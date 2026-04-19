@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Animal Hoops - Mobile Optimized & Swipe</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Montserrat:wght@800;900&display=swap');
+
+        :root {
+            --bg: #121212; --panel: #1e1e1e; --gold: #ffd700;
+            --blue: #3b82f6; --red: #ef4444; --court: #e5a454;
+            --nav-bg: #111; --nav-active: #ffd700; --line: rgba(255, 255, 255, 0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { background-color: var(--bg); color: white; font-family: 'Montserrat', sans-serif; overflow: hidden; display: flex; justify-content: center; height: 100vh; touch-action: none; overscroll-behavior: none; }
+        
+        #app-container { width: 100%; max-width: 450px; height: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+
+        /* --- 첫 화면 --- */
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a1a, #000); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+        .logo-icon { font-size: 6rem; margin-bottom: 10px; animation: bounce 2s infinite ease-in-out; }
+        .game-title { font-family: 'Black Han Sans', sans-serif; font-size: 3.5rem; color: var(--gold); text-shadow: 0 4px 15px rgba(255,215,0,0.4); text-align: center; line-height: 1.1; margin-bottom: 40px; }
+        .btn-main { background: linear-gradient(45deg, var(--blue), #60a5fa); color: white; font-family: 'Black Han Sans', sans-serif; font-size: 2rem; padding: 15px 50px; border-radius: 30px; border: none; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4); cursor: pointer; transition: transform 0.1s; margin-bottom: 20px; }
+        .btn-main:active { transform: scale(0.95); }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        /* --- 메인 게임 영역 --- */
+        #game-ui { display: none; flex-direction: column; height: 100%; width: 100%; opacity: 0; transition: opacity 0.5s ease; }
+
+        .top-bar { padding: 15px 20px; background: rgba(0,0,0,0.9); display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #333; flex-shrink: 0; }
+        .top-bar .user-info { font-weight: 900; font-size: 1rem; color: #ccc; }
+        .top-bar .gold-box { display: flex; align-items: center; gap: 8px; font-family: 'Black Han Sans', sans-serif; font-size: 1.5rem; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+
+        #view-slider { flex-grow: 1; width: 300%; display: flex; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); will-change: transform; height: 100%; }
+        .page { width: 33.333%; height: 100%; display: flex; flex-direction: column; }
+        .page-content { padding: 20px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .page-title { font-family: 'Black Han Sans', sans-serif; font-size: 2rem; color: white; margin-bottom: 15px; text-align: center; flex-shrink: 0; }
+
+        /* 하단 네비게이션 */
+        .bottom-nav { height: 70px; background: var(--nav-bg); display: flex; border-top: 2px solid #222; z-index: 100; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #555; cursor: pointer; transition: 0.2s; }
+        .nav-item .icon { font-size: 1.5rem; margin-bottom: 4px; transition: 0.2s; }
+        .nav-item .label { font-weight: 900; font-size: 0.75rem; }
+        .nav-item.active { color: var(--nav-active); }
+        .nav-item.active .icon { transform: translateY(-5px) scale(1.1); text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+
+        /* --- 탭 1: 팀 관리 (모바일 오버플로우 최적화) --- */
+        #page-team { background: #151515; }
+        .roster-area { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border: 1px solid #333; margin-bottom: 15px; flex-shrink: 0; }
+        .inventory-area { flex: 1; display: flex; flex-direction: column; min-height: 0; margin-bottom: 0; } /* 인벤토리 영역만 플렉스 확장 */
+        .section-label { font-size: 0.85rem; color: #888; font-weight: 800; margin-bottom: 10px; text-align: center; }
+        .slot-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        
+        #inventory-list { overflow-y: auto; flex: 1; align-content: flex-start; padding-bottom: 20px; scrollbar-width: none; }
+        #inventory-list::-webkit-scrollbar { display: none; } /* 스크롤바 숨김 */
+
+        .slot { width: 60px; height: 60px; background: #222; border: 3px solid #555; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.5); cursor: pointer; position: relative; transition: 0.2s; flex-shrink: 0; }
+        .slot.selected { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 15px rgba(255,215,0,0.5); z-index: 2; }
+        .hint-text { font-size: 0.75rem; color: #777; text-align: center; margin-bottom: 10px; flex-shrink: 0; }
+
+        /* --- 탭 2: 경기 (코트) --- */
+        #page-match { background: #1a1a1a; overflow: hidden; }
+        .match-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #222; border-bottom: 2px solid #333; flex-shrink: 0; }
+        .score-board { display: flex; gap: 15px; font-size: 1.5rem; font-weight: 900; color: #888; background: #111; padding: 5px 20px; border-radius: 20px; border: 1px solid #333; }
+        .score-blue { color: var(--blue); } .score-red { color: var(--red); }
+        .speed-btn { background: #333; border: 1px solid #555; padding: 5px 15px; border-radius: 15px; color: white; font-weight: 900; font-size: 0.8rem; cursor: pointer; }
+        
+        #court-area { flex-grow: 1; position: relative; background-color: var(--court); overflow: hidden; border-top: 4px solid #fff; border-bottom: 4px solid #fff; box-shadow: inset 0 0 30px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        .court-line { position: absolute; border: 3px solid var(--line); pointer-events: none; }
+        .center-line { left: 50%; top: 0; bottom: 0; width: 0; transform: translateX(-50%); }
+        .center-circle { width: 90px; height: 90px; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .hoop-area-left { left: -20px; top: 50%; width: 100px; height: 180px; transform: translateY(-50%); border-radius: 0 90px 90px 0; border-left: none; background: rgba(255,255,255,0.1); }
+        .hoop-area-right { right: -20px; top: 50%; width: 100px; height: 180px; transform: translateY(-50%); border-radius: 90px 0 0 90px; border-right: none; background: rgba(255,255,255,0.1); }
+        .hoop { position: absolute; width: 22px; height: 22px; border: 4px solid #d97706; border-radius: 50%; top: 50%; transform: translateY(-50%); z-index: 2; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
+        .hoop.left { left: 10px; } .hoop.right { right: 10px; }
+
+        /* 물리 및 게임 오브젝트 */
+        .shadow { position: absolute; width: 20px; height: 10px; background: rgba(0,0,0,0.4); border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; }
+        .player { position: absolute; transform: translate(-50%, -50%); z-index: 6; display: flex; justify-content: center; align-items: center; transition: opacity 0.2s; }
+        .player.blue { font-size: 30px; text-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        .player.red { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f87171, var(--red)); border: 2px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.4); font-size: 12px; color: white; font-weight: bold; }
+        
+        .stun-fx { position: absolute; top: -15px; font-size: 14px; display: none; z-index: 7; animation: spin 1s linear infinite; text-shadow: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .ball { position: absolute; width: 15px; height: 15px; background: radial-gradient(circle at 30% 30%, #fb923c, #ea580c); border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; border: 1px solid #7c2d12; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4); will-change: transform, left, top; }
+        .ball-shadow { position: absolute; width: 12px; height: 6px; background: rgba(0,0,0,0.5); border-radius: 50%; transform: translate(-50%, -50%); z-index: 9; will-change: transform, left, top; }
+        .event-text { position: absolute; font-family: 'Black Han Sans', sans-serif; pointer-events: none; z-index: 50; transform: translate(-50%, -50%); text-shadow: 2px 3px 0 rgba(0,0,0,0.8); white-space: nowrap; }
+        @keyframes popup { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -30px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
+        .anim-popup { animation: popup 1.2s ease-out forwards; }
+
+        /* --- 팝업 UI & 뽑기 --- */
+        #full-overlay, #info-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; }
+        .anim-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .info-card { background: #1a1a1a; border: 2px solid #444; border-radius: 20px; padding: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
+        .info-close { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; color: #888; cursor: pointer; }
+        .info-icon { font-size: 4rem; margin-bottom: 10px; text-shadow: 0 0 15px rgba(255,255,255,0.2); }
+        .info-name { font-size: 1.5rem; font-weight: 900; margin-bottom: 5px; font-family: 'Black Han Sans'; }
+        .info-grade { font-size: 0.9rem; font-weight: 800; margin-bottom: 15px; }
+        .info-stat { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: #ccc; font-weight: 700; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .info-skill { margin-top: 15px; background: rgba(255,215,0,0.1); padding: 15px 10px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); }
+        .info-skill-name { color: var(--gold); font-weight: 900; font-size: 1.1rem; margin-bottom: 8px; }
+        .info-skill-desc { font-size: 0.85rem; color: #eee; line-height: 1.5; font-weight: 700; word-break: keep-all; }
+        
+        #page-gacha { background: radial-gradient(circle at top, #2d1b4e, #111); justify-content: center; align-items: center; }
+        .gacha-banner { font-size: 5rem; animation: float 3s ease-in-out infinite; margin-bottom: 20px; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="start-screen">
+        <div class="logo-icon">🏀🐶</div>
+        <div class="game-title">ANIMAL<br>HOOPS</div>
+        <button class="btn-main" onclick="startGame()">PLAY</button>
+    </div>
+
+    <div id="full-overlay" onclick="closeOverlay()">
+        <div id="overlay-icon" style="font-size: 6rem;"></div>
+        <div id="overlay-title" style="font-size: 2.5rem; font-family: 'Black Han Sans'; color: white; margin-top: 15px;"></div>
+        <div id="overlay-sub" style="font-size: 1.3rem; font-weight: 800; margin-top: 5px;"></div>
+    </div>
+
+    <div id="info-modal" onclick="closeInfo()">
+        <div class="info-card anim-pop" onclick="event.stopPropagation()">
+            <div class="info-close" onclick="closeInfo()">✖</div>
+            <div class="info-icon" id="info-icon">🐶</div>
+            <div class="info-name" id="info-name">바둑이</div>
+            <div class="info-grade" id="info-grade">Normal</div>
+            <div class="info-stat"><span>스피드</span><span id="info-spd">0.5</span></div>
+            <div class="info-stat"><span>슛 정확도</span><span id="info-sht">40</span></div>
+            <div class="info-stat"><span>전술(BQ)</span><span id="info-iq">30</span></div>
+            <div class="info-skill" id="info-skill-box">
+                <div class="info-skill-name" id="info-skill-name">-</div>
+                <div class="info-skill-desc" id="info-skill-desc">-</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div class="top-bar">
+            <div class="user-info">LV.1 루키 구단주</div>
+            <div class="gold-box"><span>💰</span> <span id="ui-gold">2,500</span></div>
+        </div>
+
+        <div id="view-slider">
+            <div class="page" id="page-team">
+                <div class="page-content">
+                    <div class="page-title">팀 로스터</div>
+                    <div class="hint-text">💡 선수를 길게 누르면 능력치를 봅니다.<br>(좌우로 넘겨 화면 전환)</div>
+                    
+                    <div class="roster-area">
+                        <div class="section-label">선발 명단 (클릭하여 교체 대상 선택)</div>
+                        <div class="slot-container" id="starting-lineup">
+                            <div class="slot selected" id="roster-0">🐶</div>
+                            <div class="slot" id="roster-1">🐶</div>
+                            <div class="slot" id="roster-2">🐶</div>
+                        </div>
+                    </div>
+                    
+                    <div class="roster-area inventory-area">
+                        <div class="section-label">대기 선수 (클릭하여 선발과 교체)</div>
+                        <div class="slot-container" id="inventory-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="page-match">
+                <div class="match-header">
+                    <button class="speed-btn" id="btn-speed" onclick="toggleSpeed()">>> 1.0x</button>
+                    <div class="score-board">
+                        <span class="score-blue">B <span id="score-b">0</span></span>
+                        <span style="color:#555">|</span>
+                        <span class="score-red"><span id="score-r">0</span> R</span>
+                    </div>
+                </div>
+                
+                <div id="court-area">
+                    <div class="court-line center-line"></div>
+                    <div class="court-line center-circle"></div>
+                    <div class="court-line hoop-area-left"></div>
+                    <div class="court-line hoop-area-right"></div>
+                    <div class="hoop left"></div><div class="hoop right"></div>
+                </div>
+            </div>
+
+            <div class="page" id="page-gacha">
+                <div class="page-content" style="justify-content: center; align-items: center;">
+                    <div class="gacha-banner">🎁</div>
+                    <div class="page-title">프리미엄 스카우트</div>
+                    <div style="color: #ccc; font-weight: 800; text-align: center; margin-bottom: 30px; font-size: 0.9rem;">
+                        새로운 에이스를 영입하세요!<br>
+                        <span style="color:#ef4444; font-size:0.8rem;">Legendary 3% | Epic 15%</span>
+                    </div>
+                    <button class="btn-main" style="background: linear-gradient(45deg, #d97706, #f59e0b);" onclick="summon()">스카우트 (500💰)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="changeTab(0, this)"><div class="icon">📋</div><div class="label">팀 관리</div></div>
+            <div class="nav-item active" onclick="changeTab(1, this)"><div class="icon">🏀</div><div class="label">경기</div></div>
+            <div class="nav-item" onclick="changeTab(2, this)"><div class="icon">🎁</div><div class="label">뽑기</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 게임 데이터 (동물 5종 추가) ---
+    const ANIMAL_LIBRARY = [
+        { id: 'dog', name: '바둑이', grade: 'Normal', speed: 0.5, accel: 0.05, shoot: 40, iq: 30, icon: '🐶', color: '#a8a29e', shootRange: 22, passRate: 0.3 },
+        { id: 'turtle', name: '거북이', grade: 'Normal', speed: 0.2, accel: 0.02, shoot: 50, iq: 60, icon: '🐢', color: '#a8a29e', shootRange: 10, passRate: 0.1 },
+        { id: 'penguin', name: '펭귄', grade: 'Normal', speed: 0.8, accel: 0.02, shoot: 35, iq: 40, icon: '🐧', color: '#a8a29e', shootRange: 18, passRate: 0.4 },
+        { id: 'zebra', name: '얼룩말', grade: 'Normal', speed: 0.6, accel: 0.06, shoot: 45, iq: 45, icon: '🦓', color: '#a8a29e', shootRange: 22, passRate: 0.3 },
+        { id: 'cat', name: '고양이', grade: 'Normal', speed: 0.7, accel: 0.05, shoot: 45, iq: 50, icon: '🐱', color: '#a8a29e', shootRange: 20, passRate: 0.4 }, // NEW
+        { id: 'pig', name: '돼지', grade: 'Normal', speed: 0.3, accel: 0.03, shoot: 55, iq: 60, icon: '🐷', color: '#a8a29e', shootRange: 15, passRate: 0.5 }, // NEW
+        
+        { id: 'giraffe', name: '지라프', grade: 'Rare', speed: 0.5, accel: 0.04, shoot: 70, iq: 60, icon: '🦒', color: '#3b82f6', shootRange: 55, passRate: 0.3 }, 
+        { id: 'rabbit', name: '토끼', grade: 'Rare', speed: 0.9, accel: 0.1, shoot: 40, iq: 30, icon: '🐰', color: '#3b82f6', shootRange: 18, passRate: 0.5 },
+        { id: 'owl', name: '부엉이', grade: 'Rare', speed: 0.5, accel: 0.05, shoot: 50, iq: 90, icon: '🦉', color: '#3b82f6', shootRange: 25, passRate: 0.6 },
+        { id: 'kangaroo', name: '캥거루', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 60, iq: 50, icon: '🦘', color: '#3b82f6', shootRange: 35, passRate: 0.2 },
+        { id: 'monkey', name: '원숭이', grade: 'Rare', speed: 0.8, accel: 0.08, shoot: 55, iq: 70, icon: '🐵', color: '#3b82f6', shootRange: 28, passRate: 0.5 }, // NEW
+
+        { id: 'cheetah', name: '치타', grade: 'Epic', speed: 1.0, accel: 0.12, shoot: 50, iq: 50, icon: '🐆', color: '#a855f7', shootRange: 18, passRate: 0.1, skill: '초고속 질주', skillDesc: '잠시 동안 이동 속도가 3배로 증가합니다.', skillCd: 300 },
+        { id: 'bear', name: '불곰', grade: 'Epic', speed: 0.3, accel: 0.04, shoot: 85, iq: 75, icon: '🐻', color: '#a855f7', shootRange: 20, passRate: 0.1, skill: '바디체크', skillDesc: '밀착한 상대 수비수를 1.5초간 기절시킵니다.', skillCd: 250 },
+        { id: 'fox', name: '여우', grade: 'Epic', speed: 0.8, accel: 0.09, shoot: 65, iq: 85, icon: '🦊', color: '#a855f7', shootRange: 30, passRate: 0.5, skill: '앵클 브레이커', skillDesc: '돌파 시 마크맨을 1초간 넘어뜨립니다(기절).', skillCd: 250 },
+        { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '무리 사냥', skillDesc: '일정 시간 동안 자신의 이동 속도가 대폭 상승합니다.', skillCd: 250 }, // NEW
+        
+        { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.9, accel: 0.08, shoot: 85, iq: 80, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '주변의 모든 적을 1.5초간 기절시킵니다.', skillCd: 350 },
+        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.8, accel: 0.12, shoot: 95, iq: 40, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '불도저 덩크', skillDesc: '공을 잡으면 골대를 향해 돌진하며 수비수를 날려버립니다.', skillCd: 400 },
+        { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.7, accel: 0.07, shoot: 99, iq: 99, icon: '🦄', color: '#ef4444', shootRange: 65, passRate: 0.4, skill: '매직 패스', skillDesc: '공간에 상관없이 팀원에게 순간이동 패스를 줍니다.', skillCd: 300 },
+        { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 1.0, accel: 0.15, shoot: 99, iq: 90, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중으로 날아올라 코트 전체의 적을 기절시키고 슛을 쏩니다.', skillCd: 400 } // NEW
+    ];
+
+    let state = {
+        gold: 2500, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1,
+        blueBonus: { income: 100 },
+        redStats: { accel: 0.04, maxSpeed: 0.5, shoot: 40, iq: 1 }
+    };
+
+    let ownedAnimals = []; let selectedRosterIdx = 0; 
+    let pressTimer = null; let isLongPress = false; let isGameRunning = false;
+    let currentTabIdx = 1; // 0:팀, 1:경기, 2:뽑기
+
+    const court = document.getElementById('court-area');
+    let players = [];
+    let ball = { x: 50, y: 50, z: 50, vx: 0, vy: 0, vz: 0, el: null, shadow: null, holder: null, state: 'loose', targetTeam: null };
+
+    // --- 스와이프 로직 ---
+    let touchStartX = 0; let touchStartY = 0;
+    const viewSlider = document.getElementById('view-slider');
+    
+    viewSlider.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
+    }, {passive: true});
+
+    viewSlider.addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX; let touchEndY = e.changedTouches[0].screenY;
+        let dx = touchEndX - touchStartX; let dy = touchEndY - touchStartY;
+        
+        // 상하 스크롤보다 좌우 스와이프가 크고, 일정 거리 이상일 때만 탭 전환 (세로 스크롤 방해 금지)
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+            if (dx < 0 && currentTabIdx < 2) {
+                changeTab(currentTabIdx + 1, document.querySelectorAll('.nav-item')[currentTabIdx + 1]);
+            } else if (dx > 0 && currentTabIdx > 0) {
+                changeTab(currentTabIdx - 1, document.querySelectorAll('.nav-item')[currentTabIdx - 1]);
+            }
+        }
+    }, {passive: true});
+
+    // --- UI/화면 로직 ---
+    function startGame() {
+        const startScreen = document.getElementById('start-screen');
+        const gameUI = document.getElementById('game-ui');
+        startScreen.style.opacity = '0';
+        setTimeout(() => {
+            startScreen.style.display = 'none'; gameUI.style.display = 'flex';
+            setTimeout(() => { gameUI.style.opacity = '1'; }, 50);
+            changeTab(1, document.querySelectorAll('.nav-item')[1]); 
+            if(!isGameRunning) { initGame(); isGameRunning = true; }
+        }, 500);
+    }
+    function changeTab(index, element) {
+        currentTabIdx = index;
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active')); element.classList.add('active');
+        document.getElementById('view-slider').style.transform = `translateX(${-(index * 33.333)}%)`;
+    }
+    function toggleSpeed() {
+        state.gameSpeed = state.gameSpeed === 1 ? 0 : 1;
+        document.getElementById('btn-speed').innerText = state.gameSpeed === 1 ? '>> 1.0x' : '> 0.5x';
+        document.getElementById('btn-speed').style.color = state.gameSpeed === 1 ? 'white' : 'var(--gold)';
+    }
+
+    // --- 팀 관리 및 팝업 ---
+    function setupInteraction(element, clickCallback, animalGetter) {
+        element.oncontextmenu = (e) => e.preventDefault(); 
+        const startPress = () => { isLongPress = false; pressTimer = setTimeout(() => { isLongPress = true; showAnimalInfo(animalGetter()); }, 400); };
+        const endPress = (e) => { if (pressTimer) clearTimeout(pressTimer); if (!isLongPress && clickCallback) clickCallback(); };
+        element.addEventListener('mousedown', startPress); element.addEventListener('touchstart', startPress, {passive: true});
+        element.addEventListener('mouseup', endPress); element.addEventListener('touchend', endPress, {passive: true});
+        element.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+    }
+    function selectSlot(idx) { selectedRosterIdx = idx; document.querySelectorAll('#starting-lineup .slot').forEach((el, i) => { el.classList.toggle('selected', i === idx); }); }
+    function equipAnimal(invIdx) {
+        let bluePlayers = players.filter(p => p.team === 'blue');
+        let targetPlayer = bluePlayers[selectedRosterIdx];
+        let tempAnimal = targetPlayer.animal;
+        
+        targetPlayer.animal = ownedAnimals[invIdx];
+        targetPlayer.el.innerHTML = ownedAnimals[invIdx].icon + '<div class="stun-fx">💫</div>';
+        targetPlayer.currentSkillCd = 0; 
+        ownedAnimals[invIdx] = tempAnimal;
+
+        showEvent("교체!", targetPlayer.x, targetPlayer.y, "#4ade80");
+        updateRosterUI(); renderInventory();
+    }
+    function updateRosterUI() {
+        let bluePlayers = players.filter(p => p.team === 'blue');
+        for (let i = 0; i < 3; i++) {
+            let slot = document.getElementById(`roster-${i}`);
+            slot.innerText = bluePlayers[i].animal.icon; slot.style.borderColor = bluePlayers[i].animal.color;
+        }
+    }
+    function renderInventory() {
+        const invList = document.getElementById('inventory-list'); invList.innerHTML = ''; 
+        if (ownedAnimals.length === 0) { invList.innerHTML = '<div style="color:#666; font-size:0.8rem; margin:auto; padding:20px;">보유 선수가 없습니다.</div>'; return; }
+        ownedAnimals.forEach((animal, index) => {
+            let slot = document.createElement('div'); slot.className = 'slot'; slot.innerText = animal.icon; slot.style.borderColor = animal.color;
+            slot.style.width = '50px'; slot.style.height = '50px'; slot.style.fontSize = '1.5rem';
+            setupInteraction(slot, () => equipAnimal(index), () => ownedAnimals[index]);
+            invList.appendChild(slot);
+        });
+    }
+    function summon() {
+        if (state.gold < 500) return alert("골드가 부족합니다!");
+        state.gold -= 500; updateUI();
+        const roll = Math.random() * 100; let pool = [];
+        if (roll < 3) pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Legendary');
+        else if (roll < 18) pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Epic');
+        else if (roll < 50) pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Rare');
+        else pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Normal');
+
+        let picked = pool[Math.floor(Math.random() * pool.length)];
+        ownedAnimals.push(JSON.parse(JSON.stringify(picked))); renderInventory();
+
+        const overlay = document.getElementById('full-overlay');
+        document.getElementById('overlay-icon').innerText = picked.icon;
+        document.getElementById('overlay-title').innerText = picked.name;
+        document.getElementById('overlay-sub').innerText = picked.grade;
+        document.getElementById('overlay-sub').style.color = picked.color;
+        overlay.style.display = 'flex';
+        const iconEl = document.getElementById('overlay-icon'); iconEl.className = ''; void iconEl.offsetWidth; iconEl.className = 'anim-pop';
+    }
+    function showAnimalInfo(animal) {
+        if(!animal) return;
+        document.getElementById('info-icon').innerText = animal.icon; document.getElementById('info-name').innerText = animal.name;
+        document.getElementById('info-grade').innerText = animal.grade; document.getElementById('info-grade').style.color = animal.color;
+        document.getElementById('info-spd').innerText = animal.speed.toFixed(2); document.getElementById('info-sht').innerText = animal.shoot; document.getElementById('info-iq').innerText = animal.iq;
+        const skillBox = document.getElementById('info-skill-box');
+        if (animal.skill) { skillBox.style.display = 'block'; document.getElementById('info-skill-name').innerText = `✨ ${animal.skill}`; document.getElementById('info-skill-desc').innerText = animal.skillDesc; } 
+        else { skillBox.style.display = 'none'; }
+        document.getElementById('info-modal').style.display = 'flex';
+        const card = document.querySelector('.info-card'); card.classList.remove('anim-pop'); void card.offsetWidth; card.classList.add('anim-pop');
+    }
+    function closeInfo() { document.getElementById('info-modal').style.display = 'none'; }
+    function closeOverlay() { document.getElementById('full-overlay').style.display = 'none'; }
+    function updateUI() { document.getElementById('ui-gold').innerText = Math.floor(state.gold).toLocaleString(); document.getElementById('score-b').innerText = state.scoreB; document.getElementById('score-r').innerText = state.scoreR; }
+
+    // --- 게임 코어 로직 ---
+    function initGame() {
+        ball.shadow = document.createElement('div'); ball.shadow.className = 'ball-shadow'; court.appendChild(ball.shadow);
+        ball.el = document.createElement('div'); ball.el.className = 'ball'; court.appendChild(ball.el);
+        for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
+        players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
+        for (let i = 0; i < 3; i++) setupInteraction(document.getElementById(`roster-${i}`), () => selectSlot(i), () => players.filter(p => p.team === 'blue')[i].animal);
+        updateRosterUI(); renderInventory(); updateUI(); requestAnimationFrame(gameLoop); 
+    }
+    function createPlayer(team, roleIdx) {
+        const shadow = document.createElement('div'); shadow.className = 'shadow'; court.appendChild(shadow);
+        const el = document.createElement('div'); el.className = `player ${team}`; 
+        const stunFx = document.createElement('div'); stunFx.className = 'stun-fx'; stunFx.innerText = '💫'; el.appendChild(stunFx);
+        let animal = team === 'blue' ? JSON.parse(JSON.stringify(ANIMAL_LIBRARY[0])) : null;
+        if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = "R"; 
+        court.appendChild(el);
+        players.push({ el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, currentSkillCd: 0, activeBuff: 0 });
+    }
+    function gameLoop() {
+        if (state.gameSpeed === 1 || state.time % 2 === 0) { updateBall(); updatePlayers(); }
+        state.time++; draw(); requestAnimationFrame(gameLoop);
+    }
+
+    // 물리 엔진 및 공 궤적
+    function updateBall() {
+        if (ball.state === 'held' && ball.holder) {
+            ball.x = ball.holder.x + (ball.holder.team === 'blue' ? 2 : -2); ball.y = ball.holder.y; 
+            ball.z = 8 + Math.abs(Math.sin(state.time * 0.25)) * 14; 
+            return;
+        }
+        ball.vz -= 0.5; ball.x += ball.vx; ball.y += ball.vy; ball.z += ball.vz;
+
+        if (ball.z <= 0) {
+            ball.z = 0; ball.vz *= -0.65; ball.vx *= 0.75; ball.vy *= 0.75;
+            if (Math.abs(ball.vz) < 1.5) ball.vz = 0;
+            if (ball.state !== 'loose') ball.state = 'loose'; 
+        }
+
+        if (ball.state === 'pass' && ball.z < 30) {
+            players.forEach(p => { if (p.team === ball.targetTeam && p.cooldown <= 0 && p.stunTimer <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 6) { ball.state = 'held'; ball.holder = p; p.cooldown = 10; p.isCutting = false; } });
+        }
+
+        const hoopX = ball.targetTeam === 'blue' ? 92 : 8;
+        if (ball.state === 'shoot' && ball.z > 15 && ball.z < 25 && Math.hypot(ball.x - hoopX, ball.y - 50) < 5) {
+            if (ball.isGoal) triggerGoal(ball.targetTeam);
+            else {
+                showEvent("RIM!", hoopX, 50, "#ccc"); ball.state = 'loose'; 
+                ball.vx = (ball.x < hoopX ? -1 : 1) * (2 + Math.random() * 3); ball.vy = (Math.random() - 0.5) * 6; ball.vz = 8 + Math.random() * 5;
+            }
+        }
+        if (ball.x < 2 || ball.x > 98) { ball.vx *= -0.8; ball.x = Math.max(2, Math.min(98, ball.x)); }
+        if (ball.y < 2 || ball.y > 98) { ball.vy *= -0.8; ball.y = Math.max(2, Math.min(98, ball.y)); }
+    }
+
+    function shoot(p) {
+        p.isShooting = true; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team;
+        let shootProb = p.team === 'blue' ? p.animal.shoot : state.redStats.shoot;
+        ball.isGoal = Math.random() * 100 < shootProb;
+        
+        const hoopX = p.team === 'blue' ? 92 : 8;
+        const dist = Math.hypot(hoopX - p.x, 50 - p.y);
+        const time = Math.max(0.7, dist / 1.5); 
+        
+        ball.vx = (hoopX - p.x) / time; ball.vy = (50 - p.y) / time; ball.vz = (20 + 0.5 * 0.5 * time * time) / time; 
+        setTimeout(() => { p.isShooting = false; p.cooldown = 40; }, 800);
+    }
+
+    function updatePlayers() {
+        const possessionTeam = ball.holder ? ball.holder.team : (ball.state === 'pass' ? ball.targetTeam : null);
+        let closestToBall = null;
+        if (ball.state === 'loose' && ball.z < 30) closestToBall = players.filter(p => p.stunTimer <= 0).reduce((prev, curr) => !prev || Math.hypot(curr.x - ball.x, curr.y - ball.y) < Math.hypot(prev.x - ball.x, prev.y - ball.y) ? curr : prev, null);
+
+        players.forEach(p => {
+            if (p.stunTimer > 0) { p.stunTimer--; p.el.style.opacity = 0.5; p.stunFx.style.display = 'block'; p.vx = 0; p.vy = 0; if(ball.holder === p) ball.state = 'loose'; return; } 
+            else { p.el.style.opacity = 1; p.stunFx.style.display = 'none'; }
+
+            if (p.isShooting) return;
+            if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
+            if (p.currentSkillCd > 0) p.currentSkillCd--; if (p.activeBuff > 0) p.activeBuff--;
+
+            let targetSpeed, currentAccel, iqStat;
+            if (p.team === 'blue') { targetSpeed = p.animal.speed; currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; } 
+            else { targetSpeed = state.redStats.maxSpeed; currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
+
+            // 스킬 로직 (신규 스킬 추가)
+            if (p.team === 'blue' && p.animal.skill && p.currentSkillCd <= 0) {
+                let skillUsed = false; let enemies = players.filter(e => e.team === 'red'); let distToHoop = Math.hypot(p.x - 92, p.y - 50);
+                if (p.animal.id === 'lion') { let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 15); if (nearEnemies.length > 0 && ball.holder === p) { nearEnemies.forEach(e => e.stunTimer = 90); showEvent("포효!", p.x, p.y - 10, "orange", "1.5rem"); skillUsed = true; } } 
+                else if (p.animal.id === 'bear') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 5) { p.matchup.stunTimer = 90; showEvent("바디체크!", p.x, p.y - 10, "#a855f7"); skillUsed = true; } } 
+                else if (p.animal.id === 'fox') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 6 && p.cooldown <= 0) { p.matchup.stunTimer = 60; p.tx = p.x + 10; showEvent("앵클 브레이크!", p.x, p.y - 10, "#a855f7"); skillUsed = true; } } 
+                else if (p.animal.id === 'cheetah' || p.animal.id === 'wolf') { if (ball.holder === p && distToHoop > 20) { p.activeBuff = 80; showEvent(p.animal.skill+"!", p.x, p.y - 10, "#a855f7"); skillUsed = true; } } 
+                else if (p.animal.id === 'gorilla') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5) { enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 10).forEach(e => e.stunTimer = 60); showEvent("파워 덩크!!", p.x, p.y - 10, "red", "1.5rem"); shoot(p); skillUsed = true; } } 
+                else if (p.animal.id === 'unicorn') { let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p); if (ball.holder === p && cuttingTeammate) { showEvent("매직 패스!", p.x, p.y - 10, "magenta"); ball.holder = cuttingTeammate; ball.x = cuttingTeammate.x; ball.y = cuttingTeammate.y; skillUsed = true; } }
+                else if (p.animal.id === 'dragon') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5) { enemies.forEach(e => e.stunTimer = 60); showEvent("메테오 슈팅!!", p.x, p.y - 10, "red", "1.5rem"); shoot(p); skillUsed = true; } }
+                if (skillUsed) p.currentSkillCd = p.animal.skillCd;
+            }
+
+            let hoopX = p.team === 'blue' ? 92 : 8;
+            if (Math.hypot(p.tx - p.x, p.ty - p.y) < 0.5) { p.tx += (Math.random() - 0.5) * 5; p.ty += (Math.random() - 0.5) * 5; }
+
+            if (ball.state === 'loose') {
+                if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
+                if (p.cooldown <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 4) { ball.holder = p; ball.state = 'held'; }
+            } 
+            else if (ball.state === 'held' || ball.state === 'pass' || ball.state === 'shoot') {
+                if (p === ball.holder) {
+                    p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85; 
+                    
+                    let distToHoop = Math.hypot(p.x - p.tx, p.y - p.ty);
+                    let distToDef = Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y);
+                    let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
+                    
+                    let passTendency = (p.team === 'blue' ? p.animal.passRate : 0.35) * 0.4; 
+                    let currentShootRange = (p.team === 'blue' ? p.animal.shootRange : 22) * 0.7; 
+                    let isPathClear = distToDef > 12;
+
+                    if (isPathClear && distToHoop > currentShootRange) {
+                    } else if (cuttingTeammate && p.cooldown <= 0 && Math.random() < passTendency) { 
+                        triggerPass(p, cuttingTeammate); 
+                    } else if (distToHoop < currentShootRange && p.cooldown <= 0) { 
+                        shoot(p); 
+                    } else if (distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && Math.random() < 0.3) {
+                        let teammates = players.filter(t => t.team === p.team && t !== p);
+                        triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]);
+                    }
+                } else if (p.team === possessionTeam) {
+                    if (!p.isCutting && Math.random() < 0.005 * iqStat) { p.isCutting = true; p.cutTimer = 80; }
+                    if (p.isCutting) { p.tx = hoopX; p.ty = 50 + (Math.random()*10 - 5); targetSpeed *= 1.4; } 
+                    else { p.tx = p.team === 'blue' ? 65 + Math.sin(state.time*0.03)*8 : 35 - Math.sin(state.time*0.03)*8; p.ty = p.roleIdx === 0 ? 50 : (p.roleIdx === 1 ? 15 : 85); targetSpeed *= 0.7; }
+                } else {
+                    if (ball.holder === p.matchup) {
+                        p.tx = p.matchup.x; p.ty = p.matchup.y; targetSpeed *= 0.85; 
+                        if (Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0) {
+                            if (Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
+                        }
+                    } else {
+                        let defHoopX = p.team === 'blue' ? 10 : 90;
+                        p.tx = p.matchup.x + (defHoopX - p.matchup.x) * 0.3; p.ty = p.matchup.y + (50 - p.matchup.y) * 0.3; targetSpeed *= p.matchup.isCutting ? 1.3 : 0.7; 
+                    }
+                }
+            }
+
+            const dx = p.tx - p.x; const dy = p.ty - p.y; const dist = Math.hypot(dx, dy);
+            if (dist > 1) { p.vx += ((dx / dist) * targetSpeed - p.vx) * currentAccel; p.vy += ((dy / dist) * targetSpeed - p.vy) * currentAccel; } 
+            else { p.vx *= 0.7; p.vy *= 0.7; }
+            p.x = Math.max(3, Math.min(97, p.x + p.vx)); p.y = Math.max(3, Math.min(97, p.y + p.vy));
+        });
+    }
+
+    function triggerPass(from, to) {
+        ball.state = 'pass'; ball.holder = null; ball.targetTeam = to.team;
+        let leadX = to.x + to.vx * 15; let leadY = to.y + to.vy * 15;
+        const time = Math.hypot(leadX - from.x, leadY - from.y) / 1.6;
+        ball.vx = (leadX - from.x) / time; ball.vy = (leadY - from.y) / time; ball.vz = 4;
+        from.cooldown = 20;
+    }
+
+    function triggerGoal(team) {
+        if (team === 'blue') state.scoreB += 2; else state.scoreR += 2;
+        let scorerName = "적군"; let scorerIcon = "🔥"; let color = "var(--red)";
+        if (team === 'blue') {
+            let blueScorer = players.find(p => p.team === 'blue'); 
+            scorerName = blueScorer.animal.name; scorerIcon = blueScorer.animal.icon; color = "var(--blue)";
+            state.gold += state.blueBonus.income;
+            showEvent(`+$${state.blueBonus.income.toLocaleString()}`, 50, 40, "var(--gold)", "2.5rem");
+        }
+
+        const popup = document.createElement('div'); popup.className = 'event-text anim-popup';
+        popup.innerHTML = `GOAL!<br><span style="font-size:0.7em">${scorerIcon} ${scorerName}</span>`;
+        popup.style.left = `50%`; popup.style.top = `40%`; popup.style.color = color; popup.style.fontSize = "3rem"; popup.style.textAlign = "center";
+        court.appendChild(popup); setTimeout(() => popup.remove(), 1200);
+
+        ball.x = 50; ball.y = 50; ball.z = 60; ball.vx = (Math.random()-0.5)*2; ball.vy = (Math.random()-0.5)*2; ball.vz = 0; ball.state = 'loose'; ball.holder = null;
+        updateUI();
+    }
+
+    function draw() {
+        let ballScale = 1 + (ball.z / 60); 
+        ball.el.style.left = `${ball.x}%`; ball.el.style.top = `calc(${ball.y}% - ${ball.z}px)`; ball.el.style.transform = `translate(-50%, -50%) scale(${ballScale})`;
+        ball.shadow.style.left = `${ball.x}%`; ball.shadow.style.top = `${ball.y}%`; ball.shadow.style.transform = `translate(-50%, -50%) scale(${Math.max(0.2, 1 - ball.z/40)})`; ball.shadow.style.opacity = Math.max(0.2, 1 - ball.z/50);
+
+        players.forEach(p => { 
+            p.el.style.left = `${p.x}%`; p.el.style.top = `${p.y}%`; 
+            p.shadow.style.left = `${p.x}%`; p.shadow.style.top = `${p.y}%`; 
+        });
+    }
+
+    function showEvent(text, x, y, color, size="1.2rem") {
+        const div = document.createElement('div'); div.className = 'event-text anim-popup'; div.innerText = text; div.style.left = `${x}%`; div.style.top = `${y}%`; div.style.color = color; div.style.fontSize = size;
+        court.appendChild(div); setTimeout(() => div.remove(), 1200);
+    }
+</script>
+</body>
+</html>
