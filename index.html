@@ -14,9 +14,6 @@
         }
 
         html, body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100dvh; margin: 0; padding: 0; overflow: hidden; background-color: var(--bg); touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-            .swap-hold { box-shadow: 0 0 0 4px var(--gold), 0 0 15px 4px rgba(255,215,0,0.3); border-color: var(--gold) !important; }
-        .drag-ghost { position: fixed; pointer-events: none; z-index: 1000; font-size: 2.5rem; opacity: 0.9; transform: translate(-50%, -50%); filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); transition: transform 0.05s; }
-        .drag-over { border-color: var(--gold) !important; background: rgba(255,215,0,0.15) !important; transform: scale(1.05); }
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         body { color: white; font-family: 'Montserrat', sans-serif; display: flex; justify-content: center; }
         
@@ -36,48 +33,11 @@
         .top-bar .stage-info { font-weight: 900; font-size: 1.2rem; color: var(--red); font-family: 'Black Han Sans', sans-serif; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
         .top-bar .gold-box { display: flex; align-items: center; gap: 8px; font-family: 'Black Han Sans', sans-serif; font-size: 1.5rem; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
         .stage-select { appearance: none; background: rgba(255,255,255,0.07); border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 14px; font-size: 0.9rem; font-weight: 800; min-width: 70px; }
-        .slot.locked { filter: grayscale(1) brightness(0.72); opacity: 0.7; }
 
-        /* --- 수정된 부분 --- */
-
-/* 1. view-slider는 flex: 1을 주어 상단 헤더와 하단 네비를 제외한 공간을 채움 */
-#view-slider { 
-    flex: 1; 
-    width: 300%; 
-    display: flex; 
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-    overflow: hidden; /* 추가: 가로 슬라이드 외 영역 숨김 */
-}
-
-/* 2. 각 페이지의 콘텐츠는 flex: 1로 남은 공간을 채우고, overflow-y: auto로 내부 스크롤 허용 */
-.page-content { 
-    padding: 20px; 
-    display: flex; 
-    flex-direction: column; 
-    height: 100%; 
-    overflow-y: auto; /* 핵심: 여기서 스크롤 발생 */
-    -webkit-overflow-scrolling: touch; 
-}
-
-/* 3. 인벤토리 리스트의 높이 제한 삭제 (이제 부모 컨테이너가 높이를 조절함) */
-.inventory-area { 
-    flex: 1; /* 남은 공간을 모두 차지하도록 변경 */
-    display: flex; 
-    flex-direction: column; 
-    margin-bottom: 0; 
-}
-
-#inventory-list { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); 
-    gap: 12px; 
-    flex: 1; /* 리스트가 남은 공간을 채움 */
-    align-content: flex-start; 
-    padding: 10px 5px 20px; 
-    overflow-y: visible; /* 부모인 page-content에서 스크롤하므로 visible */
-}
- .page { width: 33.333%; height: 100%; display: flex; flex-direction: column; }
-        .page-content { padding: 20px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        /* --- 구조 변경 (슬라이더 영역 스크롤 최적화) --- */
+        #view-slider { flex: 1; width: 300%; display: flex; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
+        .page { width: 33.333%; height: 100%; display: flex; flex-direction: column; }
+        .page-content { padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .page-title { font-family: 'Black Han Sans', sans-serif; font-size: 2rem; color: white; margin-bottom: 10px; text-align: center; flex-shrink: 0; }
 
         .bottom-nav { height: 70px; background: var(--nav-bg); display: flex; border-top: 2px solid #222; z-index: 100; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
@@ -87,30 +47,23 @@
         .nav-item.active { color: var(--nav-active); }
         .nav-item.active .icon { transform: translateY(-5px) scale(1.1); text-shadow: 0 0 10px rgba(255,215,0,0.5); }
 
-        /* --- Team Management (인벤토리 최적화 & 레벨 배지 수정) --- */
+        /* --- Team Management --- */
         #page-team { background: #151515; }
         .roster-area { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border: 1px solid #333; margin-bottom: 15px; flex-shrink: 0; }
         
-        .inventory-area { height: calc(100% - 280px); min-height: 200px; display: flex; flex-direction: column; margin-bottom: 0; overflow: hidden; }
-        
+        .inventory-area { flex: 1; display: flex; flex-direction: column; margin-bottom: 0; }
         .section-label { font-size: 0.85rem; color: #888; font-weight: 800; margin-bottom: 10px; text-align: center; }
         .slot-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         
-        /* 모바일 대응을 위해 auto-fill과 minmax 사용 */
         #inventory-list { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); 
             gap: 12px; 
-            overflow-y: auto; 
             flex: 1; 
             align-content: flex-start; 
             padding: 10px 5px 20px; 
-            scrollbar-width: thin; 
-            -webkit-overflow-scrolling: touch; /* 스크롤 부드럽게 */
+            overflow-y: visible;
         }
-        #inventory-list::-webkit-scrollbar { width: 6px; }
-        #inventory-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        #inventory-list::-webkit-scrollbar-track { background: transparent; }
 
         .slot { width: 58px; height: 58px; background: #222; border: 3px solid #555; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; position: relative; transition: 0.2s; flex-shrink: 0; }
         .slot.selected { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 15px rgba(255,215,0,0.5); z-index: 2; }
@@ -122,12 +75,8 @@
         .slot.lv-15-19 { border-color: #a855f7; background: linear-gradient(135deg, #2a1a4a 0%, #1a0a2a 100%); box-shadow: 0 4px 10px rgba(168,85,247,0.3); }
         .slot.lv-20 { border-color: #f59e0b; background: linear-gradient(135deg, #3a2a1a 0%, #2a1a0a 100%); box-shadow: 0 4px 15px rgba(245,158,11,0.5); animation: glow-legendary 2s ease-in-out infinite; }
         
-        @keyframes glow-legendary {
-            0%, 100% { box-shadow: 0 4px 15px rgba(245,158,11,0.4); }
-            50% { box-shadow: 0 4px 25px rgba(245,158,11,0.7); }
-        }
+        @keyframes glow-legendary { 0%, 100% { box-shadow: 0 4px 15px rgba(245,158,11,0.4); } 50% { box-shadow: 0 4px 25px rgba(245,158,11,0.7); } }
         
-        /* 레벨 배지는 왼쪽 하단으로 이동하여 카운트 배지와 겹침 방지 */
         .lv-badge { position: absolute; bottom: -5px; left: -5px; background: var(--red); color: white; font-size: 0.7rem; font-weight: 900; padding: 2px 6px; border-radius: 10px; border: 2px solid #222; z-index: 6; }
         .count-badge { position: absolute; top: -5px; right: -5px; background: var(--blue); color: white; font-size: 0.75rem; font-weight: 900; padding: 2px 6px; border-radius: 10px; border: 2px solid #222; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5; }
         .hint-text { font-size: 0.75rem; color: #777; text-align: center; margin-bottom: 10px; flex-shrink: 0; }
@@ -259,7 +208,6 @@
         </div>
     </div>
 
-    <!-- 일괄 작업 모달 -->
     <div id="bulk-modal" onclick="closeBulkModal()">
         <div class="info-card anim-pop" onclick="event.stopPropagation()" style="max-width: 350px;">
             <div class="info-close" onclick="closeBulkModal()">✖</div>
@@ -327,7 +275,7 @@
             <div class="page" id="page-team">
                 <div class="page-content">
                     <div class="page-title">팀 로스터</div>
-                    <div class="hint-text">💡 선수를 누르면 합성/판매/장착이 가능합니다.</div>
+                    <div class="hint-text">💡 선수를 누르면 교체 슬롯이 선택됩니다.</div>
                     
                     <div class="roster-area">
                         <div class="section-label">선발 명단 (클릭하여 교체 대상 선택)</div>
@@ -339,7 +287,7 @@
                     </div>
                     
                     <div class="roster-area inventory-area">
-                        <div class="section-label">대기 선수 (클릭하여 관리)</div>
+                        <div class="section-label">대기 선수 (클릭하여 관리 및 장착)</div>
                         <div class="slot-container" id="inventory-list"></div>
                     </div>
                     
@@ -379,9 +327,9 @@
                         새로운 에이스를 영입하세요!<br>
                         <span style="color:#ef4444; font-size:0.8rem;">Legendary 3% | Epic 15%</span>
                     </div>
-                    <button class="btn-main" style="background: linear-gradient(45deg, #d97706, #f59e0b); width: 80%; margin-bottom: 15px;" onclick="summon(1)">1회 뽑기 (500💰)</button>
-                    <button class="btn-main" style="background: linear-gradient(45deg, #a855f7, #6366f1); width: 80%; margin-bottom: 15px;" onclick="summon(10)">10회 뽑기 (5,000💰)</button>
-                    <button class="btn-main" style="background: linear-gradient(45deg, #ef4444, #f97316); width: 80%;" onclick="summon(100)">100회 뽑기 (50,000💰)</button>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #d97706, #f59e0b); width: 85%; margin-bottom: 15px;" onclick="summon(1)">1회 뽑기 (500💰)</button>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #a855f7, #6366f1); width: 85%; margin-bottom: 15px;" onclick="summon(10)">10회 뽑기 (5,000💰)</button>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #ef4444, #f97316); width: 85%;" onclick="summon(100)">100회 뽑기 (50,000💰)</button>
                 </div>
             </div>
         </div>
@@ -435,7 +383,6 @@
 
     const genUid = () => Math.random().toString(36).substr(2, 9);
     function createAnimal(baseObj, lvl = 1) { 
-        // 기존 동물(ANIMAL_LIBRARY에 없는 경우)도 보존하기 위해 기본값 사용
         const defaultAnimal = {
             id: baseObj.id || 'unknown',
             name: baseObj.name || '알 수 없음',
@@ -460,15 +407,19 @@
     let isGameRunning = false; let isResetting = false; let currentTabIdx = 1; 
     let targetAnimUid = null;
     let gachaTimeout1, gachaTimeout2; 
-    let currentPickedList = []; // 10연뽑 대응을 위해 배열로 변경
+    let currentPickedList = [];
 
     const court = document.getElementById('court-area');
     let players = [];
     let ball = { x: 50, y: 50, z: 50, vx: 0, vy: 0, vz: 0, el: null, shadow: null, holder: null, lastHolder: null, state: 'loose', targetTeam: null, points: 2, isGoal: false };
 
     function saveData() {
-        const data = { gold: state.gold, stage: state.stage, maxStage: state.maxStage, ownedAnimals: ownedAnimals, roster: players.filter(p => p.team === 'blue').map(p => p.animal) };
-        localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
+        try {
+            const data = { gold: state.gold, stage: state.stage, maxStage: state.maxStage, ownedAnimals: ownedAnimals, roster: players.filter(p => p.team === 'blue').map(p => p.animal) };
+            localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
+        } catch(e) {
+            console.error("Save Error:", e);
+        }
     }
     
     function loadData() {
@@ -486,7 +437,6 @@
                     bluePlayers[i].animal = data.roster[i];
                     if(!bluePlayers[i].animal.uid) bluePlayers[i].animal.uid = genUid(); 
                     bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
-                    // skillUsesLeft 복원
                     bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
                 }
             }
@@ -525,199 +475,20 @@
         document.getElementById('btn-speed').innerText = state.gameSpeed === 1 ? '>> 1.0x' : '> 0.5x'; document.getElementById('btn-speed').style.color = state.gameSpeed === 1 ? 'white' : 'var(--gold)';
     }
 
-    let swapStartIdx = null;
-    let longPressTimer = null;
-    let longPressActive = false;
-    let dragGhost = null;
-    let dragSource = null;
-    let dragSourceType = null; // 'roster' or 'inventory'
-
+    // 간단한 클릭 선택 방식으로 복구
     function selectSlot(idx) {
-        if (swapStartIdx === null) {
-            swapStartIdx = idx;
-            document.querySelectorAll('#starting-lineup .slot').forEach((el, i) => el.classList.toggle('swap-hold', i === idx));
-        } else if (swapStartIdx !== idx) {
-            swapRoster(swapStartIdx, idx);
-            swapStartIdx = null;
-            clearSelection();
-        } else {
-            swapStartIdx = idx;
-        }
         selectedRosterIdx = idx;
         document.querySelectorAll('#starting-lineup .slot').forEach((el, i) => { el.classList.toggle('selected', i === idx); });
     }
 
-    function swapRoster(idx1, idx2) {
-        let bluePlayers = players.filter(p => p.team === 'blue');
-        let temp = bluePlayers[idx1].animal;
-        bluePlayers[idx1].animal = bluePlayers[idx2].animal;
-        bluePlayers[idx2].animal = temp;
-        updateRosterUI();
-        saveData();
-    }
-
-    function clearSelection() {
-        document.querySelectorAll('#starting-lineup .slot').forEach(el => el.classList.remove('swap-hold'));
-    }
-
-    // 드래그 앤 드롭 핸들러
-    function handleDragStart(e, sourceType, index) {
-        e.preventDefault();
-        dragSourceType = sourceType;
-        dragSource = index;
-        
-        // 고스트 요소 생성
-        dragGhost = document.createElement('div');
-        dragGhost.className = 'drag-ghost';
-        
-        let sourceEl, animalData;
-        if (sourceType === 'roster') {
-            let bluePlayers = players.filter(p => p.team === 'blue');
-            animalData = bluePlayers[index].animal;
-        } else {
-            // 인벤토리에서 드래그 시작
-            const invList = document.getElementById('inventory-list');
-            const slots = invList.querySelectorAll('.slot');
-            if (slots[index]) {
-                animalData = slots[index].animalData;
-            }
-        }
-        
-        if (animalData) {
-            dragGhost.innerText = animalData.icon;
-            document.body.appendChild(dragGhost);
-            
-            const moveHandler = (ev) => {
-                const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
-                const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
-                dragGhost.style.left = clientX + 'px';
-                dragGhost.style.top = clientY + 'px';
-            };
-            
-            const endHandler = (ev) => {
-                document.removeEventListener('mousemove', moveHandler);
-                document.removeEventListener('touchmove', moveHandler);
-                document.removeEventListener('mouseup', endHandler);
-                document.removeEventListener('touchend', endHandler);
-                
-                if (dragGhost) {
-                    dragGhost.remove();
-                    dragGhost = null;
-                }
-                
-                // 드롭 위치 감지
-                const clientX = ev.changedTouches ? ev.changedTouches[0].clientX : ev.clientX;
-                const clientY = ev.changedTouches ? ev.changedTouches[0].clientY : ev.clientY;
-                
-                // 로스터 슬롯 위에 드롭했는지 확인
-                const rosterSlots = document.querySelectorAll('#starting-lineup .slot');
-                let droppedOnRoster = -1;
-                rosterSlots.forEach((slot, idx) => {
-                    const rect = slot.getBoundingClientRect();
-                    if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-                        droppedOnRoster = idx;
-                    }
-                });
-                
-                if (droppedOnRoster >= 0) {
-                    if (sourceType === 'roster') {
-                        // 로스터 내부 스왑
-                        if (dragSource !== droppedOnRoster) {
-                            swapRoster(dragSource, droppedOnRoster);
-                        }
-                    } else {
-                        // 인벤토리 → 로스터 교체
-                        const invList = document.getElementById('inventory-list');
-                        const slots = invList.querySelectorAll('.slot');
-                        if (slots[dragSource] && slots[dragSource].animalData) {
-                            let anim = slots[dragSource].animalData;
-                            let bluePlayers = players.filter(p => p.team === 'blue');
-                            let targetPlayer = bluePlayers[droppedOnRoster];
-                            let tempAnimal = targetPlayer.animal;
-                            
-                            targetPlayer.animal = anim;
-                            targetPlayer.el.innerHTML = anim.icon + '<div class="stun-fx">💫</div>';
-                            targetPlayer.skillUsesLeft = anim.maxUses || 0;
-                            
-                            // 인벤토리에서 제거하고 기존 동물 추가
-                            let invIdx = ownedAnimals.findIndex(a => a.uid === anim.uid);
-                            if (invIdx > -1) {
-                                ownedAnimals.splice(invIdx, 1);
-                            }
-                            if (tempAnimal) {
-                                ownedAnimals.push(tempAnimal);
-                            }
-                            
-                            showEvent("장착 완료!", targetPlayer.x, targetPlayer.y, "#4ade80");
-                            renderInventory();
-                            saveData();
-                        }
-                    }
-                }
-                
-                // 하이라이트 제거
-                rosterSlots.forEach(slot => slot.classList.remove('drag-over'));
-                dragSource = null;
-                dragSourceType = null;
-            };
-            
-            document.addEventListener('mousemove', moveHandler);
-            document.addEventListener('touchmove', moveHandler, {passive: false});
-            document.addEventListener('mouseup', endHandler);
-            document.addEventListener('touchend', endHandler);
-            
-            // 초기 위치 설정
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            dragGhost.style.left = clientX + 'px';
-            dragGhost.style.top = clientY + 'px';
-            
-            // 로스터 슬롯에 hover 효과
-            const rosterSlots = document.querySelectorAll('#starting-lineup .slot');
-            rosterSlots.forEach((slot, idx) => {
-                const rect = slot.getBoundingClientRect();
-                if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-                    slot.classList.add('drag-over');
-                }
-            });
-        }
-    }
-
     function bindRosterSlotEvents() {
         document.querySelectorAll('#starting-lineup .slot').forEach((el, idx) => {
-            // 로스터 슬롯도 드래그 가능 (출발점)
-            el.ontouchstart = function(e) {
-                handleDragStart(e, 'roster', idx);
-            };
-            el.onmousedown = function(e) {
-                handleDragStart(e, 'roster', idx);
-            };
-            
-            // 기존 클릭/롱프레스 이벤트
-            el.onmousedown = el.ontouchstart = function(e) {
-                e.preventDefault();
-                longPressActive = false;
-                longPressTimer = setTimeout(() => {
-                    longPressActive = true;
-                    let bluePlayers = players.filter(p => p.team === 'blue');
-                    openActionModal(bluePlayers[idx].animal, 1);
-                }, 400);
-            };
-            el.onmouseup = el.ontouchend = function(e) {
-                clearTimeout(longPressTimer);
-                if (!longPressActive) {
-                    selectSlot(idx);
-                }
-            };
-            el.onmouseleave = el.ontouchcancel = function() {
-                clearTimeout(longPressTimer);
-            };
+            el.onclick = function() { selectSlot(idx); };
         });
     }
     
     function renderInventory() {
         const invList = document.getElementById('inventory-list'); invList.innerHTML = '';
-        // 레벨별로 구분하여 표시 (같은 동물도 레벨이 다르면 별도 표시)
         let sortedOwned = [...ownedAnimals].sort((a,b) => {
             const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
             if (gradeOrder[b.grade] !== gradeOrder[a.grade]) return gradeOrder[b.grade] - gradeOrder[a.grade];
@@ -725,7 +496,6 @@
             return b.level - a.level;
         });
 
-        // 중복 카운트 계산 (같은 id + level 조합)
         let groupedMap = {};
         sortedOwned.forEach(a => {
             let key = a.id + '_' + a.level;
@@ -740,11 +510,10 @@
             return b.animal.level - a.animal.level;
         });
 
-        displayList.forEach((item, displayIdx) => {
+        displayList.forEach((item) => {
             let slot = document.createElement('div');
             slot.className = 'slot';
             
-            // 레벨별 CSS 클래스 추가
             if (item.animal.level >= 20) slot.classList.add('lv-20');
             else if (item.animal.level >= 15) slot.classList.add('lv-15-19');
             else if (item.animal.level >= 10) slot.classList.add('lv-10-14');
@@ -753,27 +522,13 @@
             
             let countHtml = item.count > 1 ? `<div class="count-badge">x${item.count}</div>` : '';
             
-            // 레벨별 시각적 차이 (레벨 뱃지 색상 및 크기)
-            let lvColor = '#ef4444';
-            let lvSize = '0.7rem';
-            let borderWidth = '3px';
+            let lvColor = '#ef4444'; let lvSize = '0.7rem'; let borderWidth = '3px';
             if (item.animal.level >= 5) { lvColor = '#a855f7'; lvSize = '0.8rem'; borderWidth = '4px'; }
             if (item.animal.level >= 10) { lvColor = '#ffd700'; lvSize = '0.85rem'; borderWidth = '4px'; }
             
             slot.innerHTML = `${item.animal.icon}<div class="lv-badge" style="background:${lvColor}; font-size:${lvSize}; padding: 2px 7px;">${item.animal.level}</div>${countHtml}`;
             slot.style.borderColor = item.animal.color;
             slot.style.borderWidth = borderWidth;
-            
-            // 인벤토리 슬롯에 동물 데이터 저장 (드래그용)
-            slot.animalData = item.animal;
-            
-            // 드래그 이벤트 연결
-            slot.ontouchstart = function(e) {
-                handleDragStart(e, 'inventory', displayIdx);
-            };
-            slot.onmousedown = function(e) {
-                handleDragStart(e, 'inventory', displayIdx);
-            };
             
             slot.onclick = () => openActionModal(item.animal, item.count);
             invList.appendChild(slot);
@@ -788,7 +543,6 @@
             slot.innerHTML = `${bluePlayers[i].animal.icon}<div class="lv-badge">${bluePlayers[i].animal.level}</div>`;
             slot.style.borderColor = bluePlayers[i].animal.color;
             
-            // 레벨별 CSS 클래스 추가
             slot.classList.remove('lv-1-4', 'lv-5-9', 'lv-10-14', 'lv-15-19', 'lv-20');
             if (bluePlayers[i].animal.level >= 20) slot.classList.add('lv-20');
             else if (bluePlayers[i].animal.level >= 15) slot.classList.add('lv-15-19');
@@ -796,7 +550,6 @@
             else if (bluePlayers[i].animal.level >= 5) slot.classList.add('lv-5-9');
             else slot.classList.add('lv-1-4');
             
-            // 경기 아이콘 즉시 업데이트
             bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
         }
         bindRosterSlotEvents();
@@ -829,17 +582,12 @@
         
         document.getElementById('btn-merge').style.opacity = count >= 2 ? '1' : '0.4';
         document.getElementById('btn-merge').style.pointerEvents = count >= 2 ? 'auto' : 'none';
-        document.getElementById('btn-sell').style.opacity = '1';
-        document.getElementById('btn-sell').style.pointerEvents = 'auto';
-        document.getElementById('btn-equip').style.opacity = '1';
-        document.getElementById('btn-equip').style.pointerEvents = 'auto';
 
         document.getElementById('info-modal').style.display = 'flex';
         const card = document.querySelector('.info-card');
         card.classList.remove('anim-pop');
         void card.offsetWidth;
         card.classList.add('anim-pop');
-        if (window.getSelection) { window.getSelection().removeAllRanges(); }
     }
 
     function equipCurrent() {
@@ -904,9 +652,8 @@
     function closeInfo() { document.getElementById('info-modal').style.display = 'none'; targetAnimUid = null; }
     function closeOverlay() { document.getElementById('full-overlay').style.display = 'none'; }
     
-    // 일괄 작업 모달 관련 함수
+    // 일괄 작업 모달 (복사 버그 완벽 수정)
     function openBulkModal() {
-        // 동물 종류 필터 채우기
         const select = document.getElementById('bulk-animal-filter');
         select.innerHTML = '<option value="">전체</option>';
         const uniqueIds = [...new Set(ownedAnimals.map(a => a.id))];
@@ -923,7 +670,6 @@
         updateBulkPreview();
         document.getElementById('bulk-modal').style.display = 'flex';
         
-        // 필터 변경 시 미리보기 업데이트
         ['bulk-normal', 'bulk-rare', 'bulk-epic', 'bulk-legendary'].forEach(id => {
             document.getElementById(id).onchange = updateBulkPreview;
         });
@@ -958,7 +704,6 @@
     function updateBulkPreview() {
         const filtered = getBulkFilteredAnimals();
         
-        // 합성 가능한 수 (같은 id + level 조합이 2개 이상)
         const mergeGroups = {};
         filtered.forEach(a => {
             const key = a.id + '_' + a.level;
@@ -969,7 +714,6 @@
         document.getElementById('bulk-merge-count').innerText = `(${mergeableCount}세트)`;
         document.getElementById('bulk-sell-count').innerText = `(${filtered.length}마리)`;
         
-        // 미리보기 텍스트
         const preview = document.getElementById('bulk-preview');
         if (filtered.length === 0) {
             preview.innerText = '조건에 맞는 동물이 없습니다.';
@@ -985,9 +729,8 @@
     
     function bulkMerge() {
         const filtered = getBulkFilteredAnimals();
-        
-        // 같은 id + level 그룹화
         const groups = {};
+        
         filtered.forEach(a => {
             const key = a.id + '_' + a.level;
             if (!groups[key]) groups[key] = [];
@@ -1000,11 +743,21 @@
         Object.values(groups).forEach(group => {
             while (group.length >= 2) {
                 const cost = group[0].level * 300;
-                if (state.gold < cost + totalCost) break; // 골드 부족
+                if (state.gold < cost + totalCost) break; 
                 
                 totalCost += cost;
-                const base = group.shift();
-                const merged = JSON.parse(JSON.stringify(base));
+                const base1 = group.shift();
+                const base2 = group.shift();
+                
+                // 두 동물 모두 인벤토리에서 명확히 삭제 (복사 방지)
+                const idx1 = ownedAnimals.findIndex(a => a.uid === base1.uid);
+                if (idx1 > -1) ownedAnimals.splice(idx1, 1);
+                
+                const idx2 = ownedAnimals.findIndex(a => a.uid === base2.uid);
+                if (idx2 > -1) ownedAnimals.splice(idx2, 1);
+                
+                // 상위 개체 생성
+                const merged = JSON.parse(JSON.stringify(base1));
                 merged.uid = genUid();
                 merged.level++;
                 if (merged.grade === 'Legendary') {
@@ -1014,11 +767,6 @@
                 }
                 ownedAnimals.push(merged);
                 mergedCount++;
-                
-                // 남은 것에서 하나 더 제거 (합성으로 소비)
-                const idx = ownedAnimals.findIndex(a => a.uid === group[0].uid);
-                if (idx > -1) ownedAnimals.splice(idx, 1);
-                group.shift();
             }
         });
         
@@ -1036,14 +784,9 @@
     
     function bulkSell() {
         const filtered = getBulkFilteredAnimals();
-        
-        if (filtered.length === 0) {
-            alert('판매할 동물이 없습니다.');
-            return;
-        }
+        if (filtered.length === 0) { alert('판매할 동물이 없습니다.'); return; }
         
         const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
-        
         if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?`)) {
             state.gold += totalGold;
             ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
@@ -1054,20 +797,15 @@
             saveData();
         }
     }
+
     function updateStageSelect() {
         const sel = document.getElementById('stage-select');
         if (!sel) return;
         sel.innerHTML = '';
         for (let i = 1; i <= state.maxStage; i++) {
             const opt = document.createElement('option'); 
-            opt.value = i; 
-            opt.innerText = `STAGE ${i}`;
-            // 현재 스테이지는 선택 불가 처리
-            if (i === state.stage) {
-                opt.disabled = true;
-                opt.style.color = '#666';
-            }
-            if (i === state.stage) opt.selected = true;
+            opt.value = i; opt.innerText = `STAGE ${i}`;
+            if (i === state.stage) { opt.disabled = true; opt.style.color = '#666'; opt.selected = true; }
             sel.appendChild(opt);
         }
     }
@@ -1076,20 +814,14 @@
 
     function changeStage(stage) {
         if (!stage || stage < 1 || stage > state.maxStage) return;
-        // 현재 스테이지는 선택 불가, 현재보다 1 아래까지만 가능
         if (stage >= state.stage) return;
         state.stage = stage;
         applyEnemyStats(); 
-        // 경기 처음부터 재시작
-        state.scoreB = 0;
-        state.scoreR = 0;
-        isResetting = true;
-        resetPositions('blue');
-        saveData(); 
-        updateUI();
+        state.scoreB = 0; state.scoreR = 0;
+        isResetting = true; resetPositions('blue');
+        saveData(); updateUI();
     }
 
-    // 10연속 뽑기를 지원하는 함수로 업데이트 (100연뽑 지원)
     function summon(count = 1) {
         const cost = count === 100 ? 50000 : (count === 10 ? 5000 : 500);
         if (state.gold < cost) return alert("골드가 부족합니다!");
@@ -1121,8 +853,7 @@
         const fxContainer = document.getElementById('gacha-fx-container');
         fxContainer.innerHTML = '';
 
-        let glowColor = 'white';
-        let boxShakeIntensity = 1;
+        let glowColor = 'white'; let boxShakeIntensity = 1;
         if(highestGrade === 'Legendary') { glowColor = '#ffd700'; boxShakeIntensity = 1.5; }
         else if(highestGrade === 'Epic') { glowColor = '#a855f7'; boxShakeIntensity = 1.2; }
         else if(highestGrade === 'Rare') glowColor = '#3b82f6';
@@ -1195,8 +926,8 @@
             document.getElementById('overlay-sub').style.color = p.color;
         } else {
             document.getElementById('overlay-icon').innerText = "🎉";
-            document.getElementById('overlay-title').innerText = "10회 스카우트 완료!";
-            let gridHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px;">';
+            document.getElementById('overlay-title').innerText = "스카우트 완료!";
+            let gridHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height: 250px; overflow-y:auto;">';
             currentPickedList.forEach(p => {
                 gridHtml += `<div style="font-size:1.8rem; background:rgba(0,0,0,0.5); border: 2px solid ${p.color}; border-radius:10px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">${p.icon}</div>`;
             });
@@ -1210,57 +941,34 @@
 
     function createVfx(x, y, type, color = 'red') {
         const div = document.createElement('div');
-        if (type === 'wave') {
-            div.className = 'vfx-shockwave'; div.style.borderColor = color; div.style.left = `${x}%`; div.style.top = `${y}%`; }
-        else if (type === 'meteor') {
-            div.className = 'vfx-meteor'; div.innerText = '☄️'; div.style.left = `${x}%`; }
-        else if (type === 'fire') {
-            div.className = 'vfx-fire'; div.style.left = `${x}%`; div.style.top = `${y}%`; }
-        else if (type === 'spark') {
-            div.className = 'vfx-spark'; div.style.background = `radial-gradient(circle, ${color}, transparent 70%)`;
-            div.style.left = `${x}%`; div.style.top = `${y}%`;
-        }
+        if (type === 'wave') { div.className = 'vfx-shockwave'; div.style.borderColor = color; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'meteor') { div.className = 'vfx-meteor'; div.innerText = '☄️'; div.style.left = `${x}%`; }
+        else if (type === 'fire') { div.className = 'vfx-fire'; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'spark') { div.className = 'vfx-spark'; div.style.background = `radial-gradient(circle, ${color}, transparent 70%)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         court.appendChild(div); setTimeout(() => div.remove(), 1000);
     }
 
     function createMagicPath(fromX, fromY, toX, toY, color = '#d8b4fe') {
-        const div = document.createElement('div');
-        div.className = 'vfx-magic-path';
-        const dx = toX - fromX; const dy = toY - fromY;
-        const dist = Math.hypot(dx, dy);
-        const angle = Math.atan2(dy, dx);
-        div.style.width = `${dist}%`;
-        div.style.left = `${fromX}%`;
-        div.style.top = `${fromY}%`;
+        const div = document.createElement('div'); div.className = 'vfx-magic-path';
+        const dx = toX - fromX; const dy = toY - fromY; const dist = Math.hypot(dx, dy); const angle = Math.atan2(dy, dx);
+        div.style.width = `${dist}%`; div.style.left = `${fromX}%`; div.style.top = `${fromY}%`;
         div.style.transform = `translate(0, -50%) rotate(${angle}rad)`;
-        // 패스 방향으로 그라데이션이 흐르도록 수정 (시작점 → 끝점 방향)
         div.style.background = `linear-gradient(90deg, ${color} 0%, rgba(255,255,255,0.8) 50%, ${color} 100%)`;
         div.style.animation = 'pathFade 0.45s ease-out forwards';
-        court.appendChild(div);
-        setTimeout(() => div.remove(), 500);
+        court.appendChild(div); setTimeout(() => div.remove(), 500);
     }
 
-    // 유니콘 무지개 패스 효과
     function createRainbowPath(fromX, fromY, toX, toY) {
         const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
         colors.forEach((color, i) => {
             setTimeout(() => {
-                const div = document.createElement('div');
-                div.className = 'vfx-magic-path';
-                const dx = toX - fromX; const dy = toY - fromY;
-                const dist = Math.hypot(dx, dy);
-                const angle = Math.atan2(dy, dx);
-                div.style.width = `${dist}%`;
-                div.style.left = `${fromX}%`;
-                div.style.top = `${fromY}%`;
+                const div = document.createElement('div'); div.className = 'vfx-magic-path';
+                const dx = toX - fromX; const dy = toY - fromY; const dist = Math.hypot(dx, dy); const angle = Math.atan2(dy, dx);
+                div.style.width = `${dist}%`; div.style.left = `${fromX}%`; div.style.top = `${fromY}%`;
                 div.style.transform = `translate(0, -50%) rotate(${angle}rad)`;
-                // 패스 방향으로 그라데이션이 흐르도록 수정
                 div.style.background = `linear-gradient(90deg, ${color} 0%, rgba(255,255,255,0.8) 50%, ${color} 100%)`;
-                div.style.height = '3px';
-                div.style.zIndex = '20';
-                div.style.animation = 'pathFade 0.4s ease-out forwards';
-                court.appendChild(div);
-                setTimeout(() => div.remove(), 400);
+                div.style.height = '3px'; div.style.zIndex = '20'; div.style.animation = 'pathFade 0.4s ease-out forwards';
+                court.appendChild(div); setTimeout(() => div.remove(), 400);
             }, i * 50);
         });
     }
@@ -1271,10 +979,7 @@
         for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
-        loadData(); 
-        applyEnemyStats(); 
-        
-        updateRosterUI(); updateUI(); requestAnimationFrame(gameLoop); 
+        loadData(); applyEnemyStats(); updateRosterUI(); updateUI(); requestAnimationFrame(gameLoop); 
     }
 
     function applyEnemyStats() {
@@ -1302,9 +1007,7 @@
 
     function getPointsByDistance(x, y, hoopX) {
         const dist = Math.hypot(hoopX - x, 50 - y);
-        if (dist <= 8) return 1;
-        if (dist <= 25) return 2;
-        return 3;
+        if (dist <= 8) return 1; if (dist <= 25) return 2; return 3;
     }
 
     function resetPositions(concedingTeam) {
@@ -1330,9 +1033,7 @@
             let reward = state.stage * 100 + 500; state.gold += reward; state.stage++; state.maxStage = Math.max(state.maxStage, state.stage); applyEnemyStats();
             showEvent("STAGE CLEAR!", 50, 40, "var(--gold)", "3.5rem");
             setTimeout(() => showEvent(`+${reward}💰`, 50, 55, "var(--gold)", "2rem"), 1000);
-        } else {
-            showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem");
-        }
+        } else { showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); }
         setTimeout(() => { state.scoreB = 0; state.scoreR = 0; saveData(); updateUI(); resetPositions('red'); }, 3500);
     }
 
@@ -1361,9 +1062,7 @@
         if (ball.state === 'shoot' && ball.z > 10 && ball.z < 30 && Math.hypot(ball.x - hoopX, ball.y - 50) < 3.5) {
             if (ball.isGoal) {
                 ball.x = hoopX; ball.y = 50; ball.vx = 0; ball.vy = 0; ball.vz = -2;
-                ball.state = 'loose';
-                ball.isGoal = false;
-                triggerGoal(ball.targetTeam);
+                ball.state = 'loose'; ball.isGoal = false; triggerGoal(ball.targetTeam);
             }
             else { showEvent("RIM!", hoopX, 50, "#ccc"); ball.state = 'loose'; ball.vx = (ball.x < hoopX ? -1 : 1) * (2 + Math.random() * 3); ball.vy = (Math.random() - 0.5) * 6; ball.vz = 8 + Math.random() * 5; }
         }
@@ -1375,14 +1074,10 @@
     function shoot(p) {
         p.isShooting = true; ball.lastHolder = p; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team; 
         let shootProb = p.team === 'blue' ? p.animal.shoot : state.redStats.shoot;
-        if (p.team === 'blue' && p.animal.id === 'parrot' && (p.flyTimer > 0 || p.flightBuffTimer > 0)) {
-            shootProb = Math.min(100, shootProb + 30);
-        }
+        if (p.team === 'blue' && p.animal.id === 'parrot' && (p.flyTimer > 0 || p.flightBuffTimer > 0)) shootProb = Math.min(100, shootProb + 30);
         const hoopX = p.team === 'blue' ? 92 : 8;
-        ball.isGoal = Math.random() * 100 < shootProb;
-        ball.points = getPointsByDistance(p.x, p.y, hoopX);
-        const dist = Math.hypot(hoopX - p.x, 50 - p.y);
-        const time = Math.max(0.7, dist / 1.5); 
+        ball.isGoal = Math.random() * 100 < shootProb; ball.points = getPointsByDistance(p.x, p.y, hoopX);
+        const dist = Math.hypot(hoopX - p.x, 50 - p.y); const time = Math.max(0.7, dist / 1.5); 
         ball.vx = (hoopX - p.x) / time * 0.8; ball.vy = (50 - p.y) / time * 0.8; ball.vz = (20 + 0.5 * 0.5 * time * time) / time; 
         setTimeout(() => { p.isShooting = false; p.cooldown = 40; }, 800);
     }
@@ -1395,9 +1090,7 @@
         if (team === 'blue') {
             let blueScorer = (ball.lastHolder && ball.lastHolder.team === 'blue') ? ball.lastHolder : players.find(p => p.team === 'blue');
             scorerName = blueScorer.animal.name; scorerIcon = blueScorer.animal.icon; color = "var(--blue)";
-            state.gold += pts * 20;
-            showEvent(`+${pts*20}💰`, 50, 60, "var(--gold)", "1.5rem");
-            saveData();
+            state.gold += pts * 20; showEvent(`+${pts*20}💰`, 50, 60, "var(--gold)", "1.5rem"); saveData();
         }
         updateUI();
 
@@ -1408,7 +1101,6 @@
 
         if (state.scoreB >= 15) { endStage(true); return; }
         if (state.scoreR >= 15) { endStage(false); return; }
-
         setTimeout(() => resetPositions(team === 'blue' ? 'red' : 'blue'), 1000); 
     }
 
@@ -1425,10 +1117,7 @@
             if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
             if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--;
             if (p.flyTimer > 0) {
-                if (ball.holder !== p || ball.state !== 'held') {
-                    p.flyTimer = 0;
-                    if (p.animal && p.animal.id === 'parrot') p.flightBuffTimer = 60;
-                }
+                if (ball.holder !== p || ball.state !== 'held') { p.flyTimer = 0; if (p.animal && p.animal.id === 'parrot') p.flightBuffTimer = 60; }
                 else {
                     let enemyNear = players.some(e => e.team !== p.team && Math.hypot(e.x - p.x, e.y - p.y) < 6);
                     if (enemyNear) { p.flyTimer = 0; if (p.animal && p.animal.id === 'parrot') p.flightBuffTimer = 60; }
@@ -1440,51 +1129,26 @@
             if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8; currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 2.5; } 
             else { targetSpeed = state.redStats.maxSpeed * 0.8; currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
 
-            // 추가 요청된 스킬들 (코끼리, 매, 돌고래, 범고래)을 포함한 스킬 로직
             if (p.team === 'blue' && p.animal.skill && p.skillUsesLeft > 0) {
                 let skillUsed = false; let enemies = players.filter(e => e.team === 'red'); let distToHoop = Math.hypot(p.x - 92, p.y - 50);
                 let skillProbability = Math.random() * 100;
                 
-                // --- 새롭게 추가된 동물 스킬들 ---
                 if (p.animal.id === 'elephant') {
-                    // 수비형 스킬: 자신에게 접근하는 상대 수비수를 기절시킴
                     let defender = players.find(e => e.team !== p.team && e.matchup === p && Math.hypot(e.x - p.x, e.y - p.y) < 8 && e.stunTimer <= 0);
-                    if (defender && skillProbability < 20) {
-                        defender.stunTimer = 120; // 2초간 기절
-                        createVfx(defender.x, defender.y, 'wave', '#a855f7');
-                        skillUsed = true;
-                    }
+                    if (defender && skillProbability < 20) { defender.stunTimer = 120; createVfx(defender.x, defender.y, 'wave', '#a855f7'); skillUsed = true; }
                 } else if (p.animal.id === 'falcon') {
-                    if (ball.holder === p && distToHoop < p.animal.shootRange && skillProbability < 20) {
-                        p.flyTimer = 30; // 약간 체공
-                        p.flightBuffTimer = 30;
-                        createVfx(p.x, p.y, 'spark', '#a855f7');
-                        skillUsed = true;
-                    }
+                    if (ball.holder === p && distToHoop < p.animal.shootRange && skillProbability < 20) { p.flyTimer = 30; p.flightBuffTimer = 30; createVfx(p.x, p.y, 'spark', '#a855f7'); skillUsed = true; }
                 } else if (p.animal.id === 'dolphin') {
-                    if (ball.holder === p && skillProbability < 10) {
-                        players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60);
-                        createVfx(p.x, p.y, 'wave', '#3b82f6');
-                        skillUsed = true;
-                    }
+                    if (ball.holder === p && skillProbability < 10) { players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60); createVfx(p.x, p.y, 'wave', '#3b82f6'); skillUsed = true; }
                 } else if (p.animal.id === 'orca') {
                     if (ball.holder === p && skillProbability < 15) {
                         let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20);
-                        if(nearEnemies.length > 0) {
-                            nearEnemies.slice(0, 3).forEach(e => {
-                                e.stunTimer = 60;
-                                e.tx = Math.max(3, Math.min(97, e.x + (e.x - p.x))); // 밀쳐내기
-                                e.ty = Math.max(3, Math.min(97, e.y + (e.y - p.y)));
-                            });
-                            createVfx(p.x, p.y, 'wave', '#ef4444');
-                            skillUsed = true;
-                        }
+                        if(nearEnemies.length > 0) { nearEnemies.slice(0, 3).forEach(e => { e.stunTimer = 60; e.tx = Math.max(3, Math.min(97, e.x + (e.x - p.x))); e.ty = Math.max(3, Math.min(97, e.y + (e.y - p.y))); }); createVfx(p.x, p.y, 'wave', '#ef4444'); skillUsed = true; }
                     }
                 }
-                // --- 기존 스킬들 ---
                 else if (p.animal.id === 'lion') { let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20); if (nearEnemies.length > 0 && ball.holder === p && skillProbability < 10) { nearEnemies.forEach(e => e.stunTimer = 90); createVfx(p.x, p.y, 'wave', 'orange'); skillUsed = true; } } 
                 else if (p.animal.id === 'bear') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 5 && skillProbability < 10) { p.matchup.stunTimer = 90; createVfx(p.matchup.x, p.matchup.y, 'wave', '#a855f7'); skillUsed = true; } } 
-                else if (p.animal.id === 'giraffe') { if (ball.holder === p && skillProbability < 15) { let shootProb = 60; ball.isGoal = Math.random() * 100 < shootProb; createVfx(p.x, p.y, 'spark', '#a855f7'); shoot(p); skillUsed = true; } }
+                else if (p.animal.id === 'giraffe') { if (ball.holder === p && skillProbability < 15) { ball.isGoal = Math.random() * 100 < 60; createVfx(p.x, p.y, 'spark', '#a855f7'); shoot(p); skillUsed = true; } }
                 else if (p.animal.id === 'fox') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 8 && p.cooldown <= 0 && skillProbability < 10) { p.matchup.stunTimer = 60; p.tx = p.x + 10; createVfx(p.x, p.y, 'spark', '#a855f7'); skillUsed = true; } } 
                 else if (p.animal.id === 'cheetah') { if (ball.holder === p && distToHoop > 20 && skillProbability < 10) { p.activeBuff = 80; createVfx(p.x, p.y, 'spark', '#fbbf24'); skillUsed = true; } }
                 else if (p.animal.id === 'wolf') { if (ball.holder === p && skillProbability < 10) { enemies.forEach(e => { e.stunTimer = 80; }); createVfx(p.x, p.y, 'wave', '#a855f7'); skillUsed = true; } }
@@ -1492,21 +1156,11 @@
                 else if (p.animal.id === 'unicorn') { 
                     let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p); 
                     if (ball.holder === p && cuttingTeammate && skillProbability < 10) { 
-                        // 유니콘 매직 패스 개선된 시각 효과
                         createMagicPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y, '#c084fc');
-                        // 출발点和 도착점 스park 효과
-                        createVfx(p.x, p.y, 'spark', '#f472b6');
-                        createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#f472b6');
-                        // 추가: 유니콘 독특한 무지개 경로 효과
+                        createVfx(p.x, p.y, 'spark', '#f472b6'); createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#f472b6');
                         createRainbowPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y);
-                        // 공 이동
-                        ball.holder = cuttingTeammate; 
-                        ball.lastHolder = cuttingTeammate; 
-                        ball.x = cuttingTeammate.x; 
-                        ball.y = cuttingTeammate.y; 
-                        // 도착 효과
-                        setTimeout(() => createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#ffd700'), 100);
-                        skillUsed = true; 
+                        ball.holder = cuttingTeammate; ball.lastHolder = cuttingTeammate; ball.x = cuttingTeammate.x; ball.y = cuttingTeammate.y; 
+                        setTimeout(() => createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#ffd700'), 100); skillUsed = true; 
                     } 
                 }
                 else if (p.animal.id === 'dragon') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.forEach(e => e.stunTimer = 60); createVfx(92, 50, 'meteor'); shoot(p); skillUsed = true; } }
@@ -1528,17 +1182,10 @@
                     let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
                     let passTendency = (p.team === 'blue' ? p.animal.passRate : 0.35) * 0.35;
                     let currentShootRange = (p.team === 'blue' ? p.animal.shootRange : 22) * 0.65;
-                    let isGiraffe = p.team === 'blue' && p.animal.id === 'giraffe';
                     if (p.flyTimer > 0 && distToHoop < 10) shoot(p);
                     else if (cuttingTeammate && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < passTendency) { triggerPass(p, cuttingTeammate); }
                     else if (distToHoop < currentShootRange && p.cooldown <= 0) { shoot(p); }
-                    else if (distToHoop > 25 && p.cooldown <= 0) {
-                        if (isGiraffe) {
-                            if (Math.random() < 0.10) shoot(p);
-                        } else if (Math.random() < 0.003) {
-                            shoot(p);
-                        }
-                    }
+                    else if (distToHoop > 25 && p.cooldown <= 0 && Math.random() < 0.003) { shoot(p); }
                     else if (distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < 0.3) { let teammates = players.filter(t => t.team === p.team && t !== p); triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]); }
                 } else if (p.team === possessionTeam) {
                     if (!p.isCutting && Math.random() < 0.005 * iqStat) { p.isCutting = true; p.cutTimer = 80; }
@@ -1547,9 +1194,7 @@
                 } else {
                     if (ball.holder === p.matchup) {
                         p.tx = p.matchup.x; p.ty = p.matchup.y; targetSpeed *= 0.85; 
-                        if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0) {
-                            if (Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
-                        }
+                        if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0 && Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
                     } else { let defHoopX = p.team === 'blue' ? 10 : 90; p.tx = p.matchup.x + (defHoopX - p.matchup.x) * 0.3; p.ty = p.matchup.y + (50 - p.matchup.y) * 0.3; targetSpeed *= p.matchup.isCutting ? 1.3 : 0.7; }
                 }
             }
@@ -1574,11 +1219,8 @@
 
         players.forEach(p => { 
             let scale = 1 + (p.z / 40);
-            p.el.style.left = `${p.x}%`; p.el.style.top = `calc(${p.y}% - ${p.z}px)`; 
-            p.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
-            p.shadow.style.left = `${p.x}%`; p.shadow.style.top = `${p.y}%`; 
-            p.shadow.style.transform = `translate(-50%, -50%) scale(${Math.max(0.5, 1 - p.z/40)})`;
-            p.shadow.style.opacity = Math.max(0.2, 1 - p.z/30);
+            p.el.style.left = `${p.x}%`; p.el.style.top = `calc(${p.y}% - ${p.z}px)`; p.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            p.shadow.style.left = `${p.x}%`; p.shadow.style.top = `${p.y}%`; p.shadow.style.transform = `translate(-50%, -50%) scale(${Math.max(0.5, 1 - p.z/40)})`; p.shadow.style.opacity = Math.max(0.2, 1 - p.z/30);
             if(p.flyTimer > 0) createVfx(p.x, p.y, 'fire');
         });
     }
