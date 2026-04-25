@@ -704,30 +704,67 @@
     }
 
     function updateRosterUI() {
-        let bluePlayers = players.filter(p => p.team === 'blue');
-        for (let i = 0; i < 3; i++) {
-            let slot = document.getElementById(`roster-${i}`);
-            slot.innerHTML = `${bluePlayers[i].animal.icon}<div class="lv-badge">${bluePlayers[i].animal.level}</div>`;
-            slot.style.borderColor = bluePlayers[i].animal.color;
-            
-            slot.classList.remove('lv-1-4', 'lv-5-9', 'lv-10-14', 'lv-15-19', 'lv-20');
-            if (bluePlayers[i].animal.level >= 20) slot.classList.add('lv-20');
-            else if (bluePlayers[i].animal.level >= 15) slot.classList.add('lv-15-19');
-            else if (bluePlayers[i].animal.level >= 10) slot.classList.add('lv-10-14');
-            else if (bluePlayers[i].animal.level >= 5) slot.classList.add('lv-5-9');
-            else slot.classList.add('lv-1-4');
-            
-            // 로스터 슬롯 클릭 이벤트 추가
-            slot.style.cursor = 'pointer';
-            slot.onclick = () => {
+    let bluePlayers = players.filter(p => p.team === 'blue');
+    for (let i = 0; i < 3; i++) {
+        let slot = document.getElementById(`roster-${i}`);
+        slot.innerHTML = `${bluePlayers[i].animal.icon}<div class="lv-badge">${bluePlayers[i].animal.level}</div>`;
+        slot.style.borderColor = bluePlayers[i].animal.color;
+        
+        slot.classList.remove('lv-1-4', 'lv-5-9', 'lv-10-14', 'lv-15-19', 'lv-20');
+        if (bluePlayers[i].animal.level >= 20) slot.classList.add('lv-20');
+        else if (bluePlayers[i].animal.level >= 15) slot.classList.add('lv-15-19');
+        else if (bluePlayers[i].animal.level >= 10) slot.classList.add('lv-10-14');
+        else if (bluePlayers[i].animal.level >= 5) slot.classList.add('lv-5-9');
+        else slot.classList.add('lv-1-4');
+        
+        slot.style.cursor = 'pointer';
+        
+        // 기존의 onclick 이벤트는 제거합니다.
+        slot.onclick = null;
+        
+        // --- 🌟 꾹 누르기(롱 프레스) 이벤트 로직 ---
+        let pressTimer;
+        let isLongPress = false;
+
+        // 화면 터치 시작 / 마우스 클릭 누름
+        slot.onpointerdown = (e) => {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                if (navigator.vibrate) navigator.vibrate(40); // 모바일 진동
+                
+                // [꾹 눌렀을 때] 동물 상세 정보 보기
+                targetAnimUid = bluePlayers[i].animal.uid;
+                
+                // 💡주의: 기존에 모달을 띄우는 함수를 사용하되, 정보만 볼 수 있는 인자값을 넣어야 합니다.
+                // (보통 0이 인벤토리/순수 정보 확인용일 가능성이 높습니다. 만약 따로 showInfo() 같은 함수가 있다면 그걸로 바꿔주세요)
+                openActionModal(bluePlayers[i].animal, 0); 
+                
+            }, 400); // 0.4초
+        };
+
+        // 손가락 뗌 / 마우스 클릭 뗌
+        slot.onpointerup = (e) => {
+            clearTimeout(pressTimer);
+            if (!isLongPress) {
+                // [짧게 눌렀을 때] 기존처럼 교체/내리기 동작
                 targetAnimUid = bluePlayers[i].animal.uid;
                 openActionModal(bluePlayers[i].animal, 1);
-            };
-            
-            bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
-        }
-        bindRosterSlotEvents();
+            }
+        };
+
+        // 드래그해서 슬롯을 벗어나거나 화면 터치가 취소될 때 타이머 해제
+        slot.onpointercancel = () => clearTimeout(pressTimer);
+        slot.onpointerleave = () => clearTimeout(pressTimer);
+        
+        // 모바일 환경에서 꾹 누를 때 기본 메뉴(이미지 저장 등) 뜨는 현상 방지
+        slot.oncontextmenu = (e) => e.preventDefault();
+        // ------------------------------------------
+        
+        bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
     }
+    bindRosterSlotEvents();
+}
 
     function openActionModal(animal, count) {
         targetAnimUid = animal.uid;
@@ -1005,18 +1042,36 @@
         saveData();
     }
     
-    function toggleFavorite() {
-        let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
-        if (!anim) return;
-        anim.favorite = !anim.favorite;
-        renderInventory();
-        const favBtn = document.getElementById('btn-favorite');
+function toggleFavorite() {
+    // 1. 인벤토리(ownedAnimals)에서 먼저 동물 찾기
+    let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
+    
+    // 2. 인벤토리에 없다면? 출전 중인 동물(players의 blue팀)에서 찾기!
+    if (!anim) {
+        let activePlayer = players.find(p => p.team === 'blue' && p.animal && p.animal.uid === targetAnimUid);
+        if (activePlayer) anim = activePlayer.animal;
+    }
+
+    // 3. 그래도 못 찾으면 에러 방지용 종료
+    if (!anim) return;
+
+    // 즐겨찾기 상태 반전 (on <-> off)
+    anim.favorite = !anim.favorite;
+    
+    // UI 새로고침 (인벤토리와 로스터 모두 업데이트)
+    renderInventory();
+    if (typeof updateRosterUI === 'function') updateRosterUI(); 
+    
+    // 버튼 디자인 업데이트
+    const favBtn = document.getElementById('btn-favorite');
+    if (favBtn) {
         favBtn.innerHTML = anim.favorite ? '💛 즐겨찾기' : '🤍 즐겨찾기';
         favBtn.style.background = anim.favorite ? '#f59e0b' : '#444';
         favBtn.style.color = anim.favorite ? 'white' : '#aaa';
-        saveData();
     }
     
+    saveData();
+}
     
     // 일괄 작업 모달 (복사 버그 완벽 수정)
     function openBulkModal() {
@@ -1621,6 +1676,7 @@
         const div = document.createElement('div'); div.className = 'event-text anim-popup'; div.innerHTML = text; div.style.left = `${x}%`; div.style.top = `${y}%`; div.style.color = color; div.style.fontSize = size;
         court.appendChild(div); setTimeout(() => div.remove(), 1500);
     }
+    
 </script>
 </body>
 </html>
