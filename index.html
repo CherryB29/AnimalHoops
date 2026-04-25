@@ -131,12 +131,12 @@
         .anim-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
-        .info-card { background: #1a1a1a; border: 2px solid #444; border-radius: 20px; padding: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
+        .info-card { background: #1a1a1a; border: 2px solid #444; border-radius: 20px; padding: 20px; width: 85%; max-width: 340px; max-height: 90vh; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; }
         .info-close { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; color: #888; cursor: pointer; }
         .info-icon { font-size: 4rem; margin-bottom: 5px; text-shadow: 0 0 15px rgba(255,255,255,0.2); }
         .info-name { font-size: 1.5rem; font-weight: 900; font-family: 'Black Han Sans'; }
         .info-grade { font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; }
-        .info-stat { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: #ccc; font-weight: 700; border-bottom: 1px dashed #333; padding-bottom: 5px; }
+        .info-stat { display: flex; flex-direction: column; font-size: 0.9rem; margin-bottom: 0px; color: #ccc; font-weight: 700; border-bottom: none; padding-bottom: 0px; }
         .info-skill { margin-top: 10px; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); margin-bottom: 15px; }
         .info-skill-name { color: var(--gold); font-weight: 900; font-size: 1rem; margin-bottom: 5px; }
         .info-skill-desc { font-size: 0.8rem; color: #eee; line-height: 1.4; font-weight: 700; word-break: keep-all; }
@@ -147,6 +147,16 @@
         .btn-equip { background: var(--blue); color: white; grid-column: span 2; }
         .btn-merge { background: #a855f7; color: white; }
         .btn-sell { background: #444; color: #aaa; }
+        
+        .stat-btn { background: #444; border: 1px solid #666; color: white; border-radius: 6px; cursor: pointer; font-weight: 900; transition: 0.1s; user-select: none; }
+        .stat-btn:hover { background: #555; }
+        .stat-btn:active { transform: scale(0.9); }
+        
+        .stat-bar { height: 28px; background: linear-gradient(180deg, #1a1a1a, #0a0a0a); border: 2px solid #333; border-radius: 10px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); min-width: 120px; }
+        .stat-bar-fill { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); transition: width 0.15s ease-out; border-radius: 8px; }
+        .stat-bar-fill.speed { background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%); box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4), 0 0 12px rgba(96, 165, 250, 0.6); }
+        .stat-bar-fill.shoot { background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%); box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.4), 0 0 12px rgba(251, 191, 36, 0.6); }
+        .stat-bar-fill.iq { background: linear-gradient(90deg, #a855f7 0%, #d8b4fe 100%); box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.4), 0 0 12px rgba(216, 180, 254, 0.6); }
 
         #page-gacha { background: radial-gradient(circle at top, #2d1b4e, #111); justify-content: center; align-items: center; }
         .gacha-banner { font-size: 5rem; animation: float 3s ease-in-out infinite; margin-bottom: 20px; }
@@ -192,18 +202,80 @@
             <div class="info-icon" id="info-icon">🐶</div>
             <div class="info-name" id="info-name">바둑이 <span id="info-lv" style="color:var(--red); font-size:1.2rem;">Lv.1</span></div>
             <div class="info-grade" id="info-grade">Normal</div>
-            <div class="info-stat"><span>스피드</span><span id="info-spd">0.5</span></div>
-            <div class="info-stat"><span>슛 정확도</span><span id="info-sht">40</span></div>
-            <div class="info-stat"><span>전술(BQ)</span><span id="info-iq">30</span></div>
+            
+            <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px; border: 1px solid rgba(255,215,0,0.3);">
+                <div style="font-size: 0.8rem; color: #ffd700; font-weight: 900; margin-bottom: 5px;">⭐ 스탯 포인트: <span id="info-available-points">0</span> 남음</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 0.75rem;">
+                    <div style="text-align: center;">⚡<br><span id="info-speed-points">0</span>/<span id="info-speed-max">0</span></div>
+                    <div style="text-align: center;">🎯<br><span id="info-shoot-points">0</span>/<span id="info-shoot-max">0</span></div>
+                    <div style="text-align: center;">🧠<br><span id="info-iq-points">0</span>/<span id="info-iq-max">0</span></div>
+                </div>
+            </div>
+            
+            <div class="info-stat" style="padding-bottom: 20px; border-bottom: 1px dashed #333;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; justify-content: space-between;">
+                    <span style="font-size: 0.95rem;">⚡ 스피드</span>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="stat-btn" id="btn-speed-minus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">−</button>
+                        <button class="stat-btn" id="btn-speed-plus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">+</button>
+                    </div>
+                </div>
+                <div class="stat-bar" id="stat-bar-speed" style="width: 100%; height: 28px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div class="stat-bar-fill speed" id="stat-bar-speed-fill" style="width: 0%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.8rem;">
+                    <span id="stat-speed-display">0/9 (0%)</span>
+                    <span id="stat-speed-value" style="color: #60a5fa;">0.5</span>
+                </div>
+            </div>
+            <div class="info-stat" style="padding-bottom: 20px; border-bottom: 1px dashed #333;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; justify-content: space-between;">
+                    <span style="font-size: 0.95rem;">🎯 슷 정확도</span>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="stat-btn" id="btn-shoot-minus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">−</button>
+                        <button class="stat-btn" id="btn-shoot-plus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">+</button>
+                    </div>
+                </div>
+                <div class="stat-bar" id="stat-bar-shoot" style="width: 100%; height: 28px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div class="stat-bar-fill shoot" id="stat-bar-shoot-fill" style="width: 0%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.8rem;">
+                    <span id="stat-shoot-display">0/9 (0%)</span>
+                    <span id="stat-shoot-value" style="color: #fbbf24;">40</span>
+                </div>
+            </div>
+            <div class="info-stat" style="padding-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; justify-content: space-between;">
+                    <span style="font-size: 0.95rem;">🧠 전술(BQ)</span>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="stat-btn" id="btn-iq-minus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">−</button>
+                        <button class="stat-btn" id="btn-iq-plus" style="width: 32px; height: 32px; padding: 0; font-size: 1rem;">+</button>
+                    </div>
+                </div>
+                <div class="stat-bar" id="stat-bar-iq" style="width: 100%; height: 28px; margin-bottom: 10px; box-sizing: border-box;">
+                    <div class="stat-bar-fill iq" id="stat-bar-iq-fill" style="width: 0%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.8rem;">
+                    <span id="stat-iq-display">0/9 (0%)</span>
+                    <span id="stat-iq-value" style="color: #d8b4fe;">30</span>
+                </div>
+            </div>
+            
             <div class="info-skill" id="info-skill-box">
                 <div class="info-skill-name" id="info-skill-name">-</div>
                 <div class="info-skill-desc" id="info-skill-desc">-</div>
                 <div style="font-size: 0.7rem; color:#aaa; margin-top: 5px; text-align: right;" id="info-skill-uses"></div>
             </div>
+            
             <div class="action-btns" id="action-btns">
-                <button class="btn-action btn-equip" id="btn-equip" onclick="equipCurrent()">출전 슬롯에 장착</button>
+                <button class="btn-action btn-equip" id="btn-equip" onclick="equipCurrent()" style="grid-column: span 2;">출전 슬롯에 장착</button>
+                <button class="btn-action" id="btn-favorite" style="background: #f59e0b; color: white;" onclick="toggleFavorite()">❤️ 즐겨찾기</button>
                 <button class="btn-action btn-merge" id="btn-merge" onclick="mergeCurrent()">합성 <br><span id="merge-cost" style="font-size:0.75rem;">(300💰)</span></button>
                 <button class="btn-action btn-sell" id="btn-sell" onclick="sellCurrent()">판매 <br><span id="sell-price" style="font-size:0.75rem;">(+100💰)</span></button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px;">
+                <button class="btn-action" id="btn-reset-stats" style="background: #ef4444; color: white; padding: 12px; font-size: 0.9rem;" onclick="resetStatAllocation()">초기화</button>
             </div>
         </div>
     </div>
@@ -351,7 +423,7 @@
         { id: 'meerkat', name: '미어캣', grade: 'Rare', speed: 0.8, accel: 0.09, shoot: 48, iq: 80, icon: '🦫', color: '#3b82f6', shootRange: 20, passRate: 0.6 },
         { id: 'otter', name: '수달', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 52, iq: 55, icon: '🦦', color: '#3b82f6', shootRange: 19, passRate: 0.5 },
 
-        { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '골밑에서 슛 시 상대 2명 1.5초간 스턴', maxUses: 3 },
+        { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '마크맨을 강력하게 밀쳐내 기절시킵니다.', maxUses: 3 },
         { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 60, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '고공 슛', skillDesc: '슛 시 0.5초간 공중 체공', maxUses: 3 },
         { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3 },
 
@@ -382,6 +454,12 @@
     ];
 
     const genUid = () => Math.random().toString(36).substr(2, 9);
+    // 레벨에 따른 사용 가능한 포인트 계산: 3+4+5+6+... 누적
+    function getAvailablePoints(level) {
+        if (level <= 1) return 0;
+        const n = level - 1;
+        return n * 3 + (n * (n - 1)) / 2;
+    }
     function createAnimal(baseObj, lvl = 1) { 
         const defaultAnimal = {
             id: baseObj.id || 'unknown',
@@ -399,7 +477,12 @@
             skillDesc: baseObj.skillDesc || '',
             maxUses: baseObj.maxUses || 0
         };
-        return { ...JSON.parse(JSON.stringify(defaultAnimal)), level: lvl, uid: genUid() }; 
+        const animal = { ...JSON.parse(JSON.stringify(defaultAnimal)), level: lvl, uid: genUid() };
+        // 스탯 포인트 시스템
+        animal.baseStats = { speed: animal.speed, shoot: animal.shoot, iq: animal.iq };
+        animal.totalAvailablePoints = getAvailablePoints(lvl);
+        animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+        return animal;
     }
 
     let state = { stage: 1, maxStage: 1, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1 };
@@ -415,7 +498,14 @@
 
     function saveData() {
         try {
-            const data = { gold: state.gold, stage: state.stage, maxStage: state.maxStage, ownedAnimals: ownedAnimals, roster: players.filter(p => p.team === 'blue').map(p => p.animal) };
+            // baseStats와 allocatedPoints를 명시적으로 저장
+            const animalsWithStats = ownedAnimals.map(a => ({
+                ...a,
+                baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
+                allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
+                totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
+            }));
+            const data = { gold: state.gold, stage: state.stage, maxStage: state.maxStage, ownedAnimals: animalsWithStats, roster: players.filter(p => p.team === 'blue').map(p => p.animal) };
             localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
         } catch(e) {
             console.error("Save Error:", e);
@@ -430,12 +520,52 @@
             if (data.stage !== undefined) state.stage = data.stage;
             if (data.maxStage !== undefined) state.maxStage = data.maxStage;
             else state.maxStage = state.stage;
-            if (data.ownedAnimals) ownedAnimals = data.ownedAnimals;
+            if (data.ownedAnimals) {
+                ownedAnimals = data.ownedAnimals;
+                // 모든 동물에 대해 스탯 초기화 및 포인트 시스템 갱신
+                ownedAnimals.forEach(a => {
+                    // ANIMAL_LIBRARY에서 원본 스탯 찾기
+                    const original = ANIMAL_LIBRARY.find(lib => lib.id === a.id);
+                    if (original) {
+                        // baseStats를 항상 원본 능력치로 설정
+                        a.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
+                        // 현재 능력치도 원본으로 복원
+                        a.speed = original.speed;
+                        a.shoot = original.shoot;
+                        a.iq = original.iq;
+                    } else {
+                        // 원본을 찾을 수 없으면 현재 값 유지
+                        if (!a.baseStats) a.baseStats = { speed: a.speed, shoot: a.shoot, iq: a.iq };
+                    }
+                    // 포인트 시스템 갱신 (새로운 공식)
+                    a.totalAvailablePoints = getAvailablePoints(a.level);
+                    // 기존 유저는 allocatedPoints가 없으므로 0으로 초기화, 기존 데이터 있으면 유지
+                    if (!a.allocatedPoints) {
+                        a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+                    }
+                });
+            }
             if (data.roster && data.roster.length === 3) {
                 let bluePlayers = players.filter(p => p.team === 'blue');
                 for(let i=0; i<3; i++) {
                     bluePlayers[i].animal = data.roster[i];
-                    if(!bluePlayers[i].animal.uid) bluePlayers[i].animal.uid = genUid(); 
+                    if(!bluePlayers[i].animal.uid) bluePlayers[i].animal.uid = genUid();
+                    // 로드된 동물도 baseStats 보장
+                    // baseStats를 ANIMAL_LIBRARY 기준으로 설정
+                    const originalRoster = ANIMAL_LIBRARY.find(lib => lib.id === bluePlayers[i].animal.id);
+                    if (originalRoster) {
+                        bluePlayers[i].animal.baseStats = { speed: originalRoster.speed, shoot: originalRoster.shoot, iq: originalRoster.iq };
+                        bluePlayers[i].animal.speed = originalRoster.speed;
+                        bluePlayers[i].animal.shoot = originalRoster.shoot;
+                        bluePlayers[i].animal.iq = originalRoster.iq;
+                    } else if (!bluePlayers[i].animal.baseStats) {
+                        bluePlayers[i].animal.baseStats = { speed: bluePlayers[i].animal.speed, shoot: bluePlayers[i].animal.shoot, iq: bluePlayers[i].animal.iq };
+                    }
+                    // 포인트 시스템 갱신
+                    bluePlayers[i].animal.totalAvailablePoints = getAvailablePoints(bluePlayers[i].animal.level);
+                    if (!bluePlayers[i].animal.allocatedPoints) {
+                        bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+                    }
                     bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
                     bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
                 }
@@ -489,51 +619,88 @@
     
     function renderInventory() {
         const invList = document.getElementById('inventory-list'); invList.innerHTML = '';
+        
+        // 먼저 즐겨찾기 여부 + 다른 조건으로 정렬
         let sortedOwned = [...ownedAnimals].sort((a,b) => {
+            if ((b.favorite || false) !== (a.favorite || false)) return (b.favorite || false) ? 1 : -1;
             const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
             if (gradeOrder[b.grade] !== gradeOrder[a.grade]) return gradeOrder[b.grade] - gradeOrder[a.grade];
             if (a.id !== b.id) return a.id.localeCompare(b.id);
             return b.level - a.level;
         });
 
+        // 스탯 배분 유무 구분: allocatedPoints에 값이 있으면 분리
         let groupedMap = {};
+        let allocatedAnimals = []; // 스탯 배분된 동물
+        
         sortedOwned.forEach(a => {
-            let key = a.id + '_' + a.level;
-            if (!groupedMap[key]) groupedMap[key] = { count: 0, animal: a };
-            groupedMap[key].count++;
+            let hasAllocated = (a.allocatedPoints.speed || 0) + (a.allocatedPoints.shoot || 0) + (a.allocatedPoints.iq || 0) > 0;
+            if (hasAllocated) {
+                allocatedAnimals.push(a);
+            } else {
+                let key = a.id + '_' + a.level;
+                if (!groupedMap[key]) groupedMap[key] = { count: 0, animal: a };
+                groupedMap[key].count++;
+            }
         });
 
+        // 묶음 동물들 정렬 (즐겨찾기 먼저)
         let displayList = Object.values(groupedMap).sort((a,b) => {
+            if ((b.animal.favorite || false) !== (a.animal.favorite || false)) return (b.animal.favorite || false) ? 1 : -1;
             const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
             if (gradeOrder[b.animal.grade] !== gradeOrder[a.animal.grade]) return gradeOrder[b.animal.grade] - gradeOrder[a.animal.grade];
             if (a.animal.id !== b.animal.id) return a.animal.id.localeCompare(b.animal.id);
             return b.animal.level - a.animal.level;
         });
 
-        displayList.forEach((item) => {
-            let slot = document.createElement('div');
-            slot.className = 'slot';
-            
-            if (item.animal.level >= 20) slot.classList.add('lv-20');
-            else if (item.animal.level >= 15) slot.classList.add('lv-15-19');
-            else if (item.animal.level >= 10) slot.classList.add('lv-10-14');
-            else if (item.animal.level >= 5) slot.classList.add('lv-5-9');
-            else slot.classList.add('lv-1-4');
-            
-            let countHtml = item.count > 1 ? `<div class="count-badge">x${item.count}</div>` : '';
-            
-            let lvColor = '#ef4444'; let lvSize = '0.7rem'; let borderWidth = '3px';
-            if (item.animal.level >= 5) { lvColor = '#a855f7'; lvSize = '0.8rem'; borderWidth = '4px'; }
-            if (item.animal.level >= 10) { lvColor = '#ffd700'; lvSize = '0.85rem'; borderWidth = '4px'; }
-            
-            slot.innerHTML = `${item.animal.icon}<div class="lv-badge" style="background:${lvColor}; font-size:${lvSize}; padding: 2px 7px;">${item.animal.level}</div>${countHtml}`;
-            slot.style.borderColor = item.animal.color;
-            slot.style.borderWidth = borderWidth;
-            
-            slot.onclick = () => openActionModal(item.animal, item.count);
-            invList.appendChild(slot);
+        // 즐겨찾기된 묶음 동물 먼저 표시
+        displayList.filter(item => item.animal.favorite).forEach(item => {
+            renderSlot(item.animal, item.count, invList);
         });
+        
+        // 즐겨찾기된 스탯 배분된 동물 표시
+        allocatedAnimals.filter(a => a.favorite).forEach(a => {
+            renderSlot(a, 1, invList);
+        });
+        
+        // 나머지 묶음 동물 표시
+        displayList.filter(item => !item.animal.favorite).forEach(item => {
+            renderSlot(item.animal, item.count, invList);
+        });
+        
+        // 나머지 스탯 배분된 동물 표시
+        allocatedAnimals.filter(a => !a.favorite).forEach(a => {
+            renderSlot(a, 1, invList);
+        });
+        
         updateRosterUI();
+    }
+    
+    function renderSlot(animal, count, parentEl) {
+        let slot = document.createElement('div');
+        slot.className = 'slot';
+        
+        if (animal.level >= 20) slot.classList.add('lv-20');
+        else if (animal.level >= 15) slot.classList.add('lv-15-19');
+        else if (animal.level >= 10) slot.classList.add('lv-10-14');
+        else if (animal.level >= 5) slot.classList.add('lv-5-9');
+        else slot.classList.add('lv-1-4');
+        
+        let countHtml = count > 1 ? `<div class="count-badge">x${count}</div>` : '';
+        let favoriteHtml = animal.favorite ? `<div style="position: absolute; top: -8px; right: -8px; font-size: 1.2rem; z-index: 6;">⭐</div>` : '';
+        
+        let lvColor = '#ef4444'; let lvSize = '0.7rem'; let borderWidth = '3px';
+        if (animal.level >= 5) { lvColor = '#a855f7'; lvSize = '0.8rem'; borderWidth = '4px'; }
+        if (animal.level >= 10) { lvColor = '#ffd700'; lvSize = '0.85rem'; borderWidth = '4px'; }
+        
+        slot.innerHTML = `${animal.icon}<div class="lv-badge" style="background:${lvColor}; font-size:${lvSize}; padding: 2px 7px;">${animal.level}</div>${countHtml}${favoriteHtml}`;
+        slot.style.borderColor = animal.color;
+        slot.style.borderWidth = borderWidth;
+        
+        slot.onclick = () => {
+            openActionModal(animal, count);
+        };
+        parentEl.appendChild(slot);
     }
 
     function updateRosterUI() {
@@ -550,6 +717,13 @@
             else if (bluePlayers[i].animal.level >= 5) slot.classList.add('lv-5-9');
             else slot.classList.add('lv-1-4');
             
+            // 로스터 슬롯 클릭 이벤트 추가
+            slot.style.cursor = 'pointer';
+            slot.onclick = () => {
+                targetAnimUid = bluePlayers[i].animal.uid;
+                openActionModal(bluePlayers[i].animal, 1);
+            };
+            
             bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
         }
         bindRosterSlotEvents();
@@ -561,9 +735,14 @@
         document.getElementById('info-name').innerHTML = `${animal.name} <span style="color:var(--red); font-size:1.2rem;">Lv.${animal.level}</span>`;
         document.getElementById('info-grade').innerText = animal.grade;
         document.getElementById('info-grade').style.color = animal.color;
-        document.getElementById('info-spd').innerText = animal.speed.toFixed(2);
-        document.getElementById('info-sht').innerText = animal.shoot.toFixed(0);
-        document.getElementById('info-iq').innerText = animal.iq.toFixed(0);
+        
+        // 스탯 포인트 표시
+        let usedPoints = (animal.allocatedPoints.speed || 0) + (animal.allocatedPoints.shoot || 0) + (animal.allocatedPoints.iq || 0);
+        let remainPoints = animal.totalAvailablePoints - usedPoints;
+        document.getElementById('info-available-points').innerText = remainPoints;
+        
+        // 포인트별 증가값 표시 및 스탯 바 업데이트
+        updateStatDisplay(animal);
         
         if (animal.skill) {
             document.getElementById('info-skill-box').style.display = 'block';
@@ -582,28 +761,179 @@
         
         document.getElementById('btn-merge').style.opacity = count >= 2 ? '1' : '0.4';
         document.getElementById('btn-merge').style.pointerEvents = count >= 2 ? 'auto' : 'none';
+        
+        // 즐겨찾기 버튼 업데이트
+        const favBtn = document.getElementById('btn-favorite');
+        favBtn.innerHTML = animal.favorite ? '💛 즐겨찾기' : '🤍 즐겨찾기';
+        favBtn.style.background = animal.favorite ? '#f59e0b' : '#444';
+        favBtn.style.color = animal.favorite ? 'white' : '#aaa';
 
         document.getElementById('info-modal').style.display = 'flex';
         const card = document.querySelector('.info-card');
         card.classList.remove('anim-pop');
         void card.offsetWidth;
         card.classList.add('anim-pop');
+        
+        // 버튼 이벤트 리스너 바인딩
+        bindStatButtons(animal);
+    }
+    function calculateMultiplier(points) {
+    const dampen = 0.04;   // 완만해지는 정도 (아까 줄인 값)
+    const baseRate = 0.2; // 기본 증가율 (10%)
+    return 1 + (baseRate * points) / Math.sqrt(1 + points * dampen);
+}
+    
+  function updateStatDisplay(animal) {
+    let speedPoints = animal.allocatedPoints.speed || 0;
+    let shootPoints = animal.allocatedPoints.shoot || 0;
+    let iqPoints = animal.allocatedPoints.iq || 0;
+
+    let speedMultiplier = calculateMultiplier(speedPoints);
+    let shootMultiplier = calculateMultiplier(shootPoints);
+    let iqMultiplier = calculateMultiplier(iqPoints);
+        let currentSpeed = animal.baseStats.speed * speedMultiplier;
+        let currentShoot = animal.baseStats.shoot * shootMultiplier;
+        let currentIq = animal.baseStats.iq * iqMultiplier;
+        
+        // 능력치 값 업데이트 (우측에 표시)
+        if (document.getElementById('stat-speed-value')) document.getElementById('stat-speed-value').innerText = currentSpeed.toFixed(2);
+        if (document.getElementById('stat-shoot-value')) document.getElementById('stat-shoot-value').innerText = Math.floor(currentShoot);
+        if (document.getElementById('stat-iq-value')) document.getElementById('stat-iq-value').innerText = Math.floor(currentIq);
+        
+        // 스탯 포인트 바 업데이트
+        let usedPoints = (animal.allocatedPoints.speed || 0) + (animal.allocatedPoints.shoot || 0) + (animal.allocatedPoints.iq || 0);
+        let remainPoints = animal.totalAvailablePoints - usedPoints;
+        
+        let speedPercent = (animal.allocatedPoints.speed || 0) / animal.totalAvailablePoints * 100;
+        let shootPercent = (animal.allocatedPoints.shoot || 0) / animal.totalAvailablePoints * 100;
+        let iqPercent = (animal.allocatedPoints.iq || 0) / animal.totalAvailablePoints * 100;
+        
+        // 스피드 바
+        let speedFill = document.getElementById('stat-bar-speed-fill');
+        speedFill.style.width = speedPercent + '%';
+        speedFill.className = 'stat-bar-fill speed';
+        speedFill.innerHTML = speedPercent > 10 ? Math.round(speedPercent) + '%' : '';
+        
+        // 슛 정확도 바
+        let shootFill = document.getElementById('stat-bar-shoot-fill');
+        shootFill.style.width = shootPercent + '%';
+        shootFill.className = 'stat-bar-fill shoot';
+        shootFill.innerHTML = shootPercent > 10 ? Math.round(shootPercent) + '%' : '';
+        
+        // 전술 바
+        let iqFill = document.getElementById('stat-bar-iq-fill');
+        iqFill.style.width = iqPercent + '%';
+        iqFill.className = 'stat-bar-fill iq';
+        iqFill.innerHTML = iqPercent > 10 ? Math.round(iqPercent) + '%' : '';
+        
+        // 포인트 및 퍼센트 표시
+        document.getElementById('stat-speed-display').innerText = (animal.allocatedPoints.speed || 0) + '/' + animal.totalAvailablePoints + ' (' + Math.round(speedPercent) + '%)';
+        document.getElementById('stat-shoot-display').innerText = (animal.allocatedPoints.shoot || 0) + '/' + animal.totalAvailablePoints + ' (' + Math.round(shootPercent) + '%)';
+        document.getElementById('stat-iq-display').innerText = (animal.allocatedPoints.iq || 0) + '/' + animal.totalAvailablePoints + ' (' + Math.round(iqPercent) + '%)';
+        
+        document.getElementById('info-available-points').innerText = remainPoints;
+    }
+    
+    let longPressInterval = null;
+    let longPressTimeout = null;
+    
+    function bindStatButtons(animal) {
+        // 스피드 버튼
+        let speedPlusBtn = document.getElementById('btn-speed-plus');
+        let speedMinusBtn = document.getElementById('btn-speed-minus');
+        
+        setupLongPress(speedPlusBtn, () => { adjustStatDirect(animal, 'speed', 1); });
+        setupLongPress(speedMinusBtn, () => { adjustStatDirect(animal, 'speed', -1); });
+        
+        // 슛 정확도 버튼
+        let shootPlusBtn = document.getElementById('btn-shoot-plus');
+        let shootMinusBtn = document.getElementById('btn-shoot-minus');
+        
+        setupLongPress(shootPlusBtn, () => { adjustStatDirect(animal, 'shoot', 1); });
+        setupLongPress(shootMinusBtn, () => { adjustStatDirect(animal, 'shoot', -1); });
+        
+        // 전술 버튼
+        let iqPlusBtn = document.getElementById('btn-iq-plus');
+        let iqMinusBtn = document.getElementById('btn-iq-minus');
+        
+        setupLongPress(iqPlusBtn, () => { adjustStatDirect(animal, 'iq', 1); });
+        setupLongPress(iqMinusBtn, () => { adjustStatDirect(animal, 'iq', -1); });
+    }
+    
+    function setupLongPress(button, callback) {
+        let pressCount = 0;
+        let currentInterval = 80;
+        button.onmousedown = button.ontouchstart = (e) => {
+            e.preventDefault();
+            pressCount = 0;
+            currentInterval = 80;
+            callback();
+            longPressTimeout = setTimeout(() => {
+                longPressInterval = setInterval(() => {
+                    pressCount++;
+                    // 누르고 있는 동안 속도 가속화: 80ms → 40ms → 20ms
+                    if (pressCount === 10) { currentInterval = 40; clearInterval(longPressInterval); longPressInterval = setInterval(callback, currentInterval); }
+                    else if (pressCount === 20) { currentInterval = 20; clearInterval(longPressInterval); longPressInterval = setInterval(callback, currentInterval); }
+                    callback();
+                }, currentInterval);
+            }, 300);
+        };
+        
+        button.onmouseup = button.onmouseleave = button.ontouchend = () => {
+            clearTimeout(longPressTimeout);
+            clearInterval(longPressInterval);
+        };
+    }
+    
+    function adjustStatDirect(animal, stat, delta) {
+        if (!animal) return;
+        
+        let usedPoints = (animal.allocatedPoints.speed || 0) + (animal.allocatedPoints.shoot || 0) + (animal.allocatedPoints.iq || 0);
+        let remainPoints = animal.totalAvailablePoints - usedPoints;
+        
+        if (delta > 0 && remainPoints <= 0) return;
+        if (delta < 0 && (animal.allocatedPoints[stat] || 0) <= 0) return;
+        
+        animal.allocatedPoints[stat] = (animal.allocatedPoints[stat] || 0) + delta;
+        
+        const dampen = 0.04; // 감쇠 계수 (포인트가 많아질수록 증가율이 완만해짐)
+        const baseRate = 0.2; // 1포인트당 기본 증가율 (10%)
+
+        let speedPoints = animal.allocatedPoints.speed || 0;
+        let shootPoints = animal.allocatedPoints.shoot || 0;
+        let iqPoints = animal.allocatedPoints.iq || 0;
+
+        let speedMultiplier = 1 + (baseRate * speedPoints) / Math.sqrt(1 + speedPoints * dampen);
+        let shootMultiplier = 1 + (baseRate * shootPoints) / Math.sqrt(1 + shootPoints * dampen);
+        let iqMultiplier = 1 + (baseRate * iqPoints) / Math.sqrt(1 + iqPoints * dampen);
+        animal.speed = animal.baseStats.speed * speedMultiplier;
+        animal.shoot = animal.baseStats.shoot * shootMultiplier;
+        animal.iq = animal.baseStats.iq * iqMultiplier;
+        
+        // UI 업데이트 (모달 재렌더링 없음)
+        updateStatDisplay(animal);
+        saveData();
     }
 
     function equipCurrent() {
         let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
         if(!anim) return;
-        let bluePlayers = players.filter(p => p.team === 'blue'); let targetPlayer = bluePlayers[selectedRosterIdx];
+        
+        let bluePlayers = players.filter(p => p.team === 'blue'); 
+        let targetPlayer = bluePlayers[selectedRosterIdx];
         let tempAnimal = targetPlayer.animal;
         
-        targetPlayer.animal = anim; targetPlayer.el.innerHTML = anim.icon + '<div class="stun-fx">💫</div>'; 
+        targetPlayer.animal = anim; 
+        targetPlayer.el.innerHTML = anim.icon + '<div class="stun-fx">💫</div>'; 
         targetPlayer.skillUsesLeft = anim.maxUses || 0;
         
         let idx = ownedAnimals.findIndex(a => a.uid === targetAnimUid);
         ownedAnimals[idx] = tempAnimal; 
         
         showEvent("장착 완료!", targetPlayer.x, targetPlayer.y, "#4ade80");
-        closeInfo(); renderInventory(); saveData();
+        closeInfo(); 
+        renderInventory(); 
+        saveData();
     }
 
     function sellCurrent() {
@@ -637,20 +967,56 @@
         });
         
         let merged = JSON.parse(JSON.stringify(anim));
-        merged.uid = genUid(); merged.level++; 
-        if (merged.grade === 'Legendary') {
-            merged.speed *= 1.3; merged.shoot += 15; merged.iq += 15;
-        } else {
-            merged.speed *= 1.1; merged.shoot += 5; merged.iq += 5;
-        } 
+        merged.uid = genUid(); 
+        merged.level++; 
+        merged.totalAvailablePoints = getAvailablePoints(merged.level);
+        merged.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+        merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+        
         ownedAnimals.push(merged);
         
-        alert(`✨ 합성 성공! ${merged.name} Lv.${merged.level} 획득!`);
-        closeInfo(); renderInventory(); updateUI(); saveData();
+        closeInfo();
+        renderInventory();
+        updateUI();
+        
+        // 합성 완료 후 새 동물의 정보 창 표시 (스탯 배분 가능)
+        setTimeout(() => {
+            openActionModal(merged, 1);
+            showEvent(`✨ ${merged.name} Lv.${merged.level} 획득!`, 50, 40, "var(--gold)", "1.5rem");
+        }, 300);
+        
+        saveData();
     }
 
     function closeInfo() { document.getElementById('info-modal').style.display = 'none'; targetAnimUid = null; }
-    function closeOverlay() { document.getElementById('full-overlay').style.display = 'none'; }
+    
+    function resetStatAllocation() {
+        let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
+        if (!anim) return;
+        
+        if (!confirm("배분한 스탯을 모두 초기화하시겠습니까?")) return;
+        
+        anim.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+        anim.speed = anim.baseStats.speed;
+        anim.shoot = anim.baseStats.shoot;
+        anim.iq = anim.baseStats.iq;
+        
+        updateStatDisplay(anim);
+        saveData();
+    }
+    
+    function toggleFavorite() {
+        let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
+        if (!anim) return;
+        anim.favorite = !anim.favorite;
+        renderInventory();
+        const favBtn = document.getElementById('btn-favorite');
+        favBtn.innerHTML = anim.favorite ? '💛 즐겨찾기' : '🤍 즐겨찾기';
+        favBtn.style.background = anim.favorite ? '#f59e0b' : '#444';
+        favBtn.style.color = anim.favorite ? 'white' : '#aaa';
+        saveData();
+    }
+    
     
     // 일괄 작업 모달 (복사 버그 완벽 수정)
     function openBulkModal() {
@@ -739,6 +1105,7 @@
         
         let mergedCount = 0;
         let totalCost = 0;
+        let mergedAnimals = [];
         
         Object.values(groups).forEach(group => {
             while (group.length >= 2) {
@@ -760,23 +1127,24 @@
                 const merged = JSON.parse(JSON.stringify(base1));
                 merged.uid = genUid();
                 merged.level++;
-                if (merged.grade === 'Legendary') {
-                    merged.speed *= 1.3; merged.shoot += 15; merged.iq += 15;
-                } else {
-                    merged.speed *= 1.1; merged.shoot += 5; merged.iq += 5;
-                }
+                merged.totalAvailablePoints = getAvailablePoints(merged.level);
+                merged.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+                merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+                
                 ownedAnimals.push(merged);
+                mergedAnimals.push(merged);
                 mergedCount++;
             }
         });
         
         if (mergedCount > 0) {
             state.gold -= totalCost;
-            alert(`✨ ${mergedCount}회 합성 완료! (소모 골드: ${totalCost}💰)`);
             closeBulkModal();
             renderInventory();
             updateUI();
             saveData();
+            
+            alert(`✨ ${mergedCount}회 합성 완료! (소모 골드: ${totalCost}💰)\n정보창에서 스탯을 배분해주세요.`);
         } else {
             alert('합성 가능한 동물이 없습니다. 같은 종류와 레벨의 동물이 2마리 이상 필요합니다.');
         }
@@ -786,16 +1154,40 @@
         const filtered = getBulkFilteredAnimals();
         if (filtered.length === 0) { alert('판매할 동물이 없습니다.'); return; }
         
-        const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
-        if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?`)) {
+        // Epic 이상 등급 확인
+        const highGradeAnimals = filtered.filter(a => a.grade === 'Epic' || a.grade === 'Legendary');
+        const highGradeCount = highGradeAnimals.length;
+        
+        if (highGradeCount > 0) {
+            // Epic/Legendary가 포함된 경우 강화된 경고
+            const animalList = highGradeAnimals.map(a => `• ${a.icon} Lv.${a.level} ${a.grade}`).join('\n');
+            const firstConfirm = confirm(`⚠️ 경고! 판매 목록에 희귀 동물 포함!\n\n${animalList}\n\n총 ${highGradeCount}마리\n\n정말 판매하시겠습니까? (취소 권장)`);
+            if (!firstConfirm) return;
+            
+            // 2차 확인
+            const secondConfirm = confirm(`❗ 최종 확인 ❗\n\nEpic/Legendary ${highGradeCount}마리를 영구 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n\n판매하시겠습니까?`);
+            if (!secondConfirm) return;
+            
+            const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
             state.gold += totalGold;
             ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
-            alert(`✨ ${totalGold}💰 획득!`);
-            closeBulkModal();
-            renderInventory();
-            updateUI();
-            saveData();
+            alert(`✨ ${totalGold}💰 획득!\n\n${highGradeCount}마리 판매됨`);
+        } else {
+            // 일반 동물만 판매
+            const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
+            if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?`)) {
+                state.gold += totalGold;
+                ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
+                alert(`✨ ${totalGold}💰 획득!`);
+            } else {
+                return;
+            }
         }
+        
+        closeBulkModal();
+        renderInventory();
+        updateUI();
+        saveData();
     }
 
     function updateStageSelect() {
@@ -984,9 +1376,9 @@
 
     function applyEnemyStats() {
         let stageMul = state.stage - 1;
-        let rSpeed = Math.min(2.1, 0.55 + stageMul * 0.045);
-        let rShoot = Math.min(98, 33 + stageMul * 4.2);
-        let rIq = Math.min(100, 24 + stageMul * 3.8);
+        let rSpeed = Math.min(1.4, 0.55 + stageMul * 0.025);
+        let rShoot = Math.min(98, 33 + stageMul * 5.2);
+        let rIq = Math.min(100, 24 + stageMul * 4.8);
         state.redStats = { maxSpeed: rSpeed, accel: 0.055 + stageMul * 0.003, shoot: rShoot, iq: rIq };
     }
 
