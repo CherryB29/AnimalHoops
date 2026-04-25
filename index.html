@@ -1377,31 +1377,47 @@ function toggleFavorite() {
     }
 
     function showGachaResult() {
-        document.getElementById('gacha-anim-overlay').style.display = 'none';
-        document.getElementById('flash-screen').style.animation = '';
-        
-        const overlay = document.getElementById('full-overlay');
-        
-        if (currentPickedList.length === 1) {
-            let p = currentPickedList[0];
-            document.getElementById('overlay-icon').innerText = p.icon;
-            document.getElementById('overlay-title').innerText = p.name;
-            document.getElementById('overlay-sub').innerText = p.grade;
-            document.getElementById('overlay-sub').style.color = p.color;
-        } else {
-            document.getElementById('overlay-icon').innerText = "🎉";
-            document.getElementById('overlay-title').innerText = "스카우트 완료!";
-            let gridHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height: 250px; overflow-y:auto;">';
-            currentPickedList.forEach(p => {
-                gridHtml += `<div style="font-size:1.8rem; background:rgba(0,0,0,0.5); border: 2px solid ${p.color}; border-radius:10px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">${p.icon}</div>`;
-            });
-            gridHtml += '</div>';
-            document.getElementById('overlay-sub').innerHTML = gridHtml;
-        }
-
-        overlay.style.display = 'flex';
-        const iconEl = document.getElementById('overlay-icon'); iconEl.className = ''; void iconEl.offsetWidth; iconEl.className = 'anim-pop';
+    document.getElementById('gacha-anim-overlay').style.display = 'none';
+    document.getElementById('flash-screen').style.animation = '';
+    
+    const overlay = document.getElementById('full-overlay');
+    
+    if (currentPickedList.length === 1) {
+        let p = currentPickedList[0];
+        document.getElementById('overlay-icon').innerText = p.icon;
+        document.getElementById('overlay-title').innerText = p.name;
+        document.getElementById('overlay-sub').innerText = p.grade;
+        document.getElementById('overlay-sub').style.color = p.color;
+    } else {
+        document.getElementById('overlay-icon').innerText = "🎉";
+        document.getElementById('overlay-title').innerText = "스카우트 완료!";
+        let gridHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height: 250px; overflow-y:auto;">';
+        currentPickedList.forEach(p => {
+            gridHtml += `<div style="font-size:1.8rem; background:rgba(0,0,0,0.5); border: 2px solid ${p.color}; border-radius:10px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">${p.icon}</div>`;
+        });
+        gridHtml += '</div>';
+        document.getElementById('overlay-sub').innerHTML = gridHtml;
     }
+
+    overlay.style.display = 'flex';
+    const iconEl = document.getElementById('overlay-icon'); 
+    iconEl.className = ''; 
+    void iconEl.offsetWidth; 
+    iconEl.className = 'anim-pop';
+
+    // --- 🌟 추가된 부분: 화면 터치 시 창 닫기 ---
+    overlay.onclick = function() {
+        // 1. 결과 창 숨기기
+        overlay.style.display = 'none';
+        
+        // 2. 창이 닫힐 때 새로 뽑은 동물이 바로 보이도록 인벤토리 새로고침
+        if (typeof renderInventory === 'function') renderInventory();
+        
+        // 3. 중복 클릭 방지를 위해 이벤트 초기화
+        overlay.onclick = null; 
+    };
+    // ------------------------------------------
+}
 
     function createVfx(x, y, type, color = 'red') {
         const div = document.createElement('div');
