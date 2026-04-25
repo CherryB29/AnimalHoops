@@ -719,47 +719,46 @@
         
         slot.style.cursor = 'pointer';
         
-        // 기존의 onclick 이벤트는 제거합니다.
-        slot.onclick = null;
-        
-        // --- 🌟 꾹 누르기(롱 프레스) 이벤트 로직 ---
+        // --- 🌟 터치/클릭 충돌을 방지하는 안정된 롱 프레스 로직 ---
         let pressTimer;
         let isLongPress = false;
 
-        // 화면 터치 시작 / 마우스 클릭 누름
+        // 1. 누르기 시작할 때 타이머 작동
         slot.onpointerdown = (e) => {
             isLongPress = false;
             pressTimer = setTimeout(() => {
                 isLongPress = true;
-                if (navigator.vibrate) navigator.vibrate(40); // 모바일 진동
+                if (navigator.vibrate) navigator.vibrate(40);
                 
-                // [꾹 눌렀을 때] 동물 상세 정보 보기
+                // [꾹 눌렀을 때] 정보 창 열기
                 targetAnimUid = bluePlayers[i].animal.uid;
-                
-                // 💡주의: 기존에 모달을 띄우는 함수를 사용하되, 정보만 볼 수 있는 인자값을 넣어야 합니다.
-                // (보통 0이 인벤토리/순수 정보 확인용일 가능성이 높습니다. 만약 따로 showInfo() 같은 함수가 있다면 그걸로 바꿔주세요)
                 openActionModal(bluePlayers[i].animal, 0); 
-                
-            }, 400); // 0.4초
+            }, 400); 
         };
 
-        // 손가락 뗌 / 마우스 클릭 뗌
-        slot.onpointerup = (e) => {
-            clearTimeout(pressTimer);
-            if (!isLongPress) {
-                // [짧게 눌렀을 때] 기존처럼 교체/내리기 동작
-                targetAnimUid = bluePlayers[i].animal.uid;
-                openActionModal(bluePlayers[i].animal, 1);
+        // 2. 손을 떼거나 슬롯 밖으로 벗어나면 무조건 타이머 취소
+        const cancelTimer = () => clearTimeout(pressTimer);
+        slot.onpointerup = cancelTimer;
+        slot.onpointerleave = cancelTimer;
+        slot.onpointercancel = cancelTimer;
+
+        // 3. 짧게 누르기(클릭)는 여기서 전담 처리!
+        slot.onclick = (e) => {
+            if (isLongPress) {
+                // 길게 눌러서 이미 정보창이 열렸다면, 클릭 이벤트 무시
+                e.preventDefault();
+                e.stopImmediatePropagation(); // 다른 클릭 이벤트까지 완벽히 차단
+                return false;
             }
+            
+            // [짧게 눌렀을 때] 기존의 칸 선택 / 교체 동작 정상 실행
+            targetAnimUid = bluePlayers[i].animal.uid;
+            openActionModal(bluePlayers[i].animal, 1);
         };
-
-        // 드래그해서 슬롯을 벗어나거나 화면 터치가 취소될 때 타이머 해제
-        slot.onpointercancel = () => clearTimeout(pressTimer);
-        slot.onpointerleave = () => clearTimeout(pressTimer);
         
-        // 모바일 환경에서 꾹 누를 때 기본 메뉴(이미지 저장 등) 뜨는 현상 방지
+        // 모바일 기본 팝업(우클릭 등) 방지
         slot.oncontextmenu = (e) => e.preventDefault();
-        // ------------------------------------------
+        // -----------------------------------------------------
         
         bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
     }
@@ -1027,20 +1026,38 @@
 
     function closeInfo() { document.getElementById('info-modal').style.display = 'none'; targetAnimUid = null; }
     
-    function resetStatAllocation() {
-        let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
-        if (!anim) return;
-        
-        if (!confirm("배분한 스탯을 모두 초기화하시겠습니까?")) return;
-        
-        anim.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-        anim.speed = anim.baseStats.speed;
-        anim.shoot = anim.baseStats.shoot;
-        anim.iq = anim.baseStats.iq;
-        
-        updateStatDisplay(anim);
-        saveData();
+  function resetStatAllocation() {
+    // 1. 인벤토리(ownedAnimals)에서 먼저 동물 찾기
+    let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
+    
+    // 2. 인벤토리에 없으면 로스터(출전 중인 동물)에서 찾기!
+    if (!anim) {
+        let activePlayer = players.find(p => p.team === 'blue' && p.animal && p.animal.uid === targetAnimUid);
+        if (activePlayer) anim = activePlayer.animal;
     }
+
+    // 3. 그래도 못 찾으면 종료
+    if (!anim) return;
+    
+    // 정말 초기화할 건지 묻기
+    if (!confirm("배분한 스탯을 모두 초기화하시겠습니까?")) return;
+    
+    // 스탯 초기화 처리
+    anim.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+    anim.speed = anim.baseStats.speed;
+    anim.shoot = anim.baseStats.shoot;
+    anim.iq = anim.baseStats.iq;
+    
+    // 현재 열려있는 모달창의 스탯 숫자 즉시 새로고침
+    updateStatDisplay(anim);
+    
+    // 메인 화면(인벤토리 및 로스터) UI도 안전하게 새로고침
+    if (typeof renderInventory === 'function') renderInventory();
+    if (typeof updateRosterUI === 'function') updateRosterUI(); 
+    
+    // 저장
+    saveData();
+}
     
 function toggleFavorite() {
     // 1. 인벤토리(ownedAnimals)에서 먼저 동물 찾기
