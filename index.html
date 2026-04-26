@@ -125,6 +125,37 @@
         @keyframes sparkPulse { 0% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
         .vfx-magic-path { position: absolute; height: 2px; background: linear-gradient(90deg, rgba(220, 162, 255, 1), rgba(255, 255, 255, 0.1)); border-radius: 99px; z-index: 12; pointer-events: none; animation: pathFade 0.45s ease-out forwards; }
         @keyframes pathFade { 0% { opacity: 1; transform: scaleX(0.2); } 100% { opacity: 0; transform: scaleX(1); } }
+        
+        /* 추가 VFX 효과 */
+        .vfx-ring { position: absolute; border: 3px solid; border-radius: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; animation: ringPulse 0.6s ease-out forwards; }
+        @keyframes ringPulse { 0% { width: 20px; height: 20px; opacity: 1; } 100% { width: 120px; height: 120px; opacity: 0; } }
+        
+        .vfx-speed { position: absolute; width: 60px; height: 4px; transform: translate(-50%, -50%); z-index: 8; pointer-events: none; animation: speedTrail 0.4s ease-out forwards; }
+        @keyframes speedTrail { 0% { opacity: 1; transform: translate(-50%, -50%) scaleX(0.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scaleX(1.5); } }
+        
+        .vfx-freeze { position: absolute; width: 30px; height: 30px; border: 2px solid; border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; animation: freezeAnim 0.7s ease-out forwards; }
+        @keyframes freezeAnim { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        
+        .vfx-power { position: absolute; width: 40px; height: 40px; border-radius: 50%; transform: translate(-50%, -50%); z-index: 7; pointer-events: none; animation: powerBurst 0.5s ease-out forwards; }
+        @keyframes powerBurst { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; box-shadow: 0 0 20px currentColor; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; box-shadow: 0 0 50px currentColor; } }
+        
+        .vfx-aura { position: absolute; border: 2px solid; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; pointer-events: none; animation: auraSwirl 0.8s ease-out forwards; }
+        @keyframes auraSwirl { 0% { width: 30px; height: 30px; opacity: 0.8; transform: translate(-50%, -50%) rotate(0deg); } 100% { width: 100px; height: 100px; opacity: 0; transform: translate(-50%, -50%) rotate(180deg); } }
+        
+        .vfx-slash { position: absolute; width: 50px; height: 8px; transform: translate(-50%, -50%) rotate(-45deg); z-index: 9; pointer-events: none; animation: slashAnim 0.3s ease-out forwards; }
+        @keyframes slashAnim { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(-45deg) scaleX(0.2); } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(-45deg) scaleX(1); } }
+        
+        .vfx-howl { position: absolute; font-size: 36px; transform: translate(-50%, -50%); z-index: 15; pointer-events: none; animation: howlAnim 0.8s ease-out forwards; }
+        @keyframes howlAnim { 0% { transform: translate(-50%, -50%) scale(0.5) rotate(-20deg); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); } 100% { transform: translate(-50%, -50%) scale(1.5) rotate(0deg); opacity: 0; } }
+        
+        .vfx-roar { position: absolute; width: 60px; height: 60px; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none; animation: roarAnim 0.7s ease-out forwards; }
+        @keyframes roarAnim { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; } }
+        
+        .vfx-magic { position: absolute; width: 50px; height: 50px; border-radius: 50%; transform: translate(-50%, -50%); z-index: 11; pointer-events: none; animation: magicAnim 0.6s ease-out forwards; }
+        @keyframes magicAnim { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        
+        .vfx-flight { position: absolute; width: 30px; height: 80px; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; animation: flightTrail 0.5s ease-out forwards; }
+        @keyframes flightTrail { 0% { opacity: 0.8; transform: translate(-50%, -50%) scaleY(0.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scaleY(1.5); } }
 
         /* --- Modals & Gacha --- */
         #full-overlay, #info-modal, #gacha-anim-overlay, #bulk-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; overflow: hidden; }
@@ -442,7 +473,7 @@
         { id: 'monkey', name: '원숭이', grade: 'Rare', speed: 0.8, accel: 0.08, shoot: 55, iq: 70, icon: '🐵', color: '#3b82f6', shootRange: 28, passRate: 0.5 }, 
 
         { id: 'cheetah', name: '치타', grade: 'Epic', speed: 1.0, accel: 0.12, shoot: 50, iq: 50, icon: '🐆', color: '#a855f7', shootRange: 18, passRate: 0.1, skill: '초고속 질주', skillDesc: '이동 속도가 잠시 3배로 증가합니다.', maxUses: 2 },
-        { id: 'bear', name: '불곰', grade: 'Epic', speed: 0.3, accel: 0.04, shoot: 85, iq: 75, icon: '🐻', color: '#a855f7', shootRange: 20, passRate: 0.1, skill: '바디체크', skillDesc: '밀착한 상대 수비수를 기절시킵니다.', maxUses: 2 },
+        { id: 'bear', name: '불곰', grade: 'Epic', speed: 0.3, accel: 0.04, shoot: 25, iq: 75, icon: '🐻', color: '#a855f7', shootRange: 20, passRate: 0.0, skill: '철벽 방어', skillDesc: '2초간 공을 뺏기지 않으며, 패스하지 않고 적 골대로만 돌진합니다.', maxUses: 2 },
         { id: 'fox', name: '여우', grade: 'Epic', speed: 0.8, accel: 0.09, shoot: 65, iq: 85, icon: '🦊', color: '#a855f7', shootRange: 30, passRate: 0.5, skill: '앵클 브레이커', skillDesc: '돌파 시 마크맨을 넘어뜨립니다(기절).', maxUses: 2 },
         { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2 }, 
         
@@ -529,20 +560,26 @@
                     if (original) {
                         // baseStats를 항상 원본 능력치로 설정
                         a.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
-                        // 현재 능력치도 원본으로 복원
-                        a.speed = original.speed;
-                        a.shoot = original.shoot;
-                        a.iq = original.iq;
+                        // allocatedPoints가 있으면 적용, 없으면 0
+                        if (!a.allocatedPoints) a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+                        // 스탯 계산 적용
+                        const dampen = 0.04; const baseRate = 0.2;
+                        let speedMult = 1 + (baseRate * (a.allocatedPoints.speed || 0)) / Math.sqrt(1 + (a.allocatedPoints.speed || 0) * dampen);
+                        let shootMult = 1 + (baseRate * (a.allocatedPoints.shoot || 0)) / Math.sqrt(1 + (a.allocatedPoints.shoot || 0) * dampen);
+                        let iqMult = 1 + (baseRate * (a.allocatedPoints.iq || 0)) / Math.sqrt(1 + (a.allocatedPoints.iq || 0) * dampen);
+                        a.speed = original.speed * speedMult;
+                        a.shoot = original.shoot * shootMult;
+                        a.iq = original.iq * iqMult;
+                        // 스킬과 설명도 업데이트 (새로운 버전 적용)
+                        if (original.skill) a.skill = original.skill;
+                        if (original.skillDesc) a.skillDesc = original.skillDesc;
+                        if (original.maxUses !== undefined) a.maxUses = original.maxUses;
                     } else {
-                        // 원본을 찾을 수 없으면 현재 값 유지
                         if (!a.baseStats) a.baseStats = { speed: a.speed, shoot: a.shoot, iq: a.iq };
+                        if (!a.allocatedPoints) a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
                     }
                     // 포인트 시스템 갱신 (새로운 공식)
                     a.totalAvailablePoints = getAvailablePoints(a.level);
-                    // 기존 유저는 allocatedPoints가 없으므로 0으로 초기화, 기존 데이터 있으면 유지
-                    if (!a.allocatedPoints) {
-                        a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                    }
                 });
             }
             if (data.roster && data.roster.length === 3) {
@@ -555,17 +592,26 @@
                     const originalRoster = ANIMAL_LIBRARY.find(lib => lib.id === bluePlayers[i].animal.id);
                     if (originalRoster) {
                         bluePlayers[i].animal.baseStats = { speed: originalRoster.speed, shoot: originalRoster.shoot, iq: originalRoster.iq };
-                        bluePlayers[i].animal.speed = originalRoster.speed;
-                        bluePlayers[i].animal.shoot = originalRoster.shoot;
-                        bluePlayers[i].animal.iq = originalRoster.iq;
+                        // allocatedPoints가 있으면 적용, 없으면 0
+                        if (!bluePlayers[i].animal.allocatedPoints) bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+                        // 스탯 계산 적용
+                        const dampen = 0.04; const baseRate = 0.2;
+                        let speedMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.speed || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.speed || 0) * dampen);
+                        let shootMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.shoot || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.shoot || 0) * dampen);
+                        let iqMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.iq || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.iq || 0) * dampen);
+                        bluePlayers[i].animal.speed = originalRoster.speed * speedMult;
+                        bluePlayers[i].animal.shoot = originalRoster.shoot * shootMult;
+                        bluePlayers[i].animal.iq = originalRoster.iq * iqMult;
+                        // 스킬과 설명도 업데이트
+                        if (originalRoster.skill) bluePlayers[i].animal.skill = originalRoster.skill;
+                        if (originalRoster.skillDesc) bluePlayers[i].animal.skillDesc = originalRoster.skillDesc;
+                        if (originalRoster.maxUses !== undefined) bluePlayers[i].animal.maxUses = originalRoster.maxUses;
                     } else if (!bluePlayers[i].animal.baseStats) {
                         bluePlayers[i].animal.baseStats = { speed: bluePlayers[i].animal.speed, shoot: bluePlayers[i].animal.shoot, iq: bluePlayers[i].animal.iq };
+                        if (!bluePlayers[i].animal.allocatedPoints) bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
                     }
                     // 포인트 시스템 갱신
                     bluePlayers[i].animal.totalAvailablePoints = getAvailablePoints(bluePlayers[i].animal.level);
-                    if (!bluePlayers[i].animal.allocatedPoints) {
-                        bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                    }
                     bluePlayers[i].el.innerHTML = bluePlayers[i].animal.icon + '<div class="stun-fx">💫</div>';
                     bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
                 }
@@ -1007,7 +1053,16 @@
         merged.level++; 
         merged.totalAvailablePoints = getAvailablePoints(merged.level);
         merged.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-        merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+        // 합성 시 원본 능력치로 복원 (ANIMAL_LIBRARY에서 찾기)
+        const original = ANIMAL_LIBRARY.find(lib => lib.id === merged.id);
+        if (original) {
+            merged.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
+            merged.speed = original.speed;
+            merged.shoot = original.shoot;
+            merged.iq = original.iq;
+        } else {
+            merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+        }
         
         ownedAnimals.push(merged);
         
@@ -1201,7 +1256,16 @@ function toggleFavorite() {
                 merged.level++;
                 merged.totalAvailablePoints = getAvailablePoints(merged.level);
                 merged.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+                // 합성 시 원본 능력치로 복원
+                const original = ANIMAL_LIBRARY.find(lib => lib.id === merged.id);
+                if (original) {
+                    merged.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
+                    merged.speed = original.speed;
+                    merged.shoot = original.shoot;
+                    merged.iq = original.iq;
+                } else {
+                    merged.baseStats = { speed: merged.speed, shoot: merged.shoot, iq: merged.iq };
+                }
                 
                 ownedAnimals.push(merged);
                 mergedAnimals.push(merged);
@@ -1425,6 +1489,16 @@ function toggleFavorite() {
         else if (type === 'meteor') { div.className = 'vfx-meteor'; div.innerText = '☄️'; div.style.left = `${x}%`; }
         else if (type === 'fire') { div.className = 'vfx-fire'; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         else if (type === 'spark') { div.className = 'vfx-spark'; div.style.background = `radial-gradient(circle, ${color}, transparent 70%)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'ring') { div.className = 'vfx-ring'; div.style.borderColor = color; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'speed') { div.className = 'vfx-speed'; div.style.background = `linear-gradient(90deg, transparent, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'freeze') { div.className = 'vfx-freeze'; div.style.boxShadow = `0 0 15px ${color}`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'power') { div.className = 'vfx-power'; div.style.background = `radial-gradient(circle, ${color}, transparent 70%)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'aura') { div.className = 'vfx-aura'; div.style.borderColor = color; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'slash') { div.className = 'vfx-slash'; div.style.background = `linear-gradient(45deg, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'howl') { div.className = 'vfx-howl'; div.innerText = '🐺'; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'roar') { div.className = 'vfx-roar'; div.style.boxShadow = `0 0 30px ${color}`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'magic') { div.className = 'vfx-magic'; div.style.background = `radial-gradient(circle, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
+        else if (type === 'flight') { div.className = 'vfx-flight'; div.style.background = `linear-gradient(180deg, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         court.appendChild(div); setTimeout(() => div.remove(), 1000);
     }
 
@@ -1459,7 +1533,23 @@ function toggleFavorite() {
         for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
+        // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
+        syncPlayerStats();
+        
         loadData(); applyEnemyStats(); updateRosterUI(); updateUI(); requestAnimationFrame(gameLoop); 
+    }
+    
+    function syncPlayerStats() {
+        //蓝色팀 플레이어들의 스탯을 ownedAnimals의 최신 스탯으로 동기화
+        players.filter(p => p.team === 'blue' && p.animal).forEach(p => {
+            let owned = ownedAnimals.find(a => a.uid === p.animal.uid);
+            if (owned) {
+                p.animal.speed = owned.speed;
+                p.animal.shoot = owned.shoot;
+                p.animal.iq = owned.iq;
+                p.animal.accel = owned.accel;
+            }
+        });
     }
 
     function applyEnemyStats() {
@@ -1475,9 +1565,9 @@ function toggleFavorite() {
         const el = document.createElement('div'); el.className = `player ${team}`; 
         const stunFx = document.createElement('div'); stunFx.className = 'stun-fx'; stunFx.innerText = '💫'; el.appendChild(stunFx);
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
-        if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = "R"; 
+        if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        players.push({ el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0) });
+        players.push({ el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0 });
     }
 
     function gameLoop() {
@@ -1494,7 +1584,7 @@ function toggleFavorite() {
         isResetting = true; ball.state = 'held'; ball.isGoal = false;
         players.forEach(p => { 
             p.tx = p.team === 'blue' ? 30 : 70; p.ty = 20 + p.roleIdx * 30; p.x = p.tx; p.y = p.ty; p.vx = 0; p.vy = 0; 
-            p.stunTimer = 0; p.flyTimer = 0; p.isShooting = false; 
+            p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; 
             if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
         });
         
@@ -1535,7 +1625,7 @@ function toggleFavorite() {
         }
 
         if (ball.state === 'pass' && ball.z < 30) {
-            players.forEach(p => { if (p.team === ball.targetTeam && p.cooldown <= 0 && p.stunTimer <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 6) { ball.state = 'held'; ball.holder = p; ball.lastHolder = p; p.cooldown = 10; p.isCutting = false; } });
+            players.forEach(p => { if (p.team === ball.targetTeam && p.cooldown <= 0 && p.stunTimer <= 0 && p.stealImmune <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 6) { ball.state = 'held'; ball.holder = p; ball.lastHolder = p; p.cooldown = 10; p.isCutting = false; } });
         }
 
         const hoopX = ball.targetTeam === 'blue' ? 92 : 8;
@@ -1551,9 +1641,9 @@ function toggleFavorite() {
         if (ball.y < 2 || ball.y > 98) { ball.vy *= -0.8; ball.y = Math.max(2, Math.min(98, ball.y)); }
     }
 
-    function shoot(p) {
+    function shoot(p, overrideProb = null) {
         p.isShooting = true; ball.lastHolder = p; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team; 
-        let shootProb = p.team === 'blue' ? p.animal.shoot : state.redStats.shoot;
+        let shootProb = overrideProb !== null ? overrideProb : (p.team === 'blue' ? p.animal.shoot : state.redStats.shoot);
         if (p.team === 'blue' && p.animal.id === 'parrot' && (p.flyTimer > 0 || p.flightBuffTimer > 0)) shootProb = Math.min(100, shootProb + 30);
         const hoopX = p.team === 'blue' ? 92 : 8;
         ball.isGoal = Math.random() * 100 < shootProb; ball.points = getPointsByDistance(p.x, p.y, hoopX);
@@ -1590,12 +1680,30 @@ function toggleFavorite() {
         if (ball.state === 'loose' && ball.z < 30) closestToBall = players.filter(p => p.stunTimer <= 0).reduce((prev, curr) => !prev || Math.hypot(curr.x - ball.x, curr.y - ball.y) < Math.hypot(prev.x - ball.x, prev.y - ball.y) ? curr : prev, null);
 
         players.forEach(p => {
-            if (p.stunTimer > 0 && p.flyTimer <= 0) { p.stunTimer--; p.el.style.opacity = 0.5; p.stunFx.style.display = 'block'; p.vx = 0; p.vy = 0; if(ball.holder === p) ball.state = 'loose'; return; } 
-            else { p.el.style.opacity = 1; p.stunFx.style.display = 'none'; }
-
+            // 스턴 상태 처리
+            if (p.stunTimer > 0 && p.flyTimer <= 0) { 
+                p.stunTimer--; 
+                p.el.style.opacity = 0.5; 
+                p.stunFx.style.display = 'block'; 
+                p.vx = 0; p.vy = 0; 
+                if(ball.holder === p) ball.state = 'loose'; 
+                return; 
+            } else {
+                p.el.style.opacity = 1;
+                p.stunFx.style.display = 'none';
+            }
+            
+            // 둔화 상태 처리
+            if (p.slowTimer > 0) { 
+                p.slowTimer--; 
+                p.el.style.filter = 'brightness(0.7) sepia(1) hue-rotate(180deg) saturate(2)'; 
+            } else { 
+                p.el.style.filter = ''; 
+            } 
+            
             if (p.isShooting) return;
             if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
-            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--;
+            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--;
             if (p.flyTimer > 0) {
                 if (ball.holder !== p || ball.state !== 'held') { p.flyTimer = 0; if (p.animal && p.animal.id === 'parrot') p.flightBuffTimer = 60; }
                 else {
@@ -1606,8 +1714,8 @@ function toggleFavorite() {
             } else { p.z = 0; }
 
             let targetSpeed, currentAccel, iqStat;
-            if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8; currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 2.5; } 
-            else { targetSpeed = state.redStats.maxSpeed * 0.8; currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
+            if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8 * (p.slowTimer > 0 ? 0.7 : 1); currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 2.5; } 
+            else { targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.7 : 1); currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
 
             if (p.team === 'blue' && p.animal.skill && p.skillUsesLeft > 0) {
                 let skillUsed = false; let enemies = players.filter(e => e.team === 'red'); let distToHoop = Math.hypot(p.x - 92, p.y - 50);
@@ -1615,36 +1723,80 @@ function toggleFavorite() {
                 
                 if (p.animal.id === 'elephant') {
                     let defender = players.find(e => e.team !== p.team && e.matchup === p && Math.hypot(e.x - p.x, e.y - p.y) < 8 && e.stunTimer <= 0);
-                    if (defender && skillProbability < 20) { defender.stunTimer = 120; createVfx(defender.x, defender.y, 'wave', '#a855f7'); skillUsed = true; }
+                    if (defender && skillProbability < 20) { defender.stunTimer = 120; createVfx(defender.x, defender.y, 'power', '#a855f7'); createVfx(defender.x, defender.y, 'ring', '#a855f7'); skillUsed = true; }
                 } else if (p.animal.id === 'falcon') {
-                    if (ball.holder === p && distToHoop < p.animal.shootRange && skillProbability < 20) { p.flyTimer = 30; p.flightBuffTimer = 30; createVfx(p.x, p.y, 'spark', '#a855f7'); skillUsed = true; }
+                    if (ball.holder === p && distToHoop < p.animal.shootRange && skillProbability < 20) { p.flyTimer = 30; p.flightBuffTimer = 30; createVfx(p.x, p.y, 'flight', '#60a5fa'); createVfx(p.x, p.y, 'ring', '#60a5fa'); skillUsed = true; }
                 } else if (p.animal.id === 'dolphin') {
-                    if (ball.holder === p && skillProbability < 10) { players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60); createVfx(p.x, p.y, 'wave', '#3b82f6'); skillUsed = true; }
+                    if (ball.holder === p && skillProbability < 10) { players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60); createVfx(p.x, p.y, 'aura', '#3b82f6'); createVfx(p.x, p.y, 'wave', '#3b82f6'); skillUsed = true; }
                 } else if (p.animal.id === 'orca') {
                     if (ball.holder === p && skillProbability < 15) {
                         let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20);
-                        if(nearEnemies.length > 0) { nearEnemies.slice(0, 3).forEach(e => { e.stunTimer = 60; e.tx = Math.max(3, Math.min(97, e.x + (e.x - p.x))); e.ty = Math.max(3, Math.min(97, e.y + (e.y - p.y))); }); createVfx(p.x, p.y, 'wave', '#ef4444'); skillUsed = true; }
+                        if(nearEnemies.length > 0) { 
+                            nearEnemies.slice(0, 3).forEach(e => { 
+                                // 1초(60프레임) 기절 + 1초(60프레임) 둔화
+                                e.stunTimer = 60; 
+                                e.slowTimer = 60;
+                                // 기절 이팩트
+                                createVfx(e.x, e.y, 'power', '#ef4444');
+                                createVfx(e.x, e.y, 'freeze', '#60a5fa');
+                            }); 
+                            createVfx(p.x, p.y, 'roar', '#ef4444'); 
+                            createVfx(p.x, p.y, 'wave', '#ef4444');
+                            skillUsed = true; 
+                        }
                     }
                 }
-                else if (p.animal.id === 'lion') { let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20); if (nearEnemies.length > 0 && ball.holder === p && skillProbability < 10) { nearEnemies.forEach(e => e.stunTimer = 90); createVfx(p.x, p.y, 'wave', 'orange'); skillUsed = true; } } 
-                else if (p.animal.id === 'bear') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 5 && skillProbability < 10) { p.matchup.stunTimer = 90; createVfx(p.matchup.x, p.matchup.y, 'wave', '#a855f7'); skillUsed = true; } } 
-                else if (p.animal.id === 'giraffe') { if (ball.holder === p && skillProbability < 15) { ball.isGoal = Math.random() * 100 < 60; createVfx(p.x, p.y, 'spark', '#a855f7'); shoot(p); skillUsed = true; } }
-                else if (p.animal.id === 'fox') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 8 && p.cooldown <= 0 && skillProbability < 10) { p.matchup.stunTimer = 60; p.tx = p.x + 10; createVfx(p.x, p.y, 'spark', '#a855f7'); skillUsed = true; } } 
-                else if (p.animal.id === 'cheetah') { if (ball.holder === p && distToHoop > 20 && skillProbability < 10) { p.activeBuff = 80; createVfx(p.x, p.y, 'spark', '#fbbf24'); skillUsed = true; } }
-                else if (p.animal.id === 'wolf') { if (ball.holder === p && skillProbability < 10) { enemies.forEach(e => { e.stunTimer = 80; }); createVfx(p.x, p.y, 'wave', '#a855f7'); skillUsed = true; } }
-                else if (p.animal.id === 'gorilla') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 15).forEach(e => e.stunTimer = 60); createVfx(p.x, p.y, 'fire'); shoot(p); skillUsed = true; } } 
+                else if (p.animal.id === 'lion') { 
+                    let nearEnemies = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20); 
+                    if (nearEnemies.length > 0 && ball.holder === p && skillProbability < 10) { 
+                        nearEnemies.forEach(e => { 
+                            // 공포 효과: 사자에서 멀어지는 방향으로 천천히 밀려남
+                            let dx = e.x - p.x;
+                            let dy = e.y - p.y;
+                            let dist = Math.hypot(dx, dy);
+                            if (dist > 0) {
+                                e.slowTimer = 90; // 1.5초간 둔화
+                                // 천천히 밀어내기 (약한 속도加成)
+                                e.vx += (dx / dist) * 0.8;
+                                e.vy += (dy / dist) * 0.4;
+                                // 타겟을 현재 위치에서 더 멀어지는 방향으로
+                                e.tx = e.x + (dx / dist) * 15;
+                                e.ty = e.y + (dy / dist) * 15;
+                            }
+                            createVfx(e.x, e.y, 'aura', 'orange');
+                            createVfx(e.x, e.y, 'wave', 'orange');
+                        }); 
+                        createVfx(p.x, p.y, 'roar', 'orange'); 
+                        createVfx(p.x, p.y, 'aura', 'orange'); 
+                        skillUsed = true; 
+                    } 
+                } 
+                else if (p.animal.id === 'bear') { 
+                    // 2초간(120프레임) 공 뺏기지 않음 + 패스 안 하고 적 골대로만 감
+                    if (ball.holder === p && skillProbability < 10) { 
+                        p.stealImmune = 120; // 2초간 뺏기지 않음 (60fps * 2 = 120)
+                        createVfx(p.x, p.y, 'aura', '#a855f7'); 
+                        createVfx(p.x, p.y, 'ring', '#a855f7');
+                        skillUsed = true; 
+                    } 
+                } 
+                else if (p.animal.id === 'giraffe') { if (ball.holder === p && skillProbability < 15) { createVfx(p.x, p.y, 'power', '#a855f7'); createVfx(p.x, p.y, 'ring', '#a855f7'); shoot(p, 15); skillUsed = true; } }
+                else if (p.animal.id === 'fox') { if (ball.holder === p && Math.hypot(p.matchup.x - p.x, p.matchup.y - p.y) < 8 && p.cooldown <= 0 && skillProbability < 10) { p.matchup.stunTimer = 60; p.tx = p.x + 10; createVfx(p.x, p.y, 'slash', '#a855f7'); createVfx(p.matchup.x, p.matchup.y, 'freeze', '#a855f7'); skillUsed = true; } } 
+                else if (p.animal.id === 'cheetah') { if (ball.holder === p && distToHoop > 20 && skillProbability < 10) { p.activeBuff = 80; createVfx(p.x, p.y, 'speed', '#fbbf24'); createVfx(p.x, p.y, 'aura', '#fbbf24'); skillUsed = true; } }
+                else if (p.animal.id === 'wolf') { if (ball.holder === p && skillProbability < 10) { enemies.forEach(e => { e.stunTimer = 80; }); createVfx(p.x, p.y, 'howl', '#a855f7'); createVfx(p.x, p.y, 'wave', '#a855f7'); skillUsed = true; } }
+                else if (p.animal.id === 'gorilla') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 15).forEach(e => e.stunTimer = 60); createVfx(p.x, p.y, 'power', '#ef4444'); createVfx(p.x, p.y, 'fire'); shoot(p); skillUsed = true; } } 
                 else if (p.animal.id === 'unicorn') { 
                     let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p); 
                     if (ball.holder === p && cuttingTeammate && skillProbability < 10) { 
                         createMagicPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y, '#c084fc');
-                        createVfx(p.x, p.y, 'spark', '#f472b6'); createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#f472b6');
+                        createVfx(p.x, p.y, 'magic', '#f472b6'); createVfx(cuttingTeammate.x, cuttingTeammate.y, 'magic', '#f472b6');
                         createRainbowPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y);
                         ball.holder = cuttingTeammate; ball.lastHolder = cuttingTeammate; ball.x = cuttingTeammate.x; ball.y = cuttingTeammate.y; 
                         setTimeout(() => createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#ffd700'), 100); skillUsed = true; 
                     } 
                 }
-                else if (p.animal.id === 'dragon') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.forEach(e => e.stunTimer = 60); createVfx(92, 50, 'meteor'); shoot(p); skillUsed = true; } }
-                else if (p.animal.id === 'parrot') { if (ball.holder === p && distToHoop > 15 && skillProbability < 10) { p.flyTimer = 54; p.flightBuffTimer = 60; createVfx(p.x, p.y, 'spark', '#60a5fa'); skillUsed = true; } }
+                else if (p.animal.id === 'dragon') { if (ball.holder === p && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.forEach(e => e.stunTimer = 60); createVfx(92, 50, 'meteor'); createVfx(p.x, p.y, 'fire'); shoot(p); skillUsed = true; } }
+                else if (p.animal.id === 'parrot') { if (ball.holder === p && distToHoop > 15 && skillProbability < 10) { p.flyTimer = 54; p.flightBuffTimer = 60; createVfx(p.x, p.y, 'flight', '#60a5fa'); createVfx(p.x, p.y, 'spark', '#60a5fa'); skillUsed = true; } }
                 
                 if (skillUsed) p.skillUsesLeft--;
             }
@@ -1653,28 +1805,51 @@ function toggleFavorite() {
 
             if (ball.state === 'loose') {
                 if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
-                if (p.cooldown <= 0 && p.flyTimer <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 4) { ball.holder = p; ball.lastHolder = p; ball.state = 'held'; }
+                if (p.cooldown <= 0 && p.flyTimer <= 0 && p.stealImmune <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 4) { ball.holder = p; ball.lastHolder = p; ball.state = 'held'; }
             } 
             else if (ball.state === 'held' || ball.state === 'pass' || ball.state === 'shoot') {
                 if (p === ball.holder) {
                     p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85; 
                     let distToHoop = Math.hypot(p.x - p.tx, p.y - p.ty); let distToDef = Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y);
                     let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
+                    
+                    // IQ 기반 판단 로직: IQ가 높을수록 패스가 불리할 때 돌파 시도
+                    let iqFactor = iqStat / 50; // IQ 50 기준 1배
                     let passTendency = (p.team === 'blue' ? p.animal.passRate : 0.35) * 0.35;
+                    
+                    // 곰 스킬 사용 중에는 패스 확률 0
+                    if (p.stealImmune > 0) passTendency = 0;
+                    
+                    // 수비수가 근처에 있을 때 IQ가 높으면 패스 확률 감소, 대신 돌파 시도
+                    if (distToDef < 6 && distToHoop > 15) {
+                        // IQ가 높을수록 패스 확률 대폭 감소 (최대 80% 감소)
+                        passTendency *= Math.max(0.1, 1 - (iqFactor - 1) * 0.8);
+                        // IQ가 높으면 돌파 시도 (수비수를 우회하여 전진)
+                        if (iqFactor > 1.2 && p.cooldown <= 0 && p.flyTimer <= 0) {
+                            // 수비수 뒤로 우회 시도
+                            p.tx = p.matchup.x + (hoopX - p.matchup.x) * 0.5;
+                            p.ty = p.matchup.y + (Math.random() > 0.5 ? 15 : -15);
+                            targetSpeed *= 1.3; // 속도 증가
+                        }
+                    }
+                    
                     let currentShootRange = (p.team === 'blue' ? p.animal.shootRange : 22) * 0.65;
                     if (p.flyTimer > 0 && distToHoop < 10) shoot(p);
                     else if (cuttingTeammate && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < passTendency) { triggerPass(p, cuttingTeammate); }
                     else if (distToHoop < currentShootRange && p.cooldown <= 0) { shoot(p); }
                     else if (distToHoop > 25 && p.cooldown <= 0 && Math.random() < 0.003) { shoot(p); }
-                    else if (distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < 0.3) { let teammates = players.filter(t => t.team === p.team && t !== p); triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]); }
+                    // IQ 기반 패스 판단: IQ가 높으면 패스 확률 감소 (곰 스킬 사용 중에는 패스 안 함)
+                    else if (p.stealImmune <= 0 && distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < 0.3 * Math.max(0.5, 1 - (iqFactor - 1) * 0.5)) { let teammates = players.filter(t => t.team === p.team && t !== p); triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]); }
                 } else if (p.team === possessionTeam) {
+                    // IQ가 높을수록 컷팅(돌파) 빈도 증가
                     if (!p.isCutting && Math.random() < 0.005 * iqStat) { p.isCutting = true; p.cutTimer = 80; }
                     if (p.isCutting) { p.tx = hoopX; p.ty = 50 + (Math.random()*10 - 5); targetSpeed *= 1.4; } 
                     else { p.tx = p.team === 'blue' ? 65 + Math.sin(state.time*0.03)*8 : 35 - Math.sin(state.time*0.03)*8; p.ty = p.roleIdx === 0 ? 50 : (p.roleIdx === 1 ? 15 : 85); targetSpeed *= 0.7; }
                 } else {
                     if (ball.holder === p.matchup) {
                         p.tx = p.matchup.x; p.ty = p.matchup.y; targetSpeed *= 0.85; 
-                        if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0 && Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
+                        // IQ가 높을수록 스틸 확률 증가
+                        if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0 && p.matchup.stealImmune <= 0 && Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
                     } else { let defHoopX = p.team === 'blue' ? 10 : 90; p.tx = p.matchup.x + (defHoopX - p.matchup.x) * 0.3; p.ty = p.matchup.y + (50 - p.matchup.y) * 0.3; targetSpeed *= p.matchup.isCutting ? 1.3 : 0.7; }
                 }
             }
@@ -1701,7 +1876,7 @@ function toggleFavorite() {
             let scale = 1 + (p.z / 40);
             p.el.style.left = `${p.x}%`; p.el.style.top = `calc(${p.y}% - ${p.z}px)`; p.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
             p.shadow.style.left = `${p.x}%`; p.shadow.style.top = `${p.y}%`; p.shadow.style.transform = `translate(-50%, -50%) scale(${Math.max(0.5, 1 - p.z/40)})`; p.shadow.style.opacity = Math.max(0.2, 1 - p.z/30);
-            if(p.flyTimer > 0) createVfx(p.x, p.y, 'fire');
+            if(p.flyTimer > 0) createVfx(p.x, p.y, 'flight', '#60a5fa');
         });
     }
 
