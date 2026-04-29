@@ -111,8 +111,9 @@
         .ball { position: absolute; width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #fb923c, #ea580c); border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; border: 1px solid #7c2d12; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4); will-change: transform, left, top; }
         .ball-shadow { position: absolute; width: 12px; height: 6px; background: rgba(0,0,0,0.5); border-radius: 50%; transform: translate(-50%, -50%); z-index: 9; will-change: transform, left, top; }
         .event-text { position: absolute; font-family: 'Black Han Sans', sans-serif; pointer-events: none; z-index: 50; transform: translate(-50%, -50%); text-shadow: 2px 3px 0 rgba(0,0,0,0.8); white-space: nowrap; }
-        @keyframes popup { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -30px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
-        .anim-popup { animation: popup 1.2s ease-out forwards; }
+        @keyframes goalPulse { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+        @keyframes scoreFloat { 0% { transform: translate(-50%, -50%) translateY(0); opacity: 1; } 100% { transform: translate(-50%, -50%) translateY(-80px); opacity: 0; } }
+        @keyframes scorerSlide { 0% { transform: translate(-50%, -50%) translateX(-100px) scale(0.5); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(-50%, -50%) translateX(0) scale(1); opacity: 0; } }
 
         /* --- 시각 이펙트 (VFX) --- */
         .vfx-shockwave { position: absolute; border: 4px solid; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none; animation: waveAnim 0.6s ease-out forwards; }
@@ -300,6 +301,7 @@
             
             <div class="action-btns" id="action-btns">
                 <button class="btn-action btn-equip" id="btn-equip" onclick="equipCurrent()" style="grid-column: span 2;">출전 슬롯에 장착</button>
+                <button class="btn-action" id="btn-rename" style="background: #3b82f6; color: white;" onclick="renameAnimal()">✏️ 이름 바꾸기</button>
                 <button class="btn-action" id="btn-favorite" style="background: #f59e0b; color: white;" onclick="toggleFavorite()">❤️ 즐겨찾기</button>
                 <button class="btn-action btn-merge" id="btn-merge" onclick="mergeCurrent()">합성 <br><span id="merge-cost" style="font-size:0.75rem;">(300💰)</span></button>
                 <button class="btn-action btn-sell" id="btn-sell" onclick="sellCurrent()">판매 <br><span id="sell-price" style="font-size:0.75rem;">(+100💰)</span></button>
@@ -477,9 +479,9 @@
         { id: 'fox', name: '여우', grade: 'Epic', speed: 0.8, accel: 0.09, shoot: 65, iq: 85, icon: '🦊', color: '#a855f7', shootRange: 30, passRate: 0.5, skill: '공 도둑', skillDesc: '적이 공을 들고 있을 때 3.5초간 가짜 공을 소환해 공을 뺏습니다. 라운드당 1회.', maxUses: 1 },
         { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2 }, 
         
-        { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1.5초간 도망치게 합니다.', maxUses: 2 },
+        { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1초간 도망치게 합니다.', maxUses: 2 },
         { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '불도저 덩크', skillDesc: '공을 잡으면 불꽃을 뿜으며 골대로 돌진해 수비를 날립니다.', maxUses: 2 },
-        { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다.', maxUses: 4 },
+        { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4 },
         { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2 },
         { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3 } 
     ];
@@ -522,6 +524,11 @@
     let targetAnimUid = null;
     let gachaTimeout1, gachaTimeout2; 
     let currentPickedList = [];
+    
+    // 라운드 시작 관련 전역 변수
+    let waitingForPlayersArrive = false;
+    let roundResetStartTime = 0;
+    let possessionTeamForRound = 'red';
 
     const court = document.getElementById('court-area');
     let players = [];
@@ -562,11 +569,10 @@
                         a.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
                         // allocatedPoints가 있으면 적용, 없으면 0
                         if (!a.allocatedPoints) a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                        // 스탯 계산 적용
-                        const dampen = 0.04; const baseRate = 0.2;
-                        let speedMult = 1 + (baseRate * (a.allocatedPoints.speed || 0)) / Math.sqrt(1 + (a.allocatedPoints.speed || 0) * dampen);
-                        let shootMult = 1 + (baseRate * (a.allocatedPoints.shoot || 0)) / Math.sqrt(1 + (a.allocatedPoints.shoot || 0) * dampen);
-                        let iqMult = 1 + (baseRate * (a.allocatedPoints.iq || 0)) / Math.sqrt(1 + (a.allocatedPoints.iq || 0) * dampen);
+                        // 스탯 계산 적용 (균형 패치: 60포인트 투자 시 5배)
+                        let speedMult = 1 + 4 * Math.sqrt((a.allocatedPoints.speed || 0) / 60);
+                        let shootMult = 1 + 4 * Math.sqrt((a.allocatedPoints.shoot || 0) / 60);
+                        let iqMult = 1 + 4 * Math.sqrt((a.allocatedPoints.iq || 0) / 60);
                         a.speed = original.speed * speedMult;
                         a.shoot = original.shoot * shootMult;
                         a.iq = original.iq * iqMult;
@@ -594,11 +600,10 @@
                         bluePlayers[i].animal.baseStats = { speed: originalRoster.speed, shoot: originalRoster.shoot, iq: originalRoster.iq };
                         // allocatedPoints가 있으면 적용, 없으면 0
                         if (!bluePlayers[i].animal.allocatedPoints) bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                        // 스탯 계산 적용
-                        const dampen = 0.04; const baseRate = 0.2;
-                        let speedMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.speed || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.speed || 0) * dampen);
-                        let shootMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.shoot || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.shoot || 0) * dampen);
-                        let iqMult = 1 + (baseRate * (bluePlayers[i].animal.allocatedPoints.iq || 0)) / Math.sqrt(1 + (bluePlayers[i].animal.allocatedPoints.iq || 0) * dampen);
+                        // 스탯 계산 적용 (균형 패치: 60포인트 투자 시 5배)
+                        let speedMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.speed || 0) / 60);
+                        let shootMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.shoot || 0) / 60);
+                        let iqMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.iq || 0) / 60);
                         bluePlayers[i].animal.speed = originalRoster.speed * speedMult;
                         bluePlayers[i].animal.shoot = originalRoster.shoot * shootMult;
                         bluePlayers[i].animal.iq = originalRoster.iq * iqMult;
@@ -814,7 +819,9 @@
     function openActionModal(animal, count) {
         targetAnimUid = animal.uid;
         document.getElementById('info-icon').innerText = animal.icon;
-        document.getElementById('info-name').innerHTML = `${animal.name} <span style="color:var(--red); font-size:1.2rem;">Lv.${animal.level}</span>`;
+        // 커스텀 이름이 있으면 커스텀 이름, 없으면 기본 이름 표시
+        let displayName = animal.customName || animal.name;
+        document.getElementById('info-name').innerHTML = `${displayName} <span style="color:var(--red); font-size:1.2rem;">Lv.${animal.level}</span>`;
         document.getElementById('info-grade').innerText = animal.grade;
         document.getElementById('info-grade').style.color = animal.color;
         
@@ -860,9 +867,12 @@
         bindStatButtons(animal);
     }
     function calculateMultiplier(points) {
-    const dampen = 0.04;   // 완만해지는 정도 (아까 줄인 값)
-    const baseRate = 0.2; // 기본 증가율 (10%)
-    return 1 + (baseRate * points) / Math.sqrt(1 + points * dampen);
+    // 새로운 균형 패치: 60포인트 투자 시 기본값의 5배, 루트로 수렴하는 성향
+    // 공식: 1 + 4 * sqrt(points / 60)
+    // points=0: 1배 (기본값)
+    // points=60: 5배 (목표값)
+    // points가 증가할수록 증가율이 완만해짐 (수렴 성향)
+    return 1 + 4 * Math.sqrt(points / 60);
 }
     
   function updateStatDisplay(animal) {
@@ -978,16 +988,14 @@
         
         animal.allocatedPoints[stat] = (animal.allocatedPoints[stat] || 0) + delta;
         
-        const dampen = 0.04; // 감쇠 계수 (포인트가 많아질수록 증가율이 완만해짐)
-        const baseRate = 0.2; // 1포인트당 기본 증가율 (10%)
-
+        // 균형 패치: calculateMultiplier 함수 사용 (60포인트 = 5배)
         let speedPoints = animal.allocatedPoints.speed || 0;
         let shootPoints = animal.allocatedPoints.shoot || 0;
         let iqPoints = animal.allocatedPoints.iq || 0;
 
-        let speedMultiplier = 1 + (baseRate * speedPoints) / Math.sqrt(1 + speedPoints * dampen);
-        let shootMultiplier = 1 + (baseRate * shootPoints) / Math.sqrt(1 + shootPoints * dampen);
-        let iqMultiplier = 1 + (baseRate * iqPoints) / Math.sqrt(1 + iqPoints * dampen);
+        let speedMultiplier = calculateMultiplier(speedPoints);
+        let shootMultiplier = calculateMultiplier(shootPoints);
+        let iqMultiplier = calculateMultiplier(iqPoints);
         animal.speed = animal.baseStats.speed * speedMultiplier;
         animal.shoot = animal.baseStats.shoot * shootMultiplier;
         animal.iq = animal.baseStats.iq * iqMultiplier;
@@ -1021,6 +1029,13 @@
     function sellCurrent() {
         let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
         if(!anim) return;
+        
+        // 즐겨찾기된 동물은 판매 불가
+        if (anim.favorite) {
+            alert(`❤️ ${anim.icon} ${anim.name}은(는) 즐겨찾기되어 있어 판매할 수 없습니다.\n\n즐겨찾기를 해제한 후 다시 시도하세요.`);
+            return;
+        }
+        
         const sellPrice = anim.level * 100;
         if(confirm(`${anim.icon} ${anim.name} Lv.${anim.level}을(를) ${sellPrice}💰에 판매하시겠습니까?`)) {
             state.gold += sellPrice;
@@ -1143,6 +1158,54 @@ function toggleFavorite() {
     }
     
     saveData();
+}
+    
+function renameAnimal() {
+    // 1. 인벤토리(ownedAnimals)에서 먼저 동물 찾기
+    let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
+    
+    // 2. 인벤토리에 없다면? 출전 중인 동물(players의 blue팀)에서 찾기!
+    if (!anim) {
+        let activePlayer = players.find(p => p.team === 'blue' && p.animal && p.animal.uid === targetAnimUid);
+        if (activePlayer) anim = activePlayer.animal;
+    }
+
+    // 3. 그래도 못 찾으면 에러 방지용 종료
+    if (!anim) return;
+    
+    // 현재 이름 표시
+    let currentName = anim.customName || anim.name;
+    let newName = prompt(`동물의 새 이름을 입력하세요.\n\n현재 이름: ${currentName}`, currentName);
+    
+    // 취소 버튼 누름
+    if (newName === null) return;
+    
+    // 공백만 입력한 경우
+    if (newName.trim().length === 0) {
+        alert('이름은 비워둘 수 없습니다.');
+        return;
+    }
+    
+    // 이름 길이 제한 (10자 이내)
+    if (newName.length > 10) {
+        alert('이름은 10자 이내여야 합니다.');
+        return;
+    }
+    
+    // 커스텀 이름 저장
+    anim.customName = newName.trim();
+    
+    // UI 업데이트 (모달에 표시되는 이름 변경)
+    document.getElementById('info-name').innerHTML = `${anim.customName} <span style="color:var(--red); font-size:1.2rem;">Lv.${anim.level}</span>`;
+    
+    // 인벤토리와 로스터 새로고침
+    renderInventory();
+    if (typeof updateRosterUI === 'function') updateRosterUI(); 
+    
+    // 저장
+    saveData();
+    
+    showEvent(`이름 변경: ${anim.customName}`, 50, 50, 'var(--gold)', '1.2rem');
 }
     
     // 일괄 작업 모달 (복사 버그 완벽 수정)
@@ -1287,8 +1350,26 @@ function toggleFavorite() {
     }
     
     function bulkSell() {
-        const filtered = getBulkFilteredAnimals();
-        if (filtered.length === 0) { alert('판매할 동물이 없습니다.'); return; }
+        let filtered = getBulkFilteredAnimals();
+        
+        // 즐겨찾기된 동물은 제외
+        const favoriteAnimals = filtered.filter(a => a.favorite);
+        filtered = filtered.filter(a => !a.favorite);
+        
+        if (filtered.length === 0) { 
+            if (favoriteAnimals.length > 0) {
+                alert('❤️ 즐겨찾기된 동물은 판매할 수 없습니다.\n\n판매 가능한 동물이 없습니다.');
+            } else {
+                alert('판매할 동물이 없습니다.');
+            }
+            return; 
+        }
+        
+        // 즐겨찾기된 동물이 있으면 경고 메시지에 포함
+        let excludedMsg = '';
+        if (favoriteAnimals.length > 0) {
+            excludedMsg = `\n\n⭐ 즐겨찾기 제외: ${favoriteAnimals.length}마리`;
+        }
         
         // Epic 이상 등급 확인
         const highGradeAnimals = filtered.filter(a => a.grade === 'Epic' || a.grade === 'Legendary');
@@ -1297,7 +1378,7 @@ function toggleFavorite() {
         if (highGradeCount > 0) {
             // Epic/Legendary가 포함된 경우 강화된 경고
             const animalList = highGradeAnimals.map(a => `• ${a.icon} Lv.${a.level} ${a.grade}`).join('\n');
-            const firstConfirm = confirm(`⚠️ 경고! 판매 목록에 희귀 동물 포함!\n\n${animalList}\n\n총 ${highGradeCount}마리\n\n정말 판매하시겠습니까? (취소 권장)`);
+            const firstConfirm = confirm(`⚠️ 경고! 판매 목록에 희귀 동물 포함!\n\n${animalList}\n\n총 ${highGradeCount}마리${excludedMsg}\n\n정말 판매하시겠습니까? (취소 권장)`);
             if (!firstConfirm) return;
             
             // 2차 확인
@@ -1307,14 +1388,14 @@ function toggleFavorite() {
             const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
             state.gold += totalGold;
             ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
-            alert(`✨ ${totalGold}💰 획득!\n\n${highGradeCount}마리 판매됨`);
+            alert(`✨ ${totalGold}💰 획득!\n\n${highGradeCount}마리 판매됨${excludedMsg}`);
         } else {
             // 일반 동물만 판매
             const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
-            if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?`)) {
+            if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?${excludedMsg}`)) {
                 state.gold += totalGold;
                 ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
-                alert(`✨ ${totalGold}💰 획득!`);
+                alert(`✨ ${totalGold}💰 획득!${excludedMsg}`);
             } else {
                 return;
             }
@@ -1536,7 +1617,7 @@ function toggleFavorite() {
         // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
         syncPlayerStats();
         
-        loadData(); applyEnemyStats(); updateRosterUI(); updateUI(); requestAnimationFrame(gameLoop); 
+        loadData(); applyEnemyStats(); updateRosterUI(); updateUI(); resetPositions('red'); requestAnimationFrame(gameLoop); 
     }
     
     function syncPlayerStats() {
@@ -1554,9 +1635,9 @@ function toggleFavorite() {
 
     function applyEnemyStats() {
         let stageMul = state.stage - 1;
-        let rSpeed = Math.min(1.4, 0.55 + stageMul * 0.025);
-        let rShoot = Math.min(98, 33 + stageMul * 5.2);
-        let rIq = Math.min(100, 24 + stageMul * 4.8);
+        let rSpeed = Math.min(5.5, 0.55 + Math.sqrt(stageMul) * 0.5);
+        let rShoot = Math.min(98, 33 + stageMul * 7);
+        let rIq = Math.min(100, 24 + stageMul * 7);
         state.redStats = { maxSpeed: rSpeed, accel: 0.055 + stageMul * 0.003, shoot: rShoot, iq: rIq };
     }
 
@@ -1572,6 +1653,24 @@ function toggleFavorite() {
 
     function gameLoop() {
         if (!isResetting && (state.gameSpeed === 1 || state.time % 2 === 0)) { updateBall(); updatePlayers(); }
+        
+        // 라운드 시작 대기 중 - 모든 선수가 자리에 도착했는지 확인
+        if (waitingForPlayersArrive) {
+            let allArrived = players.every(p => Math.hypot(p.tx - p.x, p.ty - p.y) < 1);
+            let minTimeElapsed = state.time - roundResetStartTime > 90; // 최소 1.5초
+            
+            if (allArrived && minTimeElapsed) {
+                // 모든 선수 도착 완료 - PLAY! 표시하고 경기 시작
+                showEvent("PLAY!", 50, 40, "var(--gold)", "3rem");
+                let baselinePlayer = players.find(p => p.team === possessionTeamForRound && p.roleIdx === 1);
+                ball.holder = baselinePlayer;
+                ball.lastHolder = baselinePlayer;
+                ball.state = 'held';
+                waitingForPlayersArrive = false;
+                isResetting = false;
+            }
+        }
+        
         state.time++; draw(); requestAnimationFrame(gameLoop);
     }
 
@@ -1581,22 +1680,41 @@ function toggleFavorite() {
     }
 
     function resetPositions(concedingTeam) {
-        isResetting = true; ball.state = 'held'; ball.isGoal = false; ball.isFake = false;
+        isResetting = true;
+        ball.isGoal = false;
+        ball.isFake = false;
         if (ball.fakeBallEl && ball.fakeBallEl.parentNode) ball.fakeBallEl.remove();
-        ball.fakeBallEl = null; ball.fakeHolder = null; ball.fakeTeam = null;
+        ball.fakeBallEl = null;
+        ball.fakeHolder = null;
+        ball.fakeTeam = null;
+        ball.shooter = null;
+        
+        // 선수들: 현재 위치 유지, 제 자리만 설정 (자연스럽게 걸어가도록)
         players.forEach(p => { 
-            p.tx = p.team === 'blue' ? 30 : 70; p.ty = 20 + p.roleIdx * 30; p.x = p.tx; p.y = p.ty; p.vx = 0; p.vy = 0; 
+            p.tx = p.team === 'blue' ? 30 : 70; p.ty = 20 + p.roleIdx * 30;
+            // x, y는 현재 위치 유지 (순간이동 안 함!)
+            p.vx = 0; p.vy = 0; 
             p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; 
             if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
         });
         
-        let possessionTeam = concedingTeam;
-        let baselinePlayer = players.find(p => p.team === possessionTeam && p.roleIdx === 1);
-        ball.holder = baselinePlayer; ball.lastHolder = baselinePlayer;
-        ball.x = baselinePlayer.x; ball.y = baselinePlayer.y; ball.z = 10; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+        possessionTeamForRound = concedingTeam;
         
+        // 진팀 미드만 공을 가져가기 (다른 선수들은 무시)
+        let midPlayer = players.find(p => p.team === concedingTeam && p.roleIdx === 1);
+        ball.holder = midPlayer;
+        ball.lastHolder = midPlayer;
+        ball.state = 'held'; // 미드가 공을 들도록
+        // 공의 위치는 명시적으로 설정하지 않음 - updateBall에서 미드를 따라가게 됨
+        ball.vx = 0;
+        ball.vy = 0;
+        ball.vz = 0;
+        
+        // READY 표시 - 선수들이 이동 시작
         showEvent("READY", 50, 40, "white", "2.5rem");
-        setTimeout(() => { showEvent("PLAY!", 50, 40, "var(--gold)", "3rem"); isResetting = false; }, 1500);
+        isResetting = false; // updatePlayers 실행해서 선수들이 걸어가도록
+        roundResetStartTime = state.time;
+        waitingForPlayersArrive = true; // gameLoop에서 선수 도착 확인 시작
     }
 
     function endStage(isWin) {
@@ -1666,7 +1784,7 @@ function toggleFavorite() {
             return;
         }
         
-        p.isShooting = true; ball.lastHolder = p; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team; 
+        p.isShooting = true; ball.lastHolder = p; ball.shooter = p; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team; 
         let shootProb = overrideProb !== null ? overrideProb : (p.team === 'blue' ? p.animal.shoot : state.redStats.shoot);
         if (p.team === 'blue' && p.animal.id === 'parrot' && (p.flyTimer > 0 || p.flightBuffTimer > 0)) shootProb = Math.min(100, shootProb + 30);
         const hoopX = p.team === 'blue' ? 92 : 8;
@@ -1703,28 +1821,70 @@ function toggleFavorite() {
         let pts = ball.points || 2;
         if (team === 'blue') state.scoreB += pts; else state.scoreR += pts;
         
-        let scorerName = "적군"; let scorerIcon = "🔥"; let color = "var(--red)";
+        let scorerName = "적군"; let scorerIcon = "🔥"; let color = "#ef4444";
         if (team === 'blue') {
-            let blueScorer = (ball.lastHolder && ball.lastHolder.team === 'blue') ? ball.lastHolder : players.find(p => p.team === 'blue');
-            scorerName = blueScorer.animal.name; scorerIcon = blueScorer.animal.icon; color = "var(--blue)";
+            // 정확한 득점자 판정: ball.shooter를 사용 (슈팅한 선수)
+            let blueScorer = ball.shooter && ball.shooter.team === 'blue' ? ball.shooter : (ball.lastHolder && ball.lastHolder.team === 'blue' ? ball.lastHolder : players.find(p => p.team === 'blue'));
+            // 커스텀 이름이 있으면 표시, 없으면 기본 이름
+            scorerName = blueScorer.animal.customName || blueScorer.animal.name; 
+            scorerIcon = blueScorer.animal.icon; 
+            color = "#3b82f6";
             state.gold += pts * 20; showEvent(`+${pts*20}💰`, 50, 60, "var(--gold)", "1.5rem"); saveData();
         }
         updateUI();
 
-        const popup = document.createElement('div'); popup.className = 'event-text anim-popup';
-        popup.innerHTML = `<span style="font-size:0.6em; color:var(--gold);">${pts} POINTS!</span><br>GOAL!<br><span style="font-size:0.7em">${scorerIcon} ${scorerName}</span>`;
-        popup.style.left = `50%`; popup.style.top = `35%`; popup.style.color = color; popup.style.fontSize = "3rem"; popup.style.textAlign = "center"; popup.style.lineHeight = "1.1";
-        court.appendChild(popup); setTimeout(() => popup.remove(), 1500);
+        // 스포츠 경기 스타일 득점 메시지
+        const popup = document.createElement('div'); 
+        popup.style.position = 'absolute';
+        popup.style.left = '50%';
+        popup.style.top = '30%';
+        popup.style.transform = 'translate(-50%, -50%)';
+        popup.style.pointerEvents = 'none';
+        popup.style.zIndex = '50';
+        popup.style.fontFamily = "'Black Han Sans', sans-serif";
+        popup.style.textAlign = 'center';
+        
+        // 포인트 - 흰색으로 변경 (가독성 향상, 글로우 감음)
+        popup.innerHTML = `<div style="font-size:4.5rem; font-weight:900; color:#ffffff; text-shadow:0 0 8px ${color}, 0 4px 8px rgba(0,0,0,0.9); line-height:1; margin-bottom:10px;">${pts}</div>`;
+        popup.innerHTML += `<div style="font-size:1.5rem; font-weight:900; color:#ffd700; text-shadow:0 0 4px rgba(255,215,0,0.6), 0 2px 4px rgba(0,0,0,0.9); letter-spacing:0.1em; margin-bottom:15px;">POINTS!</div>`;
+        popup.innerHTML += `<div style="font-size:1.8rem; font-weight:800; color:#ffffff; text-shadow:0 0 6px ${color}, 0 2px 4px rgba(0,0,0,0.8); letter-spacing:0.05em;">${scorerIcon} ${scorerName}</div>`;
+        
+        // 페이드 인 + 바운스 애니메이션
+        popup.style.animation = 'none';
+        popup.style.opacity = '0';
+        popup.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        
+        court.appendChild(popup);
+        
+        // 애니메이션 시작
+        setTimeout(() => {
+            popup.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            popup.style.opacity = '1';
+            popup.style.transform = 'translate(-50%, -50%) scale(1)';
+        }, 10);
+        
+        setTimeout(() => {
+            popup.style.transition = 'all 0.3s ease-out';
+            popup.style.opacity = '0';
+            popup.style.transform = 'translate(-50%, -50%) scale(0.8) translateY(-50px)';
+        }, 1300);
+        
+        setTimeout(() => popup.remove(), 1650);
 
         if (state.scoreB >= 15) { endStage(true); return; }
         if (state.scoreR >= 15) { endStage(false); return; }
-        setTimeout(() => resetPositions(team === 'blue' ? 'red' : 'blue'), 1000); 
-    }
+        
+        // 다음 라운드 준비 (라운드 초기화는 resetPositions에서 담당)
+        let concedingTeam = team === 'blue' ? 'red' : 'blue';
+        resetPositions(concedingTeam); 
+    } 
+    
 
     function updatePlayers() {
         const possessionTeam = ball.holder ? ball.holder.team : (ball.state === 'pass' ? ball.targetTeam : null);
         let closestToBall = null;
-        if (ball.state === 'loose' && ball.z < 30) closestToBall = players.filter(p => p.stunTimer <= 0).reduce((prev, curr) => !prev || Math.hypot(curr.x - ball.x, curr.y - ball.y) < Math.hypot(prev.x - ball.x, prev.y - ball.y) ? curr : prev, null);
+        // 준비 단계에서는 공에 집착하지 않음 (진팀 미드만 관심)
+        if (!waitingForPlayersArrive && ball.state === 'loose' && ball.z < 30) closestToBall = players.filter(p => p.stunTimer <= 0).reduce((prev, curr) => !prev || Math.hypot(curr.x - ball.x, curr.y - ball.y) < Math.hypot(prev.x - ball.x, prev.y - ball.y) ? curr : prev, null);
 
         players.forEach(p => {
             // 스턴 상태 처리
@@ -1773,7 +1933,7 @@ function toggleFavorite() {
             if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.invisible > 0 ? 1.25 : 1); currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 2.5; } 
             else { targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1); currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
 
-            if (p.team === 'blue' && p.animal.skill && p.skillUsesLeft > 0) {
+            if (p.team === 'blue' && p.animal.skill && p.skillUsesLeft > 0 && !waitingForPlayersArrive) {
                 let skillUsed = false; let enemies = players.filter(e => e.team === 'red'); let distToHoop = Math.hypot(p.x - 92, p.y - 50);
                 let skillProbability = Math.random() * 100;
                 
@@ -1811,7 +1971,7 @@ function toggleFavorite() {
                             let dy = e.y - p.y;
                             let dist = Math.hypot(dx, dy);
                             if (dist > 0) {
-                                e.slowTimer = 90; // 1.5초간 둔화
+                                e.slowTimer = 60; // 1초간 둔화
                                 // 방향 고정 (도망치는 방향으로 이동이 고정됨)
                                 e.fearDir = { dx: dx / dist, dy: dy / dist };
                                 // 속도 직접 설정 (추가하지 않음)
@@ -1898,7 +2058,8 @@ function toggleFavorite() {
                         createMagicPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y, '#c084fc');
                         createVfx(p.x, p.y, 'magic', '#f472b6'); createVfx(cuttingTeammate.x, cuttingTeammate.y, 'magic', '#f472b6');
                         createRainbowPath(p.x, p.y, cuttingTeammate.x, cuttingTeammate.y);
-                        ball.holder = cuttingTeammate; ball.lastHolder = cuttingTeammate; ball.x = cuttingTeammate.x; ball.y = cuttingTeammate.y; 
+                        ball.holder = cuttingTeammate; ball.lastHolder = cuttingTeammate; ball.x = cuttingTeammate.x; ball.y = cuttingTeammate.y;
+                        cuttingTeammate.stealImmune = 60; // 1초 동안 공을 뺏기지 않음
                         setTimeout(() => createVfx(cuttingTeammate.x, cuttingTeammate.y, 'spark', '#ffd700'), 100); skillUsed = true; 
                     } 
                 }
@@ -1910,57 +2071,62 @@ function toggleFavorite() {
             let hoopX = p.team === 'blue' ? 92 : 8;
             if (Math.hypot(p.tx - p.x, p.ty - p.y) < 0.5) { p.tx += (Math.random() - 0.5) * 5; p.ty += (Math.random() - 0.5) * 5; }
 
-            if (ball.state === 'loose') {
-                if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
-                if (p.cooldown <= 0 && p.flyTimer <= 0 && p.stealImmune <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 4) { ball.holder = p; ball.lastHolder = p; ball.state = 'held'; }
-            } 
-            else if (ball.state === 'held' || ball.state === 'pass' || ball.state === 'shoot') {
-                // 가짜 공을 든 플레이어도 진짜 공을 든 것처럼 행동
-                let isFakeHolder = ball.isFake && ball.fakeHolder === p;
-                if (p === ball.holder || isFakeHolder) {
-                    p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85; 
-                    let distToHoop = Math.hypot(p.x - p.tx, p.y - p.ty); let distToDef = Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y);
-                    let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
-                    
-                    // IQ 기반 판단 로직: IQ가 높을수록 패스가 불리할 때 돌파 시도
-                    let iqFactor = iqStat / 50; // IQ 50 기준 1배
-                    let passTendency = (p.team === 'blue' ? p.animal.passRate : 0.35) * 0.35;
-                    
-                    // 곰 스킬 사용 중에는 패스 확률 0
-                    if (p.stealImmune > 0) passTendency = 0;
-                    
-                    // 수비수가 근처에 있을 때 IQ가 높으면 패스 확률 감소, 대신 돌파 시도
-                    if (distToDef < 6 && distToHoop > 15) {
-                        // IQ가 높을수록 패스 확률 대폭 감소 (최대 80% 감소)
-                        passTendency *= Math.max(0.1, 1 - (iqFactor - 1) * 0.8);
-                        // IQ가 높으면 돌파 시도 (수비수를 우회하여 전진)
-                        if (iqFactor > 1.2 && p.cooldown <= 0 && p.flyTimer <= 0) {
-                            // 수비수 뒤로 우회 시도
-                            p.tx = p.matchup.x + (hoopX - p.matchup.x) * 0.5;
-                            p.ty = p.matchup.y + (Math.random() > 0.5 ? 15 : -15);
-                            targetSpeed *= 1.3; // 속도 증가
+            if (waitingForPlayersArrive) {
+                // 준비 단계: 선수들이 자기 자리로 전력질주
+                targetSpeed *= 2.5; // 전력질주 (일반 속도의 2.5배)
+            } else {
+                if (ball.state === 'loose') {
+                    if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
+                    if (p.cooldown <= 0 && p.flyTimer <= 0 && p.stealImmune <= 0 && Math.hypot(p.x - ball.x, p.y - ball.y) < 4) { ball.holder = p; ball.lastHolder = p; ball.state = 'held'; }
+                } 
+                else if (ball.state === 'held' || ball.state === 'pass' || ball.state === 'shoot') {
+                    // 가짜 공을 든 플레이어도 진짜 공을 든 것처럼 행동
+                    let isFakeHolder = ball.isFake && ball.fakeHolder === p;
+                    if (p === ball.holder || isFakeHolder) {
+                        p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85; 
+                        let distToHoop = Math.hypot(p.x - p.tx, p.y - p.ty); let distToDef = Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y);
+                        let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
+                        
+                        // IQ 기반 판단 로직: IQ가 높을수록 패스가 불리할 때 돌파 시도
+                        let iqFactor = iqStat / 50; // IQ 50 기준 1배
+                        let passTendency = (p.team === 'blue' ? p.animal.passRate : 0.35) * 0.35;
+                        
+                        // 곰 스킬 사용 중에는 패스 확률 0
+                        if (p.stealImmune > 0) passTendency = 0;
+                        
+                        // 수비수가 근처에 있을 때 IQ가 높으면 패스 확률 감소, 대신 돌파 시도
+                        if (distToDef < 6 && distToHoop > 15) {
+                            // IQ가 높을수록 패스 확률 대폭 감소 (최대 80% 감소)
+                            passTendency *= Math.max(0.1, 1 - (iqFactor - 1) * 0.8);
+                            // IQ가 높으면 돌파 시도 (수비수를 우회하여 전진)
+                            if (iqFactor > 1.2 && p.cooldown <= 0 && p.flyTimer <= 0) {
+                                // 수비수 뒤로 우회 시도
+                                p.tx = p.matchup.x + (hoopX - p.matchup.x) * 0.5;
+                                p.ty = p.matchup.y + (Math.random() > 0.5 ? 15 : -15);
+                                targetSpeed *= 1.3; // 속도 증가
+                            }
                         }
+                        
+                        let currentShootRange = (p.team === 'blue' ? p.animal.shootRange : 22) * 0.65;
+                        if (p.flyTimer > 0 && distToHoop < 10) shoot(p);
+                        else if (cuttingTeammate && p.cooldown <= 0 && p.flyTimer <= 0 && p.invisible <= 0 && Math.random() < passTendency) { triggerPass(p, cuttingTeammate); }
+                        else if (distToHoop < currentShootRange && p.cooldown <= 0 && p.invisible <= 0) { shoot(p); }
+                        else if (distToHoop > 25 && p.cooldown <= 0 && p.invisible <= 0 && Math.random() < 0.003) { shoot(p); }
+                        // IQ 기반 패스 판단: IQ가 높으면 패스 확률 감소 (곰 스킬 사용 중에는 패스 안 함)
+                        // 가짜 공持有자는 패스 불가 (슈팅만 가능)
+                        else if (!ball.isFake && p.stealImmune <= 0 && p.invisible <= 0 && distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < 0.3 * Math.max(0.5, 1 - (iqFactor - 1) * 0.5)) { let teammates = players.filter(t => t.team === p.team && t !== p); triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]); }
+                    } else if (p.team === possessionTeam) {
+                        // IQ가 높을수록 컷팅(돌파) 빈도 증가
+                        if (!p.isCutting && Math.random() < 0.005 * iqStat) { p.isCutting = true; p.cutTimer = 80; }
+                        if (p.isCutting) { p.tx = hoopX; p.ty = 50 + (Math.random()*10 - 5); targetSpeed *= 1.4; } 
+                        else { p.tx = p.team === 'blue' ? 65 + Math.sin(state.time*0.03)*8 : 35 - Math.sin(state.time*0.03)*8; p.ty = p.roleIdx === 0 ? 50 : (p.roleIdx === 1 ? 15 : 85); targetSpeed *= 0.7; }
+                    } else {
+                        if (ball.holder === p.matchup) {
+                            p.tx = p.matchup.x; p.ty = p.matchup.y; targetSpeed *= 0.85; 
+                            // IQ가 높을수록 스틸 확률 증가
+                            if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0 && p.matchup.stealImmune <= 0 && p.matchup.invisible <= 0 && Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
+                        } else { let defHoopX = p.team === 'blue' ? 10 : 90; p.tx = p.matchup.x + (defHoopX - p.matchup.x) * 0.3; p.ty = p.matchup.y + (50 - p.matchup.y) * 0.3; targetSpeed *= p.matchup.isCutting ? 1.3 : 0.7; }
                     }
-                    
-                    let currentShootRange = (p.team === 'blue' ? p.animal.shootRange : 22) * 0.65;
-                    if (p.flyTimer > 0 && distToHoop < 10) shoot(p);
-                    else if (cuttingTeammate && p.cooldown <= 0 && p.flyTimer <= 0 && p.invisible <= 0 && Math.random() < passTendency) { triggerPass(p, cuttingTeammate); }
-                    else if (distToHoop < currentShootRange && p.cooldown <= 0 && p.invisible <= 0) { shoot(p); }
-                    else if (distToHoop > 25 && p.cooldown <= 0 && p.invisible <= 0 && Math.random() < 0.003) { shoot(p); }
-                    // IQ 기반 패스 판단: IQ가 높으면 패스 확률 감소 (곰 스킬 사용 중에는 패스 안 함)
-                    // 가짜 공持有자는 패스 불가 (슈팅만 가능)
-                    else if (!ball.isFake && p.stealImmune <= 0 && p.invisible <= 0 && distToDef < 4 && distToHoop > 20 && p.cooldown <= 0 && p.flyTimer <= 0 && Math.random() < 0.3 * Math.max(0.5, 1 - (iqFactor - 1) * 0.5)) { let teammates = players.filter(t => t.team === p.team && t !== p); triggerPass(p, teammates[Math.floor(Math.random() * teammates.length)]); }
-                } else if (p.team === possessionTeam) {
-                    // IQ가 높을수록 컷팅(돌파) 빈도 증가
-                    if (!p.isCutting && Math.random() < 0.005 * iqStat) { p.isCutting = true; p.cutTimer = 80; }
-                    if (p.isCutting) { p.tx = hoopX; p.ty = 50 + (Math.random()*10 - 5); targetSpeed *= 1.4; } 
-                    else { p.tx = p.team === 'blue' ? 65 + Math.sin(state.time*0.03)*8 : 35 - Math.sin(state.time*0.03)*8; p.ty = p.roleIdx === 0 ? 50 : (p.roleIdx === 1 ? 15 : 85); targetSpeed *= 0.7; }
-                } else {
-                    if (ball.holder === p.matchup) {
-                        p.tx = p.matchup.x; p.ty = p.matchup.y; targetSpeed *= 0.85; 
-                        // IQ가 높을수록 스틸 확률 증가
-                        if (p.matchup.flyTimer <= 0 && Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y) < 5 && p.cooldown <= 0 && p.matchup.stunTimer <= 0 && p.matchup.stealImmune <= 0 && p.matchup.invisible <= 0 && Math.random() < 0.01 * iqStat) { showEvent("STEAL", p.x, p.y, p.team === 'blue' ? 'var(--blue)' : 'var(--red)', "1rem"); ball.holder = p; ball.lastHolder = p; p.cooldown = 30; p.matchup.cooldown = 40; }
-                    } else { let defHoopX = p.team === 'blue' ? 10 : 90; p.tx = p.matchup.x + (defHoopX - p.matchup.x) * 0.3; p.ty = p.matchup.y + (50 - p.matchup.y) * 0.3; targetSpeed *= p.matchup.isCutting ? 1.3 : 0.7; }
                 }
             }
 
@@ -2015,8 +2181,34 @@ function toggleFavorite() {
     }
 
     function showEvent(text, x, y, color, size="1.2rem") {
-        const div = document.createElement('div'); div.className = 'event-text anim-popup'; div.innerHTML = text; div.style.left = `${x}%`; div.style.top = `${y}%`; div.style.color = color; div.style.fontSize = size;
-        court.appendChild(div); setTimeout(() => div.remove(), 1500);
+        const div = document.createElement('div'); 
+        div.className = 'event-text';
+        div.innerHTML = text; 
+        div.style.left = `${x}%`; 
+        div.style.top = `${y}%`; 
+        div.style.color = color; 
+        div.style.fontSize = size;
+        // 글로우 줄임
+        div.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
+        div.style.opacity = '0';
+        div.style.transform = 'translate(-50%, 0) scale(0.3)';
+        div.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        court.appendChild(div); 
+        
+        // 애니메이션 시작
+        setTimeout(() => {
+            div.style.opacity = '1';
+            div.style.transform = 'translate(-50%, -30px) scale(1.2)';
+        }, 10);
+        
+        // 애니메이션 끝 (더 빨리)
+        setTimeout(() => {
+            div.style.transition = 'all 0.6s ease-out';
+            div.style.opacity = '0';
+            div.style.transform = 'translate(-50%, -60px) scale(1)';
+        }, 600);
+        
+        setTimeout(() => div.remove(), 1200);
     }
     
 </script>
