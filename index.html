@@ -371,6 +371,7 @@
         <div class="top-bar">
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="stage-info">STAGE <span id="ui-stage">1</span></div>
+                <button id="btn-stage-info" style="background: #333; border: none; color: #ffd700; font-weight: 900; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 1rem;" onclick="showStageInfo()">ℹ️</button>
                 <select id="stage-select" class="stage-select" onchange="changeStage(parseInt(this.value))"></select>
             </div>
             <div class="gold-box"><span>💰</span> <span id="ui-gold">2,500</span></div>
@@ -468,7 +469,7 @@
         { id: 'cat', name: '고양이', grade: 'Normal', speed: 0.7, accel: 0.05, shoot: 45, iq: 50, icon: '🐱', color: '#a8a29e', shootRange: 20, passRate: 0.4 }, 
         { id: 'pig', name: '돼지', grade: 'Normal', speed: 0.3, accel: 0.03, shoot: 55, iq: 60, icon: '🐷', color: '#a8a29e', shootRange: 15, passRate: 0.5 }, 
         
-        { id: 'giraffe', name: '지라프', grade: 'Epic', speed: 0.5, accel: 0.04, shoot: 75, iq: 65, icon: '🦒', color: '#a855f7', shootRange: 80, passRate: 0.2, skill: '다이렉트 슛', skillDesc: '현재 위치에서 즉시 상대 골대로 슛을 날립니다(60% 성공률).', maxUses: 3 }, 
+        { id: 'giraffe', name: '지라프', grade: 'Epic', speed: 0.5, accel: 0.04, shoot: 75, iq: 65, icon: '🦒', color: '#a855f7', shootRange: 80, passRate: 0.2, skill: '다이렉트 슛', skillDesc: '현재 위치에서 즉시 상대 골대로 슛을 날립니다(25% 성공률).', maxUses: 3 }, 
         { id: 'rabbit', name: '토끼', grade: 'Rare', speed: 0.9, accel: 0.1, shoot: 40, iq: 30, icon: '🐰', color: '#3b82f6', shootRange: 18, passRate: 0.5 },
         { id: 'owl', name: '부엉이', grade: 'Rare', speed: 0.5, accel: 0.05, shoot: 50, iq: 90, icon: '🦉', color: '#3b82f6', shootRange: 25, passRate: 0.6 },
         { id: 'kangaroo', name: '캥거루', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 60, iq: 50, icon: '🦘', color: '#3b82f6', shootRange: 35, passRate: 0.2 },
@@ -518,7 +519,7 @@
         return animal;
     }
 
-    let state = { stage: 1, maxStage: 1, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1 };
+    let state = { stage: 50, maxStage: 50, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1, redComposition: [] };
     let ownedAnimals = []; let selectedRosterIdx = 0; 
     let isGameRunning = false; let isResetting = false; let currentTabIdx = 1; 
     let targetAnimUid = null;
@@ -1633,12 +1634,81 @@ function renameAnimal() {
         });
     }
 
+    // 50스테이지 이상: 적이 스킬 타입을 가짐
+    // skillType: 'speedBoost' | 'marksman' | 'crowdControl' | 'passer' | null
     function applyEnemyStats() {
         let stageMul = state.stage - 1;
-        let rSpeed = Math.min(5.5, 0.55 + Math.sqrt(stageMul) * 0.5);
-        let rShoot = Math.min(98, 33 + stageMul * 7);
-        let rIq = Math.min(100, 24 + stageMul * 7);
+        // 속도는 루트 함수로 증가 (초반 빠름, 후반 완만) - 500스테이지 최대 3.8
+        let rSpeed = Math.min(3.8, 0.48 + Math.sqrt(stageMul) * 0.152);
+        // 슛 정확도는 스테이지가 올라갈수록 크게 증가
+        let rShoot = Math.min(98, 38 + stageMul * 8.5);
+        // 전술(IQ)도 스테이지가 올라갈수록 큰 폭으로 증가 (더 전략적인 움직임)
+        let rIq = Math.min(100, 28 + stageMul * 8);
         state.redStats = { maxSpeed: rSpeed, accel: 0.055 + stageMul * 0.003, shoot: rShoot, iq: rIq };
+        
+        // 50스테이지 이상: 적 구성 결정
+        state.redComposition = [];
+        if (state.stage >= 50) {
+            let stageOffset = state.stage - 50;
+            // 스테이지 50-67: 각 타입 1개씩 순차적으로 배치
+            if (stageOffset < 18) {
+                let types = ['speedBoost', 'marksman', 'crowdControl', 'passer'];
+                state.redComposition = [types[stageOffset % 4], types[(stageOffset + 1) % 4], types[(stageOffset + 2) % 4]];
+            } 
+            // 스테이지 68-85: 더 복잡한 조합
+            else if (stageOffset < 36) {
+                let offset2 = stageOffset - 18;
+                let basicTypes = [
+                    ['speedBoost', 'speedBoost', 'marksman'],
+                    ['marksman', 'marksman', 'crowdControl'],
+                    ['crowdControl', 'crowdControl', 'passer'],
+                    ['passer', 'speedBoost', 'crowdControl']
+                ];
+                state.redComposition = basicTypes[offset2 % basicTypes.length];
+            } 
+            // 스테이지 86+: 극단적인 구성
+            else {
+                let offset3 = stageOffset - 36;
+                let extremeTypes = [
+                    ['marksman', 'marksman', 'marksman'],
+                    ['crowdControl', 'crowdControl', 'crowdControl'],
+                    ['speedBoost', 'speedBoost', 'passer'],
+                    ['passer', 'passer', 'marksman']
+                ];
+                state.redComposition = extremeTypes[offset3 % extremeTypes.length];
+            }
+        }
+        
+        // red 플레이어들에게 스킬 타입 할당
+        players.filter(p => p.team === 'red').forEach((p, idx) => {
+            p.skillType = state.redComposition[idx] || null;
+            p.skillUsesLeft = p.skillType ? 1 : 0;
+            p.skillCooldown = 0;
+            p.markedTarget = null;
+            
+            // 스킬 타입에 따른 외형 설정 (모두 원형, 테두리만 다름)
+            if (p.skillType === 'speedBoost') {
+                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.boxShadow = 'inset 0 0 12px #fbbf24, 0 4px 6px rgba(0,0,0,0.4)';
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'solid'; // 일반 테두리
+            } else if (p.skillType === 'marksman') {
+                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderWidth = '4px';
+                p.el.style.borderStyle = 'double'; // 이중 테두리
+                p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
+            } else if (p.skillType === 'crowdControl') {
+                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'dashed'; // 점선 테두리
+                p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
+            } else if (p.skillType === 'passer') {
+                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'dotted'; // 점 형태 테두리
+                p.el.style.boxShadow = 'inset 0 0 10px #b8c5d6, 0 4px 6px rgba(0,0,0,0.4)';
+            }
+        });
     }
 
     function createPlayer(team, roleIdx) {
@@ -1648,7 +1718,17 @@ function renameAnimal() {
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        players.push({ el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0 });
+        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0 };
+        // red 플레이어만 스킬 타입 추가 (나중에 applyEnemyStats에서 할당)
+        if (team === 'red') {
+            player.skillType = null;
+            player.skillCooldown = 0;
+            player.markedTarget = null;
+            player.speedBoostTimer = 0;
+            // 스킬 타입에 따른 외형 초기화
+            player.skillShapeStyle = 'default';
+        }
+        players.push(player);
     }
 
     function gameLoop() {
@@ -1696,6 +1776,12 @@ function renameAnimal() {
             p.vx = 0; p.vy = 0; 
             p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; 
             if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
+            // 적 팀 스킬 초기화
+            if(p.team === 'red') {
+                p.skillCooldown = 0;
+                p.speedBoostTimer = 0;
+                p.markedTarget = null;
+            }
         });
         
         possessionTeamForRound = concedingTeam;
@@ -1931,7 +2017,79 @@ function renameAnimal() {
 
             let targetSpeed, currentAccel, iqStat;
             if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.invisible > 0 ? 1.25 : 1); currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 2.5; } 
-            else { targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1); currentAccel = state.redStats.accel; iqStat = state.redStats.iq; }
+            else { 
+                targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1); 
+                // speedBoost 스킬 활성화 중: 속도 1.5배 증가
+                if (p.speedBoostTimer > 0) targetSpeed *= 1.5;
+                currentAccel = state.redStats.accel; 
+                iqStat = state.redStats.iq; 
+            }
+
+            // === 적 팀 스킬 실행 (50스테이지 이상) ===
+            if (p.team === 'red' && p.skillType && !waitingForPlayersArrive && p.skillCooldown <= 0) {
+                let skillUsed = false;
+                let blueTeam = players.filter(e => e.team === 'blue');
+                
+                if (p.skillType === 'speedBoost') {
+                    // 속도 증가: 자신이 공을 들고 있을 때만 발동
+                    if (ball.holder === p && Math.random() < 0.015) {
+                        p.speedBoostTimer = 120; // 2초간 속도 1.5배
+                        createVfx(p.x, p.y, 'aura', '#fbbf24');
+                        skillUsed = true;
+                    }
+                } else if (p.skillType === 'marksman') {
+                    // 마크맨: 특정 선수 집중 마크 후 기절 거는 능력
+                    if (!p.markedTarget || p.markedTarget.stunTimer > 0 || !players.includes(p.markedTarget)) {
+                        // 새로운 대상 선택 (무작위)
+                        p.markedTarget = blueTeam[Math.floor(Math.random() * blueTeam.length)];
+                    }
+                    if (p.markedTarget && Math.hypot(p.x - p.markedTarget.x, p.y - p.markedTarget.y) < 8 && Math.random() < 0.02) {
+                        p.markedTarget.stunTimer = 60; // 1초 기절
+                        createVfx(p.markedTarget.x, p.markedTarget.y, 'freeze', '#ef4444');
+                        skillUsed = true;
+                    }
+                } else if (p.skillType === 'crowdControl') {
+                    // 광역 기절: 공을 들고 있을 때 근처 선수 모두 기절
+                    if (ball.holder === p && Math.random() < 0.01) {
+                        let nearbyEnemies = blueTeam.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 20);
+                        if (nearbyEnemies.length > 0) {
+                            nearbyEnemies.forEach(e => {
+                                e.stunTimer = 90; // 1.5초 기절
+                                createVfx(e.x, e.y, 'roar', '#ef4444');
+                            });
+                            skillUsed = true;
+                        }
+                    }
+                } else if (p.skillType === 'passer') {
+                    // 롱 패스: 매우 긴 거리의 정확한 패스
+                    if (ball.holder === p && Math.random() < 0.012) {
+                        let teammates = players.filter(t => t.team === 'red' && t !== p && t.stunTimer <= 0);
+                        if (teammates.length > 0) {
+                            let target = teammates[Math.floor(Math.random() * teammates.length)];
+                            // 롱 패스: 정확도 높고 거리 멀게
+                            ball.state = 'pass';
+                            ball.holder = null;
+                            ball.targetTeam = 'red';
+                            let leadX = target.x + target.vx * 20;
+                            let leadY = target.y + target.vy * 20;
+                            const time = Math.hypot(leadX - p.x, leadY - p.y) / 2.0; // 일반 패스보다 빠름
+                            ball.vx = (leadX - p.x) / time * 0.9;
+                            ball.vy = (leadY - p.y) / time * 0.9;
+                            ball.vz = 6;
+                            p.cooldown = 25;
+                            createMagicPath(p.x, p.y, target.x, target.y, '#fbbf24');
+                            skillUsed = true;
+                        }
+                    }
+                }
+                
+                if (skillUsed) p.skillCooldown = 120; // 2초 쿨다운
+            }
+            
+            // 적 스킬 쿨다운 감소
+            if (p.team === 'red' && p.skillCooldown > 0) p.skillCooldown--;
+            // speedBoost 타이머 감소
+            if (p.team === 'red' && p.speedBoostTimer > 0) p.speedBoostTimer--;
 
             if (p.team === 'blue' && p.animal.skill && p.skillUsesLeft > 0 && !waitingForPlayersArrive) {
                 let skillUsed = false; let enemies = players.filter(e => e.team === 'red'); let distToHoop = Math.hypot(p.x - 92, p.y - 50);
@@ -1998,7 +2156,7 @@ function renameAnimal() {
                         skillUsed = true; 
                     } 
                 } 
-                else if (p.animal.id === 'giraffe') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 15) { createVfx(p.x, p.y, 'power', '#a855f7'); createVfx(p.x, p.y, 'ring', '#a855f7'); shoot(p, 15); skillUsed = true; } }
+                else if (p.animal.id === 'giraffe') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 15) { createVfx(p.x, p.y, 'power', '#a855f7'); createVfx(p.x, p.y, 'ring', '#a855f7'); shoot(p, 25); skillUsed = true; } }
                 else if (p.animal.id === 'fox') { 
                     // 적이 공을 들고 있을 때 가짜 공(초록색) 소환 후 뺏기 (라운드당 1회)
                     // 다른 여우가 이미 스킬 사용 중이면 불가
@@ -2073,7 +2231,7 @@ function renameAnimal() {
 
             if (waitingForPlayersArrive) {
                 // 준비 단계: 선수들이 자기 자리로 전력질주
-                targetSpeed *= 2.5; // 전력질주 (일반 속도의 2.5배)
+                targetSpeed *= 1.2; // 전력질주 (일반 속도의 1.2배)
             } else {
                 if (ball.state === 'loose') {
                     if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
@@ -2142,7 +2300,17 @@ function renameAnimal() {
                     p.fearDir = null;
                 }
             } else if (dist > 1) {
-                p.vx += ((dx / dist) * targetSpeed - p.vx) * currentAccel; p.vy += ((dy / dist) * targetSpeed - p.vy) * currentAccel; 
+                // 목표 속도 계산
+                let desiredVx = (dx / dist) * targetSpeed;
+                let desiredVy = (dy / dist) * targetSpeed;
+                // 가속도 적용
+                p.vx += (desiredVx - p.vx) * currentAccel;
+                p.vy += (desiredVy - p.vy) * currentAccel;
+                // 고속 이동 시 진동 방지: 목표에 너무 가까우면 속도를 줄임
+                if (dist < 2 && Math.hypot(p.vx, p.vy) > targetSpeed * 0.8) {
+                    p.vx *= 0.85;
+                    p.vy *= 0.85;
+                }
             } else { p.vx *= 0.7; p.vy *= 0.7; }
             p.x = Math.max(3, Math.min(97, p.x + p.vx)); p.y = Math.max(3, Math.min(97, p.y + p.vy));
         });
@@ -2209,6 +2377,41 @@ function renameAnimal() {
         }, 600);
         
         setTimeout(() => div.remove(), 1200);
+    }
+    
+    function showStageInfo() {
+        if (state.stage < 50) {
+            alert(`STAGE ${state.stage}\n일반 적팀`);
+            return;
+        }
+        
+        let skillNames = {
+            'speedBoost': '⚡ 속도 부스트',
+            'marksman': '🎯 마크맨',
+            'crowdControl': '💥 광역 기절',
+            'passer': '📍 롱 패스'
+        };
+        
+        let skillShapes = {
+            'speedBoost': '■ (네모)',
+            'marksman': '▦ (이중선)',
+            'crowdControl': '▬ (점선)',
+            'passer': '● (동그란)'
+        };
+        
+        let info = `STAGE ${state.stage} 적팀 구성\n\n`;
+        state.redComposition.forEach((skill, idx) => {
+            info += `선수 ${idx}: ${skillNames[skill] || '없음'} ${skillShapes[skill] || ''}\n`;
+        });
+        
+        // 스킬 설명 추가
+        info += `\n=== 능력 설명 ===\n`;
+        info += `■ ⚡ 속도 부스트\n공을 들 때 속도 1.5배 증가\n\n`;
+        info += `▦ 🎯 마크맨\n특정 선수를 집중 마크하며\n근거리에서 기절 시전\n\n`;
+        info += `▬ 💥 광역 기절\n공을 들 때 근처 모든 선수\n1.5초 기절\n\n`;
+        info += `● 📍 롱 패스\n매우 먼 거리의 정확한 패스\n팀원에게 패스`;
+        
+        alert(info);
     }
     
 </script>
