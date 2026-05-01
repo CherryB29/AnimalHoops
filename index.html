@@ -2196,7 +2196,7 @@ function renameAnimal() {
         let pts = ball.points || 2;
         if (team === 'blue') state.scoreB += pts; else state.scoreR += pts;
         
-        let scorerName = "적군"; let scorerIcon = "🔥"; let color = "#ef4444";
+        let scorerName = "적팀"; let scorerIcon = "🔥"; let color = "#ef4444";
         if (team === 'blue') {
             // 정확한 득점자 판정: ball.shooter를 사용 (슈팅한 선수)
             let blueScorer = ball.shooter && ball.shooter.team === 'blue' ? ball.shooter : (ball.lastHolder && ball.lastHolder.team === 'blue' ? ball.lastHolder : players.find(p => p.team === 'blue'));
