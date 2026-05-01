@@ -1656,8 +1656,8 @@ function renameAnimal() {
         });
         
         // 경기 완전 리셋 - 처음부터 다시 진행
-        isResetting = false;
-        waitingForPlayersArrive = false;
+        isResetting = true; // 경기 시작 전까지 리셋 상태로 유지
+        waitingForPlayersArrive = true; // 대기 상태로 설정
         
         // 선수들 위치 초기화 (즉시 제자리로)
         players.forEach(p => { 
@@ -1679,12 +1679,15 @@ function renameAnimal() {
         ball.y = midPlayer.y;
         ball.z = 8;
         
-        // READY 표시 후 2초 대기
+        // READY 표시 후 2초 대기 (이 동안 선수들은 움직일 수 없음)
         showEvent("READY", 50, 40, "white", "2.5rem");
+        roundResetStartTime = state.time;
         
-        // 2초 후 PLAY!
+        // 2초 후 PLAY! - 그제서야 경기 시작
         setTimeout(() => {
             showEvent("PLAY!", 50, 40, "var(--gold)", "3rem");
+            isResetting = false;
+            waitingForPlayersArrive = false;
         }, 2000);
         
         // 데이터 저장
@@ -1900,7 +1903,7 @@ function renameAnimal() {
     function applyEnemyStats() {
         let stageMul = state.stage - 1;
         // 속도는 루트 함수로 증가 (초반 빠름, 후반 완만) - 500스테이지 최대 3.8
-        let rSpeed = Math.min(3.8, 0.48 + Math.sqrt(stageMul) * 0.152);
+        let rSpeed = Math.min(2.5, 0.48 + Math.sqrt(stageMul) * 0.152);
         // 슛 정확도는 스테이지가 올라갈수록 크게 증가
         let rShoot = Math.min(98, 38 + stageMul * 8.5);
         // 전술(IQ)도 스테이지가 올라갈수록 큰 폭으로 증가 (더 전략적인 움직임)
@@ -1968,25 +1971,31 @@ function renameAnimal() {
             
             // 스킬 타입에 따른 외형 설정 (모두 원형, 테두리만 다름)
             if (p.skillType === 'speedBoost') {
-                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderRadius = '50%';
                 p.el.style.boxShadow = 'inset 0 0 12px #fbbf24, 0 4px 6px rgba(0,0,0,0.4)';
                 p.el.style.borderWidth = '3px';
-                p.el.style.borderStyle = 'solid'; // 일반 테두리
+                p.el.style.borderStyle = 'solid';
             } else if (p.skillType === 'marksman') {
-                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderRadius = '50%';
                 p.el.style.borderWidth = '4px';
-                p.el.style.borderStyle = 'double'; // 이중 테두리
+                p.el.style.borderStyle = 'double';
                 p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
             } else if (p.skillType === 'crowdControl') {
-                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderRadius = '50%';
                 p.el.style.borderWidth = '3px';
-                p.el.style.borderStyle = 'dashed'; // 점선 테두리
+                p.el.style.borderStyle = 'dashed';
                 p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
             } else if (p.skillType === 'passer') {
-                p.el.style.borderRadius = '50%'; // 원형
+                p.el.style.borderRadius = '50%';
                 p.el.style.borderWidth = '3px';
-                p.el.style.borderStyle = 'dotted'; // 점 형태 테두리
+                p.el.style.borderStyle = 'dotted';
                 p.el.style.boxShadow = 'inset 0 0 10px #b8c5d6, 0 4px 6px rgba(0,0,0,0.4)';
+            } else {
+                // 스킬 없음 - 기본 외형으로 완전 초기화
+                p.el.style.borderRadius = '';
+                p.el.style.boxShadow = '';
+                p.el.style.borderWidth = '';
+                p.el.style.borderStyle = '';
             }
         });
     }
