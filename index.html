@@ -30,9 +30,11 @@
         /* --- UI Components --- */
         #game-ui { display: none; flex-direction: column; height: 100%; width: 100%; opacity: 0; transition: opacity 0.5s ease; }
         .top-bar { padding: 15px 20px; background: rgba(0,0,0,0.9); display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #333; flex-shrink: 0; }
-        .top-bar .stage-info { font-weight: 900; font-size: 1.2rem; color: var(--red); font-family: 'Black Han Sans', sans-serif; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .top-bar .stage-info { font-weight: 900; font-size: 1.2rem; color: white; font-family: 'Black Han Sans', sans-serif; }
+        .top-bar .stage-info span { color: var(--red); text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); cursor: pointer; }
+        .top-bar .stage-info span:hover { text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
         .top-bar .gold-box { display: flex; align-items: center; gap: 8px; font-family: 'Black Han Sans', sans-serif; font-size: 1.5rem; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
-        .stage-select { appearance: none; background: rgba(255,255,255,0.07); border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 14px; font-size: 0.9rem; font-weight: 800; min-width: 70px; }
+        .stage-select { appearance: none; background: rgba(255,255,255,0.07); border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 14px; font-size: 0.85rem; font-weight: 800; min-width: 65px; }
 
         /* --- 구조 변경 (슬라이더 영역 스크롤 최적화) --- */
         #view-slider { flex: 1; width: 300%; display: flex; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
@@ -105,6 +107,10 @@
         .player { position: absolute; transform: translate(-50%, -50%); z-index: 6; display: flex; justify-content: center; align-items: center; transition: opacity 0.2s; }
         .player.blue { font-size: 30px; text-shadow: 0 4px 6px rgba(0,0,0,0.4); }
         .player.red { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f87171, var(--red)); border: 2px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.4); font-size: 12px; color: white; font-weight: bold; }
+        /* 적 플레이어 역할별 테두리 스타일 */
+        .player.red.role-0 { border: 3px solid white; border-style: solid; } /* 가드 - 흰 실선 */
+        .player.red.role-1 { border: 3px solid white; border-style: dashed; } /* 센터 - 흰 점선 */
+        .player.red.role-2 { border: 3px solid white; border-style: dotted; } /* 포워드 - 흰 점선 */
         .stun-fx { position: absolute; top: -15px; font-size: 14px; display: none; z-index: 7; animation: spin 1s linear infinite; text-shadow: none; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -370,9 +376,8 @@
     <div id="game-ui">
         <div class="top-bar">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div class="stage-info">STAGE <span id="ui-stage">1</span></div>
-                <button id="btn-stage-info" style="background: #333; border: none; color: #ffd700; font-weight: 900; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 1rem;" onclick="showStageInfo()">ℹ️</button>
-                <select id="stage-select" class="stage-select" onchange="changeStage(parseInt(this.value))"></select>
+                <div class="stage-info">STAGE <span id="ui-stage" onclick="openStageSelect()" style="cursor:pointer;">1</span></div>
+                <button id="btn-stage-info" style="background: #333; border: none; color: #ffd700; font-weight: 900; padding: 2px 6px; border-radius: 50%; cursor: pointer; font-size: 0.85rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;" onclick="showStageInfo()">i</button>
             </div>
             <div class="gold-box"><span>💰</span> <span id="ui-gold">2,500</span></div>
         </div>
@@ -469,7 +474,7 @@
         { id: 'cat', name: '고양이', grade: 'Normal', speed: 0.7, accel: 0.05, shoot: 45, iq: 50, icon: '🐱', color: '#a8a29e', shootRange: 20, passRate: 0.4 }, 
         { id: 'pig', name: '돼지', grade: 'Normal', speed: 0.3, accel: 0.03, shoot: 55, iq: 60, icon: '🐷', color: '#a8a29e', shootRange: 15, passRate: 0.5 }, 
         
-        { id: 'giraffe', name: '지라프', grade: 'Epic', speed: 0.5, accel: 0.04, shoot: 75, iq: 65, icon: '🦒', color: '#a855f7', shootRange: 80, passRate: 0.2, skill: '다이렉트 슛', skillDesc: '현재 위치에서 즉시 상대 골대로 슛을 날립니다(25% 성공률).', maxUses: 3 }, 
+        { id: 'giraffe', name: '지라프', grade: 'Epic', speed: 0.5, accel: 0.04, shoot: 75, iq: 65, icon: '🦒', color: '#a855f7', shootRange: 80, passRate: 0.2, skill: '다이렉트 슛', skillDesc: '현재 위치에서 즉시 상대 골대로 슛을 날립니다(40% 확률 발동).', maxUses: 3 },
         { id: 'rabbit', name: '토끼', grade: 'Rare', speed: 0.9, accel: 0.1, shoot: 40, iq: 30, icon: '🐰', color: '#3b82f6', shootRange: 18, passRate: 0.5 },
         { id: 'owl', name: '부엉이', grade: 'Rare', speed: 0.5, accel: 0.05, shoot: 50, iq: 90, icon: '🦉', color: '#3b82f6', shootRange: 25, passRate: 0.6 },
         { id: 'kangaroo', name: '캥거루', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 60, iq: 50, icon: '🦘', color: '#3b82f6', shootRange: 35, passRate: 0.2 },
@@ -1408,28 +1413,284 @@ function renameAnimal() {
         saveData();
     }
 
-    function updateStageSelect() {
-        const sel = document.getElementById('stage-select');
-        if (!sel) return;
-        sel.innerHTML = '';
-        for (let i = 1; i <= state.maxStage; i++) {
-            const opt = document.createElement('option'); 
-            opt.value = i; opt.innerText = `STAGE ${i}`;
-            if (i === state.stage) { opt.disabled = true; opt.style.color = '#666'; opt.selected = true; }
-            sel.appendChild(opt);
-        }
-    }
 
-    function updateUI() { document.getElementById('ui-gold').innerText = Math.floor(state.gold).toLocaleString(); document.getElementById('score-b').innerText = state.scoreB; document.getElementById('score-r').innerText = state.scoreR; document.getElementById('ui-stage').innerText = state.stage; updateStageSelect(); }
+    function updateUI() { document.getElementById('ui-gold').innerText = Math.floor(state.gold).toLocaleString(); document.getElementById('score-b').innerText = state.scoreB; document.getElementById('score-r').innerText = state.scoreR; document.getElementById('ui-stage').innerText = state.stage; }
+
+
+    function openStageSelect() {
+        let maxSelectable = Math.max(1, state.maxStage);
+        if (maxSelectable < 2) {
+            alert('아직 다른 스테이지를 선택할 수 없습니다.\n\n최소 스테이지 2 이상에서 다른 스테이지로 변경할 수 있습니다.');
+            return;
+        }
+        
+        // 스테이지 선택 모달 생성 (숫자 스크롤 방식)
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;justify-content:center;align-items:center;';
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'background:#1a1a1a;border:2px solid #444;border-radius:20px;padding:25px;width:90%;max-width:340px;text-align:center;';
+        
+        modal.innerHTML = `
+            <div style="font-family:'Black Han Sans';font-size:1.5rem;color:white;margin-bottom:5px;">STAGE SELECT</div>
+            <div style="font-size:0.8rem;color:#888;margin-bottom:15px;">숫자를 터치하거나 스크롤하세요</div>
+            
+            <div style="display:flex;justify-content:center;align-items:center;gap:15px;margin:20px 0;">
+                <button id="stage-decrease" style="width:50px;height:50px;border-radius:50%;background:#333;border:2px solid #555;color:white;font-size:1.8rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+                
+                <div style="position:relative;width:100px;height:80px;overflow:hidden;">
+                    <div id="stage-scroll-container" style="height:80px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none;text-align:center;">
+                        <div id="stage-scroll-list" style="padding:30px 0;"></div>
+                    </div>
+                    <div style="position:absolute;top:50%;left:0;right:0;height:32px;transform:translateY(-50%);border:2px solid var(--gold);border-radius:8px;pointer-events:none;box-shadow:0 0 10px rgba(255,215,0,0.3);"></div>
+                </div>
+                
+                <button id="stage-increase" style="width:50px;height:50px;border-radius:50%;background:#333;border:2px solid #555;color:white;font-size:1.8rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+            </div>
+            
+            <div style="font-size:1.2rem;font-weight:900;color:var(--gold);margin:10px 0;" id="stage-preview">STAGE ${state.stage}</div>
+            <div style="font-size:0.75rem;color:#666;margin-bottom:15px;" id="stage-info-text">현재 스테이지</div>
+            
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button id="stage-cancel-btn" style="flex:1;background:#333;color:#aaa;border:none;padding:12px;border-radius:10px;font-weight:900;cursor:pointer;font-size:0.9rem;">취소</button>
+                <button id="stage-confirm-btn" style="flex:1;background:var(--gold);color:#000;border:none;padding:12px;border-radius:10px;font-weight:900;cursor:pointer;font-size:0.9rem;">확인</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        const scrollContainer = document.getElementById('stage-scroll-container');
+        const scrollList = document.getElementById('stage-scroll-list');
+        const stagePreview = document.getElementById('stage-preview');
+        const stageInfoText = document.getElementById('stage-info-text');
+        const itemHeight = 32;
+        
+        let selectedStage = state.stage;
+        
+        // 스크롤 리스트 생성
+        for (let i = 1; i <= maxSelectable; i++) {
+            const item = document.createElement('div');
+            const isCurrent = i === state.stage;
+            item.style.cssText = `height:${itemHeight}px;line-height:${itemHeight}px;font-size:${i === selectedStage ? '1.5rem' : '1rem'};font-weight:${i === selectedStage ? '900' : '700'};color:${isCurrent ? '#666' : (i === selectedStage ? 'var(--gold)' : '#888')};cursor:pointer;transition:all 0.2s;`;
+            item.innerText = i;
+            item.dataset.stage = i;
+            
+            if (!isCurrent) {
+                item.onclick = () => {
+                    selectedStage = i;
+                    updateStagePreview();
+                    scrollToStage(i);
+                };
+            }
+            
+            scrollList.appendChild(item);
+        }
+        
+        // 현재 스테이지로 스크롤
+        setTimeout(() => {
+            scrollToStage(state.stage);
+        }, 50);
+        
+        function scrollToStage(stage) {
+            const targetScroll = (stage - 1) * itemHeight;
+            scrollContainer.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+        
+        function updateStagePreview() {
+            const isCurrent = selectedStage === state.stage;
+            stagePreview.innerText = `STAGE ${selectedStage}`;
+            stagePreview.style.color = isCurrent ? '#666' : 'var(--gold)';
+            stageInfoText.innerText = isCurrent ? '현재 스테이지 (변경 불가)' : `${selectedStage}스테이지로 변경`;
+            
+            const confirmBtn = document.getElementById('stage-confirm-btn');
+            if (isCurrent) {
+                confirmBtn.style.opacity = '0.4';
+                confirmBtn.style.pointerEvents = 'none';
+            } else {
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // + 버튼
+        document.getElementById('stage-increase').onclick = () => {
+            if (selectedStage < maxSelectable) {
+                selectedStage++;
+                updateStagePreview();
+                scrollToStage(selectedStage);
+            }
+        };
+        
+        // - 버튼
+        document.getElementById('stage-decrease').onclick = () => {
+            if (selectedStage > 1) {
+                selectedStage--;
+                updateStagePreview();
+                scrollToStage(selectedStage);
+            }
+        };
+        
+        // 스크롤 이벤트 - 더 빠른 반응
+        let scrollTimeout;
+        scrollContainer.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const scrollTop = scrollContainer.scrollTop;
+                const newIndex = Math.round(scrollTop / itemHeight) + 1;
+                if (newIndex >= 1 && newIndex <= maxSelectable && newIndex !== selectedStage) {
+                    selectedStage = newIndex;
+                    updateStagePreview();
+                }
+            }, 50);
+        });
+        
+        // 취소 버튼
+        document.getElementById('stage-cancel-btn').onclick = () => overlay.remove();
+        
+        // 확인 버튼
+        document.getElementById('stage-confirm-btn').onclick = () => {
+            if (selectedStage !== state.stage) {
+                changeStage(selectedStage);
+            }
+            overlay.remove();
+        };
+        
+        // 오버레이 클릭 시 닫기
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+        
+        updateStagePreview();
+    }
 
     function changeStage(stage) {
         if (!stage || stage < 1 || stage > state.maxStage) return;
-        if (stage >= state.stage) return;
+        if (stage === state.stage) return;
+        
+        console.log(`스테이지 변경 시작: ${state.stage} -> ${stage}`);
+        
         state.stage = stage;
-        applyEnemyStats(); 
-        state.scoreB = 0; state.scoreR = 0;
-        isResetting = true; resetPositions('blue');
-        saveData(); updateUI();
+        
+        // 적 stats 다시 적용 (스킬 타입 포함 모든 변경 사항 반영)
+        applyEnemyStats();
+        
+        // 적 플레이어 외형 업데이트 (스킬 타입에 따른 테두리 스타일)
+        players.filter(p => p.team === 'red').forEach((p, idx) => {
+            p.skillType = state.redComposition[idx] || null;
+            p.skillUsesLeft = p.skillType ? 1 : 0;
+            p.skillCooldown = 0;
+            p.markedTarget = null;
+            p.speedBoostTimer = 0;
+            
+            // 스킬 타입에 따른 외형 설정
+            if (p.skillType === 'speedBoost') {
+                p.el.style.borderRadius = '50%';
+                p.el.style.boxShadow = 'inset 0 0 12px #fbbf24, 0 4px 6px rgba(0,0,0,0.4)';
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'solid';
+            } else if (p.skillType === 'marksman') {
+                p.el.style.borderRadius = '50%';
+                p.el.style.borderWidth = '4px';
+                p.el.style.borderStyle = 'double';
+                p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
+            } else if (p.skillType === 'crowdControl') {
+                p.el.style.borderRadius = '50%';
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'dashed';
+                p.el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.4)';
+            } else if (p.skillType === 'passer') {
+                p.el.style.borderRadius = '50%';
+                p.el.style.borderWidth = '3px';
+                p.el.style.borderStyle = 'dotted';
+                p.el.style.boxShadow = 'inset 0 0 10px #b8c5d6, 0 4px 6px rgba(0,0,0,0.4)';
+            }
+        });
+        
+        // 스코어 초기화
+        state.scoreB = 0;
+        state.scoreR = 0;
+        updateUI();
+        
+        // 공 상태 완전 초기화
+        ball.state = 'loose';
+        ball.holder = null;
+        ball.lastHolder = null;
+        ball.shooter = null;
+        ball.vx = 0;
+        ball.vy = 0;
+        ball.vz = 0;
+        ball.isGoal = false;
+        ball.isFake = false;
+        ball.points = 2;
+        
+        // 가짜 공 제거
+        if (ball.fakeBallEl && ball.fakeBallEl.parentNode) {
+            ball.fakeBallEl.remove();
+        }
+        ball.fakeBallEl = null;
+        ball.fakeHolder = null;
+        ball.fakeTeam = null;
+        
+        // 선수들 스탯 동기화 (블루팀)
+        syncPlayerStats();
+        
+        // 선수들 버프/디버프 완전 초기화
+        players.forEach(p => {
+            p.stunTimer = 0;
+            p.slowTimer = 0;
+            p.flyTimer = 0;
+            p.flightBuffTimer = 0;
+            p.activeBuff = 0;
+            p.stealImmune = 0;
+            p.invisible = 0;
+            p.fearDir = null;
+            p.isShooting = false;
+            p.isCutting = false;
+            p.cutTimer = 0;
+            p.cooldown = 0;
+            p.skillCooldown = 0;
+            p.speedBoostTimer = 0;
+            p.markedTarget = null;
+            if (p.team === 'blue' && p.animal) {
+                p.skillUsesLeft = p.animal.maxUses || 0;
+            }
+        });
+        
+        // 경기 완전 리셋 - 처음부터 다시 진행
+        isResetting = false;
+        waitingForPlayersArrive = false;
+        
+        // 선수들 위치 초기화 (즉시 제자리로)
+        players.forEach(p => { 
+            p.x = p.team === 'blue' ? 30 : 70; 
+            p.y = 20 + p.roleIdx * 30; 
+            p.z = 0;
+            p.tx = p.team === 'blue' ? 30 : 70; 
+            p.ty = 20 + p.roleIdx * 30;
+            p.vx = 0;
+            p.vy = 0;
+        });
+        
+        // 레드팀이 공을 가지고 시작
+        let midPlayer = players.find(p => p.team === 'red' && p.roleIdx === 1);
+        ball.holder = midPlayer;
+        ball.lastHolder = midPlayer;
+        ball.state = 'held';
+        ball.x = midPlayer.x - 2;
+        ball.y = midPlayer.y;
+        ball.z = 8;
+        
+        // READY 표시 후 2초 대기
+        showEvent("READY", 50, 40, "white", "2.5rem");
+        
+        // 2초 후 PLAY!
+        setTimeout(() => {
+            showEvent("PLAY!", 50, 40, "var(--gold)", "3rem");
+        }, 2000);
+        
+        // 데이터 저장
+        saveData();
+        
+        console.log(`스테이지가 ${stage}로 변경되었습니다.`);
     }
 
     function summon(count = 1) {
@@ -1646,37 +1907,56 @@ function renameAnimal() {
         let rIq = Math.min(100, 28 + stageMul * 8);
         state.redStats = { maxSpeed: rSpeed, accel: 0.055 + stageMul * 0.003, shoot: rShoot, iq: rIq };
         
-        // 50스테이지 이상: 적 구성 결정
+        // 스테이지별 적 구성 결정 (50스테이지부터 스킬 타입 부여)
         state.redComposition = [];
-        if (state.stage >= 50) {
-            let stageOffset = state.stage - 50;
-            // 스테이지 50-67: 각 타입 1개씩 순차적으로 배치
-            if (stageOffset < 18) {
-                let types = ['speedBoost', 'marksman', 'crowdControl', 'passer'];
-                state.redComposition = [types[stageOffset % 4], types[(stageOffset + 1) % 4], types[(stageOffset + 2) % 4]];
-            } 
-            // 스테이지 68-85: 더 복잡한 조합
-            else if (stageOffset < 36) {
-                let offset2 = stageOffset - 18;
-                let basicTypes = [
-                    ['speedBoost', 'speedBoost', 'marksman'],
-                    ['marksman', 'marksman', 'crowdControl'],
-                    ['crowdControl', 'crowdControl', 'passer'],
-                    ['passer', 'speedBoost', 'crowdControl']
-                ];
-                state.redComposition = basicTypes[offset2 % basicTypes.length];
-            } 
-            // 스테이지 86+: 극단적인 구성
-            else {
-                let offset3 = stageOffset - 36;
-                let extremeTypes = [
-                    ['marksman', 'marksman', 'marksman'],
-                    ['crowdControl', 'crowdControl', 'crowdControl'],
-                    ['speedBoost', 'speedBoost', 'passer'],
-                    ['passer', 'passer', 'marksman']
-                ];
-                state.redComposition = extremeTypes[offset3 % extremeTypes.length];
-            }
+        if (state.stage < 50) {
+            // 1-49: 기본 구성 (스킬 없음) - 반드시 null만 할당
+            state.redComposition = [null, null, null];
+        } else if (state.stage < 100) {
+            // 50-99: 5스테이지마다 새로운 급간 (총 10개 급간)
+            let tier = Math.floor((state.stage - 50) / 5); // 0~9
+            let compositions = [
+                // Tier 0-1: 단일 스킬 타입
+                ['speedBoost', null, null],
+                ['marksman', null, null],
+                ['crowdControl', null, null],
+                ['passer', null, null],
+                // Tier 2-3: 두 명 스킬 보유
+                ['speedBoost', 'speedBoost', null],
+                ['marksman', 'marksman', null],
+                ['crowdControl', 'crowdControl', null],
+                ['passer', 'passer', null],
+                // Tier 4-5: 혼합
+                ['speedBoost', 'marksman', null],
+                ['crowdControl', 'passer', null],
+            ];
+            state.redComposition = compositions[Math.min(tier, compositions.length - 1)];
+        } else if (state.stage < 200) {
+            // 100-199: 세 명 모두 스킬 보유
+            let tier = Math.floor((state.stage - 100) / 10); // 0~9
+            let compositions = [
+                ['speedBoost', 'marksman', 'crowdControl'],
+                ['marksman', 'crowdControl', 'passer'],
+                ['crowdControl', 'passer', 'speedBoost'],
+                ['passer', 'speedBoost', 'marksman'],
+                ['speedBoost', 'speedBoost', 'marksman'],
+                ['marksman', 'marksman', 'crowdControl'],
+                ['crowdControl', 'crowdControl', 'passer'],
+                ['passer', 'passer', 'speedBoost'],
+                ['speedBoost', 'marksman', 'passer'],
+                ['crowdControl', 'speedBoost', 'passer'],
+            ];
+            state.redComposition = compositions[Math.min(tier, compositions.length - 1)];
+        } else {
+            // 200+: 극단적 구성 (모두 같은 스킬)
+            let tier = Math.floor((state.stage - 200) / 25); // 0~3
+            let compositions = [
+                ['speedBoost', 'speedBoost', 'speedBoost'],
+                ['marksman', 'marksman', 'marksman'],
+                ['crowdControl', 'crowdControl', 'crowdControl'],
+                ['passer', 'passer', 'passer'],
+            ];
+            state.redComposition = compositions[tier % compositions.length];
         }
         
         // red 플레이어들에게 스킬 타입 할당
@@ -1713,7 +1993,7 @@ function renameAnimal() {
 
     function createPlayer(team, roleIdx) {
         const shadow = document.createElement('div'); shadow.className = 'shadow'; court.appendChild(shadow);
-        const el = document.createElement('div'); el.className = `player ${team}`; 
+        const el = document.createElement('div'); el.className = `player ${team}`;
         const stunFx = document.createElement('div'); stunFx.className = 'stun-fx'; stunFx.innerText = '💫'; el.appendChild(stunFx);
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
@@ -2156,7 +2436,22 @@ function renameAnimal() {
                         skillUsed = true; 
                     } 
                 } 
-                else if (p.animal.id === 'giraffe') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 15) { createVfx(p.x, p.y, 'power', '#a855f7'); createVfx(p.x, p.y, 'ring', '#a855f7'); shoot(p, 25); skillUsed = true; } }
+                else if (p.animal.id === 'giraffe') { 
+                    // 기린: 다이렉트 슛 - 공을 들고 골대 방향으로 이동 중일 때 발동
+                    // 40% 확률로 스킬 발동 체크 (매 프레임)
+                    if (ball.holder === p && skillProbability < 40 && p.cooldown <= 0 && !p.isShooting) { 
+                        // 최소 0.5초(30프레임)는 이동한 후 슛 + 골대에서 60 이내 거리일 때
+                        let timeSincePickup = state.time - (p.lastBallPickupTime || 0);
+                        let distToHoop2 = Math.hypot(p.x - 92, p.y - 50);
+                        if (timeSincePickup > 30 && distToHoop2 < 60) {
+                            createVfx(p.x, p.y, 'power', '#a855f7'); 
+                            createVfx(p.x, p.y, 'ring', '#a855f7'); 
+                            // 기린이 공을 들고 있으면 60% 성공률로 슈팅 (거리 무관)
+                            shoot(p, 60); 
+                            skillUsed = true; 
+                        }
+                    } 
+                }
                 else if (p.animal.id === 'fox') { 
                     // 적이 공을 들고 있을 때 가짜 공(초록색) 소환 후 뺏기 (라운드당 1회)
                     // 다른 여우가 이미 스킬 사용 중이면 불가
@@ -2227,11 +2522,17 @@ function renameAnimal() {
                 if (skillUsed) p.skillUsesLeft--;
             }
             let hoopX = p.team === 'blue' ? 92 : 8;
-            if (Math.hypot(p.tx - p.x, p.ty - p.y) < 0.5) { p.tx += (Math.random() - 0.5) * 5; p.ty += (Math.random() - 0.5) * 5; }
+            if (!waitingForPlayersArrive && Math.hypot(p.tx - p.x, p.ty - p.y) < 0.5) { p.tx += (Math.random() - 0.5) * 5; p.ty += (Math.random() - 0.5) * 5; }
 
             if (waitingForPlayersArrive) {
-                // 준비 단계: 선수들이 자기 자리로 전력질주
+                // 준비 단계: 선수들이 자기 자리로 이동
                 targetSpeed *= 1.2; // 전력질주 (일반 속도의 1.2배)
+                
+                // 자리에 도착했으면 완전히 멈춤
+                if (Math.hypot(p.tx - p.x, p.ty - p.y) < 0.5) {
+                    p.vx = 0;
+                    p.vy = 0;
+                }
             } else {
                 if (ball.state === 'loose') {
                     if (p === closestToBall) { p.tx = ball.x; p.ty = ball.y; targetSpeed *= 1.5; } else { p.tx = p.team === 'blue' ? 40 : 60; p.ty = 20 + p.roleIdx * 30; targetSpeed *= 0.8; }
@@ -2300,19 +2601,86 @@ function renameAnimal() {
                     p.fearDir = null;
                 }
             } else if (dist > 1) {
-                // 목표 속도 계산
+                // === 부드러운 가속도 적용 (댐핑 효과) ===
                 let desiredVx = (dx / dist) * targetSpeed;
                 let desiredVy = (dy / dist) * targetSpeed;
-                // 가속도 적용
-                p.vx += (desiredVx - p.vx) * currentAccel;
-                p.vy += (desiredVy - p.vy) * currentAccel;
-                // 고속 이동 시 진동 방지: 목표에 너무 가까우면 속도를 줄임
-                if (dist < 2 && Math.hypot(p.vx, p.vy) > targetSpeed * 0.8) {
-                    p.vx *= 0.85;
-                    p.vy *= 0.85;
+                
+                // 현재 속도가 높을수록 가속도를 줄임 (댐핑)
+                let currentSpeed = Math.hypot(p.vx, p.vy);
+                let dampingFactor = Math.max(0.3, 1 - (currentSpeed / (targetSpeed + 0.1)) * 0.7);
+                let smoothAccel = currentAccel * dampingFactor;
+                
+                p.vx += (desiredVx - p.vx) * smoothAccel;
+                p.vy += (desiredVy - p.vy) * smoothAccel;
+                
+                // 목표 속도 초과 방지
+                let newSpeed = Math.hypot(p.vx, p.vy);
+                if (newSpeed > targetSpeed * 1.1) {
+                    let scale = (targetSpeed * 1.1) / newSpeed;
+                    p.vx *= scale;
+                    p.vy *= scale;
                 }
-            } else { p.vx *= 0.7; p.vy *= 0.7; }
-            p.x = Math.max(3, Math.min(97, p.x + p.vx)); p.y = Math.max(3, Math.min(97, p.y + p.vy));
+            } else { 
+                // 목표에 도착 시 천천히 감속
+                p.vx *= 0.75; 
+                p.vy *= 0.75; 
+            }
+            
+            // === 충돌 처리 (부드러운 회피 + 왈츠 방지) ===
+            let minCollisionDist = 5;
+            let separationDist = 8; // 왈츠 방지를 위한 더 넓은 분리 거리
+            let tempX = p.x + p.vx;
+            let tempY = p.y + p.vy;
+            
+            // 다른 플레이어와의 충돌 감지 및 왈츠 방지
+            for (let other of players) {
+                if (other === p) continue;
+                let distToOther = Math.hypot(other.x - tempX, other.y - tempY);
+                
+                if (distToOther < minCollisionDist) {
+                    // 긴박한 충돌 회피
+                    let dx = tempX - other.x;
+                    let dy = tempY - other.y;
+                    let d = Math.hypot(dx, dy);
+                    if (d > 0.1) {
+                        // 충돌 회피: 더 강하게 밀어내기
+                        let avoidX = dx / d;
+                        let avoidY = dy / d;
+                        let avoidStrength = (minCollisionDist - distToOther) / minCollisionDist;
+                        p.vx += avoidX * avoidStrength * 0.5;
+                        p.vy += avoidY * avoidStrength * 0.5;
+                    }
+                } else if (distToOther < separationDist) {
+                    // 왈츠 방지: 서로의 목표점이 겹치지 않도록 조정
+                    let dx = p.x - other.x;
+                    let dy = p.y - other.y;
+                    let d = Math.hypot(dx, dy);
+                    
+                    // 서로 비슷한 방향으로 이동 중인지 확인 (왈츠 상태 감지)
+                    let dotProduct = p.vx * other.vx + p.vy * other.vy;
+                    let crossProduct = p.vx * other.vy - p.vy * other.vx;
+                    
+                    // 서로 반대 방향으로 움직이면서 회전하는 경우 (왈츠)
+                    if (dotProduct < 0 && Math.abs(crossProduct) > 0.01) {
+                        // 목표점을 약간 조정하여 회전 방지
+                        let separationStrength = (separationDist - distToOther) / separationDist * 0.3;
+                        let sepX = dx / d;
+                        let sepY = dy / d;
+                        
+                        // 서로 멀어지는 방향으로 목표점 조정
+                        p.tx += sepX * separationStrength * 5;
+                        p.ty += sepY * separationStrength * 5;
+                        
+                        // 속도에도 약간의 분리력 추가
+                        p.vx += sepX * separationStrength * 0.2;
+                        p.vy += sepY * separationStrength * 0.2;
+                    }
+                }
+            }
+            
+            // 최종 위치 업데이트 (경계 처리)
+            p.x = Math.max(3, Math.min(97, p.x + p.vx));
+            p.y = Math.max(3, Math.min(97, p.y + p.vy));
         });
     }
 
@@ -2381,7 +2749,7 @@ function renameAnimal() {
     
     function showStageInfo() {
         if (state.stage < 50) {
-            alert(`STAGE ${state.stage}\n일반 적팀`);
+            alert(`STAGE ${state.stage}\n일반 적팀 (스킬 없음)`);
             return;
         }
         
@@ -2393,10 +2761,10 @@ function renameAnimal() {
         };
         
         let skillShapes = {
-            'speedBoost': '■ (네모)',
+            'speedBoost': '■ (실선)',
             'marksman': '▦ (이중선)',
             'crowdControl': '▬ (점선)',
-            'passer': '● (동그란)'
+            'passer': '● (점선)'
         };
         
         let info = `STAGE ${state.stage} 적팀 구성\n\n`;
