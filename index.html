@@ -463,7 +463,7 @@
         { id: 'otter', name: '수달', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 52, iq: 55, icon: '🦦', color: '#3b82f6', shootRange: 19, passRate: 0.5 },
 
         { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '마크맨을 강력하게 밀쳐내 기절시킵니다.', maxUses: 3 },
-        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 60, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '매우 높게 뜬 공(z > 60)을 빠르게 낚아채 소유합니다.', maxUses: 3 },
+        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 60, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '높게 뜬 공을 빠르게 낚아채 소유합니다.', maxUses: 3 },
         { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3 },
 
         { id: 'orca', name: '범고래', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 70, iq: 70, icon: '🐋', color: '#ef4444', shootRange: 32, passRate: 0.4, skill: '파괴의 돌진', skillDesc: '공격 시 주변 상대 3명을 0.7초간 기절시키고 2.4초간 50% 둔화시킵니다.', maxUses: 2 },
@@ -526,7 +526,7 @@
         return animal;
     }
 
-    let state = { stage: 50, maxStage: 50, gold: 600000000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1, redComposition: [] };
+    let state = { stage: 50, maxStage: 50, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1, redComposition: [] };
     let ownedAnimals = []; let selectedRosterIdx = 0; 
     let isGameRunning = false; let isResetting = false; let currentTabIdx = 1; 
     let targetAnimUid = null;
