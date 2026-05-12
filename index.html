@@ -463,7 +463,7 @@
         { id: 'otter', name: '수달', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 52, iq: 55, icon: '🦦', color: '#3b82f6', shootRange: 19, passRate: 0.5 },
 
         { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '마크맨을 강력하게 밀쳐내 기절시킵니다.', maxUses: 3 },
-        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 60, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '높게 뜬 공을 빠르게 낚아채 소유합니다.', maxUses: 3 },
+        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 18, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '공중에 떠있는 공을 빠르게 낚아채 소유합니다. 비행 후 2초간 속도 25% 감소.', maxUses: 1 },
         { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3 },
 
         { id: 'orca', name: '범고래', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 70, iq: 70, icon: '🐋', color: '#ef4444', shootRange: 32, passRate: 0.4, skill: '파괴의 돌진', skillDesc: '공격 시 주변 상대 3명을 0.7초간 기절시키고 2.4초간 50% 둔화시킵니다.', maxUses: 2 },
@@ -489,6 +489,7 @@
         { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '불도저 덩크', skillDesc: '공을 잡으면 불꽃을 뿜으며 골대로 돌진해 수비를 날립니다.', maxUses: 2 },
         { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4 },
         { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2 },
+        { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '돌진 태클', skillDesc: '공을 들고 있는 적이 가까우면 돌진하여 넉백시키고 1.5초 기절시킵니다. 회복 후 1.5초간 약화됩니다.', maxUses: 2 },
         { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3 },
         
         { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2 }
@@ -697,12 +698,12 @@
     function renderInventory() {
         const invList = document.getElementById('inventory-list'); invList.innerHTML = '';
         
-        // 먼저 즐겨찾기 여부 + 다른 조건으로 정렬
+        // 먼저 즐겨찾기 여부 + 희귀도 - 레벨 정렬
         let sortedOwned = [...ownedAnimals].sort((a,b) => {
             if ((b.favorite || false) !== (a.favorite || false)) return (b.favorite || false) ? 1 : -1;
+            // 즐겨찾기 내에서는 희귀도 내림차순, 그 다음 레벨 내림차순
             const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
             if (gradeOrder[b.grade] !== gradeOrder[a.grade]) return gradeOrder[b.grade] - gradeOrder[a.grade];
-            if (a.id !== b.id) return a.id.localeCompare(b.id);
             return b.level - a.level;
         });
 
@@ -721,12 +722,12 @@
             }
         });
 
-        // 묶음 동물들 정렬 (즐겨찾기 먼저)
+        // 묶음 동물들 정렬 (희귀도 - 레벨)
         let displayList = Object.values(groupedMap).sort((a,b) => {
             if ((b.animal.favorite || false) !== (a.animal.favorite || false)) return (b.animal.favorite || false) ? 1 : -1;
+            // 즐겨찾기 내에서는 희귀도 내림차순, 그 다음 레벨 내림차순
             const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
             if (gradeOrder[b.animal.grade] !== gradeOrder[a.animal.grade]) return gradeOrder[b.animal.grade] - gradeOrder[a.animal.grade];
-            if (a.animal.id !== b.animal.id) return a.animal.id.localeCompare(b.animal.id);
             return b.animal.level - a.animal.level;
         });
 
@@ -735,8 +736,12 @@
             renderSlot(item.animal, item.count, invList);
         });
         
-        // 즐겨찾기된 스탯 배분된 동물 표시
-        allocatedAnimals.filter(a => a.favorite).forEach(a => {
+        // 즐겨찾기된 스탯 배분된 동물 표시 (희귀도 - 레벨 정렬)
+        allocatedAnimals.filter(a => a.favorite).sort((a, b) => {
+            const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
+            if (gradeOrder[b.grade] !== gradeOrder[a.grade]) return gradeOrder[b.grade] - gradeOrder[a.grade];
+            return b.level - a.level;
+        }).forEach(a => {
             renderSlot(a, 1, invList);
         });
         
@@ -745,8 +750,12 @@
             renderSlot(item.animal, item.count, invList);
         });
         
-        // 나머지 스탯 배분된 동물 표시
-        allocatedAnimals.filter(a => !a.favorite).forEach(a => {
+        // 나머지 스탯 배분된 동물 표시 (희귀도 - 레벨 정렬)
+        allocatedAnimals.filter(a => !a.favorite).sort((a, b) => {
+            const gradeOrder = { Legendary: 3, Epic: 2, Rare: 1, Normal: 0 };
+            if (gradeOrder[b.grade] !== gradeOrder[a.grade]) return gradeOrder[b.grade] - gradeOrder[a.grade];
+            return b.level - a.level;
+        }).forEach(a => {
             renderSlot(a, 1, invList);
         });
         
@@ -1238,7 +1247,7 @@ function renameAnimal() {
     function openBulkModal() {
         const select = document.getElementById('bulk-animal-filter');
         select.innerHTML = '<option value="">전체</option>';
-        const uniqueIds = [...new Set(ownedAnimals.map(a => a.id))];
+        const uniqueIds = [...new Set(ownedAnimals.map(a => a.id))].sort((a, b) => a.localeCompare(b, 'ko'));
         uniqueIds.forEach(id => {
             const animal = ownedAnimals.find(a => a.id === id);
             if (animal) {
@@ -1686,6 +1695,10 @@ function renameAnimal() {
             p.activeBuff = 0;
             p.stealImmune = 0;
             p.invisible = 0;
+            p.speedDebuffTimer = 0;
+            p.bisonRecoveryTimer = 0;
+            p.chargeTimer = 0;
+            p.chargeTarget = null;
             p.fearDir = null;
             p.isShooting = false;
             p.isCutting = false;
@@ -1946,8 +1959,8 @@ function renameAnimal() {
     // skillType: 'speedBoost' | 'marksman' | 'crowdControl' | 'passer' | null
     function applyEnemyStats() {
         let stageMul = state.stage - 1;
-        // 속도는 루트 함수로 증가하되 수렴값을 2로 설정
-        let rSpeed = Math.min(2, 0.4 + Math.sqrt(stageMul) * 0.14);
+        // 속도는 루트 함수로 증가하되 수렴값을 낮춤 (진동 방지: 1.5)
+        let rSpeed = Math.min(1.5, 0.4 + Math.sqrt(stageMul) * 0.12);
         // 슛 정확도는 스테이지가 올라갈수록 크게 증가 (계수 증가)
         let rShoot = Math.min(99, 45 + stageMul * 12);
         // 전술(IQ)도 스테이지가 올라갈수록 큰 폭으로 증가 (더 전략적인 움직임)
@@ -2051,7 +2064,7 @@ function renameAnimal() {
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0 };
+        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0 };
         // red 플레이어만 스킬 타입 추가 (나중에 applyEnemyStats에서 할당)
         if (team === 'red') {
             player.skillType = null;
@@ -2116,7 +2129,7 @@ function renameAnimal() {
             p.tx = p.team === 'blue' ? 30 : 70; p.ty = 20 + p.roleIdx * 30;
             // x, y는 현재 위치 유지 (순간이동 안 함!)
             p.vx = 0; p.vy = 0; 
-            p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; 
+            p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; p.speedDebuffTimer = 0; p.bisonRecoveryTimer = 0; 
             if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
             // 적 팀 스킬 초기화
             if(p.team === 'red') {
@@ -2214,6 +2227,10 @@ function renameAnimal() {
         
         p.isShooting = true; ball.lastHolder = p; ball.shooter = p; ball.holder = null; ball.state = 'shoot'; ball.targetTeam = p.team; 
         let shootProb = overrideProb !== null ? overrideProb : (p.team === 'blue' ? p.animal.shoot : state.redStats.shoot);
+        // 들소 약화 적용 (정확도 50% 감소)
+        if (p.bisonRecoveryTimer > 0) {
+            shootProb *= 0.5;
+        }
         if (p.team === 'blue' && p.animal.id === 'parrot' && (p.flyTimer > 0 || p.flightBuffTimer > 0)) shootProb = Math.min(100, shootProb + 50);
         const hoopX = p.team === 'blue' ? 92 : 8;
         ball.isGoal = Math.random() * 100 < shootProb; ball.points = getPointsByDistance(p.x, p.y, hoopX);
@@ -2356,14 +2373,41 @@ function renameAnimal() {
             
             if (p.isShooting) return;
             if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
-            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--;
+            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--; if (p.speedDebuffTimer > 0) p.speedDebuffTimer--; if (p.bisonRecoveryTimer > 0) p.bisonRecoveryTimer--; if (p.chargeTimer > 0) p.chargeTimer--;
+            
+            // 들소 돌진 충돌 감지
+            if (p.animal && p.animal.id === 'bison' && p.chargeTimer > 0 && p.chargeTarget) {
+                let distToTarget = Math.hypot(p.x - p.chargeTarget.x, p.y - p.chargeTarget.y);
+                if (distToTarget < 8) {
+                    // 충돌! 적을 반대 방향으로 날아가게 함
+                    let dx = p.chargeTarget.x - p.x;
+                    let dy = p.chargeTarget.y - p.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist > 0) {
+                        p.chargeTarget.vx = -(dx / dist) * 28;
+                        p.chargeTarget.vy = -(dy / dist) * 28;
+                    }
+                    p.chargeTarget.stunTimer = 90;
+                    p.chargeTarget.bisonRecoveryTimer = 180;
+                    
+                    createVfx(p.chargeTarget.x, p.chargeTarget.y, 'power', '#ef4444');
+                    createVfx(p.chargeTarget.x, p.chargeTarget.y, 'wave', '#ef4444');
+                    createVfx(p.x, p.y, 'roar', '#ef4444');
+                    
+                    p.chargeTimer = 0; // 돌진 종료
+                    p.chargeTarget = null;
+                }
+            }
+            
             if (p.flyTimer > 0) {
                 // 매가 공에 도달했다면 소유
                 if (p.animal.id === 'falcon' && Math.hypot(p.x - ball.x, p.y - ball.y) < 3) {
                     ball.holder = p; ball.lastHolder = p; ball.state = 'held';
                     p.flyTimer = 0;
+                    // 비행 후 2초간(120프레임) 속도 25% 감소 상태 활성화
+                    p.speedDebuffTimer = 120;
                 }
-                // 매가 비행 중이면 공을 계속 추적
+                // 매가 비행 중이면 공을 계속 추적하고 포물선 궤적 + 자연스러운 크기 변화
                 else if (p.animal.id === 'falcon' && p.flyTimer > 0) {
                     let dx = ball.x - p.x;
                     let dy = ball.y - p.y;
@@ -2373,22 +2417,25 @@ function renameAnimal() {
                         p.vy = (dy / dist) * 3;
                     }
                     p.flyTimer--;
-                    // 기림이 던지는 공의 높이에 따라가기
-                    p.z = Math.max(0, ball.z - 5);
+                    // 포물선 궤적 적용: 시작 높이 → 최고높이 → 공 높이로 강착
+                    const totalFlyTime = 80;
+                    const progress = 1 - (p.flyTimer / totalFlyTime);
+                    const maxHeight = (p.falconStartZ || 30) + 20;
+                    p.z = maxHeight * Math.sin(progress * Math.PI);
                 }
                 // 앵무새가 공을 놓쳤다면 비행 중단
                 else if (p.animal.id === 'parrot' && !(ball.holder === p || (ball.isFake && ball.fakeHolder === p))) {
-                    p.flyTimer = 0; p.flightBuffTimer = 25;
+                    p.flyTimer = 0; p.flightBuffTimer = 18;
                 }
                 // 앵무새가 골에 도달했다면 종료
                 else if (p.animal.id === 'parrot' && ball.state === 'held' && ball.holder === p) {
                     let hoop = p.team === 'blue' ? { x: 92, y: 50 } : { x: 8, y: 50 };
                     if (Math.hypot(p.x - hoop.x, p.y - hoop.y) < 5) {
-                        p.flyTimer = 0; p.flightBuffTimer = 25;
+                        p.flyTimer = 0; p.flightBuffTimer = 18;
                     } else {
                         p.flyTimer--;
                         let maxZ = 30;
-                        const progress = 1 - (p.flyTimer / 25);
+                        const progress = 1 - (p.flyTimer / 18);
                         p.z = maxZ * Math.sin(progress * Math.PI);
                     }
                 }
@@ -2402,11 +2449,17 @@ function renameAnimal() {
             } else { p.z = 0; }
 
             let targetSpeed, currentAccel, iqStat;
-            if (p.team === 'blue') { targetSpeed = p.animal.speed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.invisible > 0 ? 1.25 : 1); currentAccel = p.animal.accel; iqStat = p.animal.iq; if(p.activeBuff > 0) targetSpeed *= 3; if(p.flyTimer > 0) targetSpeed *= 5; } 
+            if (p.team === 'blue') { 
+                targetSpeed = p.animal.speed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.invisible > 0 ? 1.25 : 1) * (p.speedDebuffTimer > 0 ? 0.75 : 1) * (p.bisonRecoveryTimer > 0 ? 0.7 : 1) * (p.chargeTimer > 0 ? 2.5 : 1); 
+                currentAccel = p.animal.accel; 
+                iqStat = p.animal.iq; 
+                if(p.activeBuff > 0) targetSpeed *= 3; 
+                if(p.flyTimer > 0) targetSpeed *= (p.animal.id === 'parrot' ? 3.5 : 5); 
+            } 
             else { 
-                targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1); 
-                // speedBoost 스킬 활성화 중: 속도 1.5배 증가
-                if (p.speedBoostTimer > 0) targetSpeed *= 1.5;
+                targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.bisonRecoveryTimer > 0 ? 0.7 : 1) * (p.chargeTimer > 0 ? 2.5 : 1); 
+                // speedBoost 스킬 활성화 중: 속도 1.3배 증가 (1.5배에서 감소)
+                if (p.speedBoostTimer > 0) targetSpeed *= 1.3;
                 currentAccel = state.redStats.accel; 
                 iqStat = state.redStats.iq; 
             }
@@ -2485,8 +2538,9 @@ function renameAnimal() {
                     let defender = players.find(e => e.team !== p.team && e.matchup === p && Math.hypot(e.x - p.x, e.y - p.y) < 8 && e.stunTimer <= 0);
                     if (defender && skillProbability < 20) { defender.stunTimer = 192; createVfx(defender.x, defender.y, 'power', '#a855f7'); createVfx(defender.x, defender.y, 'ring', '#a855f7'); skillUsed = true; }
                 } else if (p.animal.id === 'falcon') {
-                    // 높이 제한 없이 공중에 있는 모든 공을 낚아채기
-                    if (ball.state === 'loose' && skillProbability < 60) {
+                    // 공중에 떠있고 매와 공 사이의 거리가 충분할 때만 낚아채기
+                    let distToFalcon = Math.hypot(ball.x - p.x, ball.y - p.y);
+                    if (ball.state === 'loose' && ball.z > 15 && distToFalcon > 30 && skillProbability < 100) {
                         p.flyTimer = 80; p.flightBuffTimer = 80;
                         // 공 방향으로 직진하도록 속도 설정
                         let dx = ball.x - p.x;
@@ -2497,6 +2551,8 @@ function renameAnimal() {
                             p.vy = (dy / dist) * 3;
                         }
                         p.stealImmune = 80;
+                        // 매의 초기 비행 높이를 높게 설정 (포물선의 중간 시점부터 시작)
+                        p.falconStartZ = Math.max(25, ball.z + 10);
                         createVfx(p.x, p.y, 'flight', '#fbbf24'); createVfx(p.x, p.y, 'spark', '#fbbf24');
                         createVfx(ball.x, ball.y, 'power', '#fbbf24'); createVfx(ball.x, ball.y, 'ring', '#fbbf24');
                         skillUsed = true;
@@ -2703,7 +2759,40 @@ function renameAnimal() {
                     } 
                 }
                 else if (p.animal.id === 'dragon') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.forEach(e => e.stunTimer = 60); createVfx(92, 50, 'meteor'); createVfx(p.x, p.y, 'fire'); shoot(p); skillUsed = true; } }
-                else if (p.animal.id === 'parrot') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 10) { p.flyTimer = 25; p.flightBuffTimer = 25; p.stealImmune = 25; let hoop = p.team === 'blue' ? 92 : 8; p.tx = hoop; p.ty = 50; createVfx(p.x, p.y, 'flight', '#60a5fa'); createVfx(p.x, p.y, 'ring', '#ef4444'); createVfx(p.x, p.y, 'ring', '#ef4444'); createVfx(p.x, p.y, 'speed', '#60a5fa'); skillUsed = true; } }
+                else if (p.animal.id === 'parrot') { 
+                    // 상대 코트(x > 50)에서만 스킬 발동
+                    if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 10 && p.x > 50) { 
+                        p.flyTimer = 18; p.flightBuffTimer = 18; p.stealImmune = 18; 
+                        let hoop = p.team === 'blue' ? 92 : 8; 
+                        p.tx = hoop; p.ty = 50; 
+                        createVfx(p.x, p.y, 'ring', '#ef4444'); 
+                        createVfx(p.x, p.y, 'ring', '#ef4444'); 
+                        createVfx(p.x, p.y, 'power', '#ef4444'); 
+                        skillUsed = true; 
+                    } 
+                }
+                else if (p.animal.id === 'bison') {
+                    // 공을 들고 있는 적이 거리 50 이내면 돌진
+                    if ((ball.holder && ball.holder.team !== p.team) || (ball.isFake && ball.fakeHolder && ball.fakeHolder.team !== p.team)) {
+                        let holder = ball.holder && ball.holder.team !== p.team ? ball.holder : ball.fakeHolder;
+                        let dist = Math.hypot(holder.x - p.x, holder.y - p.y);
+                        if (dist < 50 && dist > 0 && skillProbability < 25) {
+                            // 돌진 시작
+                            p.chargeTimer = 60; // 1초
+                            p.chargeTarget = holder;
+                            // 돌진 방향 설정
+                            p.chargeDx = holder.x - p.x;
+                            p.chargeDy = holder.y - p.y;
+                            let chargeDist = Math.hypot(p.chargeDx, p.chargeDy);
+                            if (chargeDist > 0) {
+                                p.chargeDx /= chargeDist;
+                                p.chargeDy /= chargeDist;
+                            }
+                            createVfx(p.x, p.y, 'speed', '#fbbf24');
+                            skillUsed = true;
+                        }
+                    }
+                }
                 
                 if (skillUsed) p.skillUsesLeft--;
             }
@@ -2729,7 +2818,13 @@ function renameAnimal() {
                     // 가짜 공을 든 플레이어도 진짜 공을 든 것처럼 행동
                     let isFakeHolder = ball.isFake && ball.fakeHolder === p;
                     if (p === ball.holder || isFakeHolder) {
-                        p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85; 
+                        // chargeTimer 중이면 chargeTarget을 향해 돌진
+                        if (p.chargeTimer > 0 && p.chargeTarget) {
+                            p.tx = p.chargeTarget.x;
+                            p.ty = p.chargeTarget.y;
+                        } else {
+                            p.tx = hoopX; p.ty = 50; targetSpeed *= 0.85;
+                        } 
                         let distToHoop = Math.hypot(p.x - p.tx, p.y - p.ty); let distToDef = Math.hypot(p.x - p.matchup.x, p.y - p.matchup.y);
                         let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p);
                         
@@ -2792,18 +2887,18 @@ function renameAnimal() {
                 let desiredVx = (dx / dist) * targetSpeed;
                 let desiredVy = (dy / dist) * targetSpeed;
                 
-                // 현재 속도가 높을수록 가속도를 줄임 (댐핑)
+                // 현재 속도가 높을수록 가속도를 줄임 (댐핑) - 더 부드럽게
                 let currentSpeed = Math.hypot(p.vx, p.vy);
-                let dampingFactor = Math.max(0.3, 1 - (currentSpeed / (targetSpeed + 0.1)) * 0.7);
+                let dampingFactor = Math.max(0.25, 1 - (currentSpeed / (targetSpeed + 0.1)) * 0.6);
                 let smoothAccel = currentAccel * dampingFactor;
                 
                 p.vx += (desiredVx - p.vx) * smoothAccel;
                 p.vy += (desiredVy - p.vy) * smoothAccel;
                 
-                // 목표 속도 초과 방지
+                // 목표 속도 초과 방지 (더 강하게)
                 let newSpeed = Math.hypot(p.vx, p.vy);
-                if (newSpeed > targetSpeed * 1.1) {
-                    let scale = (targetSpeed * 1.1) / newSpeed;
+                if (newSpeed > targetSpeed * 1.05) {
+                    let scale = (targetSpeed * 1.05) / newSpeed;
                     p.vx *= scale;
                     p.vy *= scale;
                 }
@@ -2905,7 +3000,8 @@ function renameAnimal() {
                         let wallAngle = Math.atan2(targetY - child.markedTarget.y, targetX - child.markedTarget.x);
                         child.markedTarget.vx = Math.cos(wallAngle) * 14; // 벽으로 강한 넉백
                         child.markedTarget.vy = Math.sin(wallAngle) * 14;
-                        // 넉백 후 둔화 없음 - 펑 밀쳐지는 느낌
+                        // 넉백 후 짧은 스턴 추가
+                        child.markedTarget.stunTimer = 30; // 0.5초 스턴
                         createVfx(child.markedTarget.x, child.markedTarget.y, 'spark', '#ff8c00');
                         createVfx(child.markedTarget.x, child.markedTarget.y, 'spark', '#ffd700');
                         child.cooldown = 15; // 넉백 쿨다운
@@ -2997,6 +3093,20 @@ function renameAnimal() {
     function draw() {
         let ballScale = 1 + (ball.z / 60); 
         ball.el.style.left = `${ball.x}%`; ball.el.style.top = `calc(${ball.y}% - ${ball.z}px)`; ball.el.style.transform = `translate(-50%, -50%) scale(${ballScale})`;
+        
+        // 매의 크기를 비행 높이에 따라 자연스럽게 변화
+        players.filter(p => p.animal && p.animal.id === 'falcon').forEach(p => {
+            if (p.flyTimer > 0) {
+                const totalFlyTime = 80;
+                const progress = 1 - (p.flyTimer / totalFlyTime);
+                // 0 → 1 → 0.5 (작아지는 효과로 원근감 표현, 더 부드럽게)
+                const sizeScale = 0.5 + Math.sin(progress * Math.PI) * 0.5;
+                p.el.style.transform = `translate(-50%, -50%) scale(${sizeScale})`;
+            } else {
+                // 비행이 끝나면 원래 크기로 복구
+                p.el.style.transform = `translate(-50%, -50%) scale(1)`;
+            }
+        });
         
         // 가짜 공이 있으면 위치 업데이트 (fakeHolder를 따라감)
         // 우리 팀이 가짜 공을持有하면 표시 안 함 (적팀만 영향받음)
