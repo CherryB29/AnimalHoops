@@ -512,19 +512,49 @@
               console.warn("Firestore가 아직 초기화되지 않았습니다.");
               return [];
             }
-            const snapshot = await db.collection('rankings')
-              .orderBy('rating', 'desc')
-              .limit(limit)
-              .get();
+            
+            // gameData 컬렉션에서 모든 플레이어의 maxStage 조회
+            const gameDataSnapshot = await db.collection('gameData').get();
             
             const rankings = [];
-            snapshot.forEach((doc, index) => {
-              rankings.push({
-                rank: index + 1,
-                ...doc.data()
-              });
+            
+            for (const doc of gameDataSnapshot.docs) {
+              const gameData = doc.data();
+              const uid = gameData.uid || doc.id;
+              
+              // 해당 사용자의 프로필 조회
+              const userDoc = await db.collection('users').doc(uid).get();
+              const userData = userDoc.data();
+              
+              if (userData) {
+                rankings.push({
+                  userId: uid,
+                  nickname: userData.nickname || '플레이어',
+                  avatar: userData.avatar || '🐶',
+                  maxStage: gameData.maxStage || 1,
+                  stage: gameData.stage || 0,
+                  wins: userData.wins || 0,
+                  losses: userData.losses || 0,
+                  rating: userData.rating || 1500,
+                  winRate: userData.winRate || 0
+                });
+              }
+            }
+            
+            // maxStage 기준으로 내림차순 정렬
+            rankings.sort((a, b) => {
+              if (b.maxStage !== a.maxStage) {
+                return b.maxStage - a.maxStage;
+              }
+              return b.rating - a.rating;
             });
-            return rankings;
+            
+            // rank 번호 부여
+            rankings.forEach((rank, index) => {
+              rank.rank = index + 1;
+            });
+            
+            return rankings.slice(0, limit);
           } catch (error) {
             console.error("랭킹 조회 실패:", error);
             return [];
@@ -2544,10 +2574,47 @@ function renameAnimal() {
         for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
+        // 친선전 모드인 경우 상대팀 로스터 할당
+        if (isFriendlyMatch && opponentData && opponentData.roster) {
+            let redPlayers = players.filter(p => p.team === 'red');
+            opponentData.roster.forEach((animal, idx) => {
+                if (redPlayers[idx]) {
+                    redPlayers[idx].animal = {
+                        id: animal.id,
+                        name: animal.name,
+                        icon: animal.icon,
+                        level: animal.level || 1,
+                        speed: 1,
+                        shoot: 45,
+                        iq: 40,
+                        accel: 0.055
+                    };
+                }
+            });
+            console.log("⚽ 친선전 상대팀 로스터 적용됨");
+        }
+        
         // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
         syncPlayerStats();
         
-        loadData(); applyEnemyStats(); updateRosterUI(); updateUI(); resetPositions('red'); requestAnimationFrame(gameLoop); 
+        loadData(); 
+        
+        // 친선전 모드가 아닌 경우만 applyEnemyStats 적용 (스테이지 기반)
+        if (!isFriendlyMatch) {
+            applyEnemyStats();
+        } else {
+            // 친선전 모드: 상대팀 스탯을 약간 강화 (추천받은 높은 스테이지)
+            let recommendedLevel = 20 + Math.random() * 10; // 20-30 정도의 난이도
+            state.redStats = {
+                maxSpeed: 0.8 + Math.sqrt(recommendedLevel) * 0.1,
+                accel: 0.055 + recommendedLevel * 0.002,
+                shoot: 50 + recommendedLevel * 2,
+                iq: 50 + recommendedLevel * 1.5
+            };
+            state.redComposition = [null, null, null]; // 친선전에는 AI 스킬 없음
+        }
+        
+        updateRosterUI(); updateUI(); resetPositions('red'); requestAnimationFrame(gameLoop); 
     }
     
     function syncPlayerStats() {
@@ -2768,12 +2835,92 @@ function renameAnimal() {
 
     function endStage(isWin) {
         isResetting = true;
-        if (isWin) {
-            let reward = state.stage * 100 + 500; state.gold += reward; state.stage++; state.maxStage = Math.max(state.maxStage, state.stage); applyEnemyStats();
-            showEvent("STAGE CLEAR!", 50, 40, "var(--gold)", "3.5rem");
-            setTimeout(() => showEvent(`+${reward}💰`, 50, 55, "var(--gold)", "2rem"), 1000);
-        } else { showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); }
-        setTimeout(() => { state.scoreB = 0; state.scoreR = 0; saveData(); updateUI(); resetPositions('red'); }, 3500);
+        
+        // 친선전 모드인 경우
+        if (isFriendlyMatch && opponentData) {
+            if (isWin) {
+                showEvent("친선전 승리! 🎉", 50, 40, "#22c55e", "3rem");
+                // 친선전 결과 저장
+                recordFriendlyMatchResult(getCurrentUser().uid, opponentData.uid, true);
+            } else {
+                showEvent("친선전 패배...", 50, 40, "var(--red)", "3rem");
+                recordFriendlyMatchResult(getCurrentUser().uid, opponentData.uid, false);
+            }
+            
+            setTimeout(() => {
+                // 홈 화면으로 복귀
+                isFriendlyMatch = false;
+                opponentData = null;
+                isGameRunning = false;
+                document.getElementById('game-ui').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('game-ui').style.display = 'none';
+                    document.getElementById('start-screen').style.display = 'flex';
+                    setTimeout(() => { document.getElementById('start-screen').style.opacity = '1'; }, 50);
+                    changeTab(3, document.querySelectorAll('.nav-item')[3]); // 랭킹 페이지로 이동
+                    loadRankings(); // 랭킹 새로고침
+                }, 500);
+            }, 3500);
+        } else {
+            // 일반 스테이지 모드
+            if (isWin) {
+                let reward = state.stage * 100 + 500; state.gold += reward; state.stage++; state.maxStage = Math.max(state.maxStage, state.stage); applyEnemyStats();
+                showEvent("STAGE CLEAR!", 50, 40, "var(--gold)", "3.5rem");
+                setTimeout(() => showEvent(`+${reward}💰`, 50, 55, "var(--gold)", "2rem"), 1000);
+            } else { showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); }
+            setTimeout(() => { state.scoreB = 0; state.scoreR = 0; saveData(); updateUI(); resetPositions('red'); }, 3500);
+        }
+    }
+    
+    // ===========================
+    // 📊 친선전 결과 기록 함수
+    // ===========================
+    
+    async function recordFriendlyMatchResult(playerUid, opponentUid, isWin) {
+        try {
+            if (!db) {
+                console.warn("Firestore가 초기화되지 않았습니다.");
+                return;
+            }
+            
+            const currentUser = getCurrentUser();
+            if (!currentUser) return;
+            
+            // 플레이어 프로필 업데이트
+            const playerRef = db.collection('users').doc(playerUid);
+            const playerDoc = await playerRef.get();
+            const playerData = playerDoc.data();
+            
+            if (playerData) {
+                const newWins = (playerData.wins || 0) + (isWin ? 1 : 0);
+                const newLosses = (playerData.losses || 0) + (isWin ? 0 : 1);
+                const totalGames = newWins + newLosses;
+                const winRate = totalGames > 0 ? Math.round((newWins / totalGames) * 100) : 0;
+                
+                await playerRef.update({
+                    wins: newWins,
+                    losses: newLosses,
+                    winRate: winRate,
+                    lastUpdated: new Date()
+                });
+                
+                console.log(`✅ ${isWin ? '승리' : '패배'} 기록: ${newWins}W ${newLosses}L (승률: ${winRate}%)`);
+            }
+            
+            // 친선전 기록을 friendlyMatches 컬렉션에 저장
+            await db.collection('friendlyMatches').add({
+                playerUid: playerUid,
+                opponentUid: opponentUid,
+                playerWon: isWin,
+                timestamp: new Date(),
+                playerStage: state.maxStage,
+                playerScore: state.scoreB,
+                opponentScore: state.scoreR
+            });
+            
+        } catch (error) {
+            console.error("친선전 결과 기록 실패:", error);
+        }
     }
 
     function updateBall() {
@@ -4089,9 +4236,17 @@ function renameAnimal() {
                     return;
                 }
                 
-                rankings.forEach(rank => {
+                for (const rank of rankings) {
                     const rankItem = document.createElement('div');
-                    rankItem.style.cssText = 'display:grid; grid-template-columns:0.8fr 1fr 1fr 0.8fr; gap:8px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:6px; font-size:0.85rem; font-weight:800; align-items:center;';
+                    rankItem.style.cssText = 'display:grid; grid-template-columns:0.6fr 0.8fr 1.2fr 0.8fr 0.8fr; gap:8px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:6px; font-size:0.8rem; font-weight:800; align-items:center; cursor:pointer; transition:all 0.3s;';
+                    rankItem.onmouseover = () => rankItem.style.background = 'rgba(59, 130, 246, 0.1)';
+                    rankItem.onmouseout = () => {
+                        if (currentUser && rank.userId === currentUser.uid) {
+                            rankItem.style.background = 'linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0))';
+                        } else {
+                            rankItem.style.background = 'rgba(255,255,255,0.05)';
+                        }
+                    };
                     
                     // 순위에 따른 색상 (1-3등 특별)
                     let rankColor = '#888';
@@ -4104,10 +4259,11 @@ function renameAnimal() {
                         '#' + rank.rank;
                     
                     rankItem.innerHTML = `
-                        <div style="color:${rankColor}; font-weight:900;">${rankDisplay}</div>
-                        <div style="color:#ffd700;">${rank.nickname || '알 수 없음'}</div>
-                        <div style="color:#aaa;">${rank.wins || 0}승 ${rank.losses || 0}패</div>
-                        <div style="color:#60a5fa; font-weight:900;">${rank.rating || 0}</div>
+                        <div style="color:${rankColor}; font-weight:900; text-align:center;">${rankDisplay}</div>
+                        <div style="color:#ffd700; text-align:center; font-size:1.2rem;">${rank.avatar}</div>
+                        <div style="color:#ffd700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${rank.nickname}</div>
+                        <div style="color:#60a5fa; text-align:center; font-weight:900;">Stage ${rank.maxStage}</div>
+                        <div style="color:#a1a1a1; text-align:center; font-size:0.75rem;">${rank.wins}W ${rank.losses}L</div>
                     `;
                     
                     // 현재 사용자 강조
@@ -4117,18 +4273,94 @@ function renameAnimal() {
                         rankItem.style.paddingLeft = '10px';
                     }
                     
+                    // 클릭 시 로스터 보기 및 친선전 옵션
+                    rankItem.onclick = async (e) => {
+                        e.stopPropagation();
+                        
+                        // 이미 선택된 항목이면 토글
+                        const selectedItem = rankingList.querySelector('[data-selected="true"]');
+                        if (selectedItem && selectedItem !== rankItem) {
+                            selectedItem.removeAttribute('data-selected');
+                            const rosterContainer = selectedItem.nextElementSibling;
+                            if (rosterContainer && rosterContainer.className === 'roster-container') {
+                                rosterContainer.remove();
+                            }
+                        }
+                        
+                        if (rankItem.getAttribute('data-selected') === 'true') {
+                            // 이미 선택된 항목 해제
+                            rankItem.removeAttribute('data-selected');
+                            const rosterContainer = rankItem.nextElementSibling;
+                            if (rosterContainer && rosterContainer.className === 'roster-container') {
+                                rosterContainer.remove();
+                            }
+                        } else {
+                            // 새로운 항목 선택
+                            rankItem.setAttribute('data-selected', 'true');
+                            rankItem.style.background = 'linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0))';
+                            rankItem.style.borderLeft = '4px solid #22c55e';
+                            rankItem.style.paddingLeft = '10px';
+                            
+                            // 로스터 정보 로드
+                            const rosterData = await getRoster(rank.userId);
+                            
+                            // 로스터 표시 컨테이너 생성
+                            const rosterContainer = document.createElement('div');
+                            rosterContainer.className = 'roster-container';
+                            rosterContainer.style.cssText = 'grid-column:1/-1; background:rgba(34, 197, 94, 0.1); padding:12px; border-radius:6px; margin-bottom:6px; border-left:4px solid #22c55e;';
+                            
+                            if (rosterData && rosterData.animals) {
+                                let rosterHtml = `<div style="color:#ffd700; font-weight:900; margin-bottom:8px;">📋 팀: ${rosterData.teamName || '팀'}</div>`;
+                                rosterHtml += '<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">';
+                                
+                                rosterData.animals.forEach((animal, idx) => {
+                                    rosterHtml += `
+                                        <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; text-align:center; color:#aaa; font-size:0.75rem;">
+                                            <div style="font-size:1.2rem; margin-bottom:4px;">${animal.icon || '🐶'}</div>
+                                            <div>${animal.name}</div>
+                                            <div style="color:#60a5fa;">Lv.${animal.level || 1}</div>
+                                        </div>
+                                    `;
+                                });
+                                
+                                rosterHtml += '</div>';
+                                
+                                // 친선전 버튼 (현재 사용자가 아닌 경우만)
+                                if (currentUser && rank.userId !== currentUser.uid) {
+                                    rosterHtml += `
+                                        <button onclick="startFriendlyMatch('${rank.userId}', '${rank.nickname}')" style="
+                                            width:100%; margin-top:10px; padding:10px; background:linear-gradient(135deg, #ef4444, #f87171);
+                                            color:white; border:none; border-radius:6px; font-weight:900; cursor:pointer;
+                                            transition:all 0.3s; font-size:0.9rem;
+                                        " onmouseover="this.style.background='linear-gradient(135deg, #dc2626, #ef4444)'" onmouseout="this.style.background='linear-gradient(135deg, #ef4444, #f87171)'">
+                                        ⚽ ${rank.nickname}와 친선전 시작
+                                        </button>
+                                    `;
+                                } else if (currentUser && rank.userId === currentUser.uid) {
+                                    rosterHtml += `<div style="color:#888; text-align:center; font-size:0.8rem; margin-top:10px;">🔒 내 팀입니다</div>`;
+                                }
+                                
+                                rosterContainer.innerHTML = rosterHtml;
+                            } else {
+                                rosterContainer.innerHTML = '<div style="color:#888;">로스터 데이터를 불러올 수 없습니다.</div>';
+                            }
+                            
+                            rankingList.insertBefore(rosterContainer, rankItem.nextElementSibling);
+                        }
+                    };
+                    
                     rankingList.appendChild(rankItem);
-                });
+                }
             }
             
             // 내 순위 표시
             if (currentUser) {
-                const myRank = await getMyRank(currentUser.uid);
+                const myRankInfo = rankings.find(r => r.userId === currentUser.uid);
                 const myRankCard = document.getElementById('my-rank-card');
                 
-                if (myRank && myRankCard) {
-                    document.getElementById('my-rank-number').textContent = '#' + (rankings.findIndex(r => r.userId === currentUser.uid) + 1 || '?');
-                    document.getElementById('my-rank-rating').textContent = (myRank.rating || 1500) + ' Pt';
+                if (myRankInfo && myRankCard) {
+                    document.getElementById('my-rank-number').textContent = '#' + myRankInfo.rank;
+                    document.getElementById('my-rank-rating').textContent = 'Stage ' + myRankInfo.maxStage;
                     myRankCard.style.display = 'block';
                 }
             }
@@ -4222,6 +4454,60 @@ function renameAnimal() {
                 });
         }
     }
+    
+    // ===========================
+    // ⚽ 친선전(대전) 함수
+    // ===========================
+    
+    let opponentData = null; // 친선전 상대 정보
+    let isFriendlyMatch = false; // 친선전 모드 여부
+    
+    window.startFriendlyMatch = async function(opponentUid, opponentName) {
+        try {
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert("로그인이 필요합니다.");
+                return;
+            }
+            
+            // 상대방 로스터 로드
+            const opponentRoster = await getRoster(opponentUid);
+            const playerRoster = await getRoster(currentUser.uid);
+            
+            if (!opponentRoster || !opponentRoster.animals || opponentRoster.animals.length === 0) {
+                alert("상대방의 팀 정보를 찾을 수 없습니다.");
+                return;
+            }
+            
+            if (!playerRoster || !playerRoster.animals || playerRoster.animals.length === 0) {
+                alert("내 팀 정보를 찾을 수 없습니다. PLAY 버튼으로 팀을 먼저 구성하세요.");
+                return;
+            }
+            
+            // 친선전 모드 설정
+            isFriendlyMatch = true;
+            opponentData = {
+                uid: opponentUid,
+                name: opponentName,
+                roster: opponentRoster.animals
+            };
+            
+            console.log("⚽ 친선전 준비 완료:", {
+                player: currentUser.displayName || currentUser.email,
+                opponent: opponentName,
+                playerTeam: playerRoster.animals.length,
+                opponentTeam: opponentRoster.animals.length
+            });
+            
+            // 게임 시작 (startGame이 changeTab(2)를 호출함)
+            startGame();
+            
+        } catch (error) {
+            console.error("친선전 시작 실패:", error);
+            alert("친선전 시작에 실패했습니다: " + error.message);
+        }
+    }
+    
     
     // ===========================
     // 🏠 화면 전환 함수들
