@@ -607,11 +607,61 @@
               console.warn("Firestore가 아직 초기화되지 않았습니다.");
               return null;
             }
-            const doc = await db.collection('rosters').doc(uid).get();
-            return doc.exists ? doc.data() : null;
+            
+            // 먼저 rosters 컬렉션에서 조회
+            let doc = await db.collection('rosters').doc(uid).get();
+            if (doc.exists) {
+              const rosterData = doc.data();
+              console.log("✅ rosters 컬렉션에서 로스터 로드:", rosterData);
+              return rosterData;
+            }
+            
+            // rosters 컬렉션에 없으면 gameData에서 동물 정보 직접 가져오기
+            const gameDataDoc = await db.collection('gameData').doc(uid).get();
+            if (!gameDataDoc.exists) {
+              console.warn("게임 데이터를 찾을 수 없습니다:", uid);
+              return null;
+            }
+            
+            const gameData = gameDataDoc.data();
+            
+            // roster 필드가 있으면 우선 사용
+            if (gameData.roster && Array.isArray(gameData.roster) && gameData.roster.length > 0) {
+              console.log("✅ gameData.roster에서 로스터 로드:", gameData.roster);
+              return {
+                userId: uid,
+                teamName: '팀',
+                animals: gameData.roster.map(animal => ({
+                  id: animal.id || 'unknown',
+                  name: animal.name || '알 수 없음',
+                  icon: animal.icon || '🐶',
+                  level: animal.level || 1
+                }))
+              };
+            }
+            
+            // roster가 없으면 ownedAnimals에서 첫 3마리 사용
+            if (!gameData.ownedAnimals || !Array.isArray(gameData.ownedAnimals) || gameData.ownedAnimals.length === 0) {
+              console.warn("소유한 동물이 없습니다:", uid);
+              return null;
+            }
+            
+            const teamAnimals = gameData.ownedAnimals.slice(0, 3).map(animal => ({
+              id: animal.id || 'unknown',
+              name: animal.name || '알 수 없음',
+              icon: animal.icon || '🐶',
+              level: animal.level || 1
+            }));
+            
+            console.log("✅ ownedAnimals에서 로스터 로드:", teamAnimals);
+            return {
+              userId: uid,
+              teamName: '팀',
+              animals: teamAnimals
+            };
           } catch (error) {
             console.error("로스터 조회 실패:", error);
-            throw error;
+            return null;
           }
         }
     </script>
@@ -886,16 +936,15 @@
                         <div style="font-size:1.8rem; font-weight:900; color:white;">
                             <span id="my-rank-number">#1</span>
                         </div>
-                        <div id="my-rank-rating" style="font-size:0.9rem; font-weight:900; color:rgba(0,0,0,0.7);">Stage 1</div>
+                        <div id="my-rank-rating" style="font-size:0.9rem; font-weight:900; color:rgba(0,0,0,0.7);">1500 Pt</div>
                     </div>
                     
                     <!-- 랭킹 테이블 -->
-                    <div style="font-size:0.8rem; font-weight:900; color:#666; display:grid; grid-template-columns:0.6fr 0.8fr 1.2fr 0.8fr 0.8fr; gap:8px; padding:8px; border-bottom:2px solid #333; margin-bottom:10px;">
+                    <div style="font-size:0.8rem; font-weight:900; color:#666; display:grid; grid-template-columns:0.8fr 1fr 1fr 0.8fr; gap:8px; padding:8px; border-bottom:2px solid #333; margin-bottom:10px;">
                         <div>순위</div>
-                        <div>캐릭</div>
                         <div>닉네임</div>
-                        <div>스테이지</div>
                         <div>전적</div>
+                        <div>레이팅</div>
                     </div>
                     
                     <div id="ranking-list" style="display:flex; flex-direction:column; gap:8px;">
@@ -2568,27 +2617,23 @@ function renameAnimal() {
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
         // 친선전 모드인 경우 상대팀 로스터 할당
-        if (isFriendlyMatch && friendlyMatchRosters && friendlyMatchRosters.opponent && friendlyMatchRosters.opponent.length > 0) {
+        if (isFriendlyMatch && opponentData && opponentData.roster) {
             let redPlayers = players.filter(p => p.team === 'red');
-            console.log("🎮 친선전 모드 - 상대팀 로스터 할당:", friendlyMatchRosters.opponent);
-            
-            friendlyMatchRosters.opponent.forEach((animal, idx) => {
+            opponentData.roster.forEach((animal, idx) => {
                 if (redPlayers[idx]) {
                     redPlayers[idx].animal = {
-                        id: animal.id || idx,
-                        name: animal.name || `상대팀${idx+1}`,
-                        icon: animal.icon || '🐶',
+                        id: animal.id,
+                        name: animal.name,
+                        icon: animal.icon,
                         level: animal.level || 1,
                         speed: 1,
                         shoot: 45,
                         iq: 40,
-                        accel: 0.055,
-                        maxUses: 0
+                        accel: 0.055
                     };
-                    console.log(`  플레이어 ${idx}: ${redPlayers[idx].animal.name} (${redPlayers[idx].animal.icon})`);
                 }
             });
-            console.log("✅ 친선전 상대팀 로스터 할당 완료");
+            console.log("⚽ 친선전 상대팀 로스터 적용됨");
         }
         
         // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
@@ -2600,13 +2645,13 @@ function renameAnimal() {
         if (!isFriendlyMatch) {
             applyEnemyStats();
         } else {
-            // 친선전 모드: 균형 잡힌 난이도 설정
-            console.log("⚽ 친선전 모드 - AI 스탯 설정");
+            // 친선전 모드: 상대팀 스탯을 약간 강화 (추천받은 높은 스테이지)
+            let recommendedLevel = 20 + Math.random() * 10; // 20-30 정도의 난이도
             state.redStats = {
-                maxSpeed: 0.7,
-                accel: 0.055,
-                shoot: 45,
-                iq: 40
+                maxSpeed: 0.8 + Math.sqrt(recommendedLevel) * 0.1,
+                accel: 0.055 + recommendedLevel * 0.002,
+                shoot: 50 + recommendedLevel * 2,
+                iq: 50 + recommendedLevel * 1.5
             };
             state.redComposition = [null, null, null]; // 친선전에는 AI 스킬 없음
         }
@@ -4457,7 +4502,6 @@ function renameAnimal() {
     
     let opponentData = null; // 친선전 상대 정보
     let isFriendlyMatch = false; // 친선전 모드 여부
-    let friendlyMatchRosters = null; // 친선전 로스터 저장
     
     window.startFriendlyMatch = async function(opponentUid, opponentName) {
         try {
@@ -4467,18 +4511,17 @@ function renameAnimal() {
                 return;
             }
             
-            console.log("🔄 친선전 준비 중...", opponentName);
+            console.log("친선전 시작 시도:", { opponent: opponentName, opponentUid: opponentUid });
             
             // 상대방 로스터 로드
-            let opponentRoster = await getRoster(opponentUid);
-            let playerRoster = await getRoster(currentUser.uid);
+            const opponentRoster = await getRoster(opponentUid);
+            const playerRoster = await getRoster(currentUser.uid);
             
-            console.log("📋 로스터 조회 결과:", { opponentRoster, playerRoster });
+            console.log("로스터 로드 결과:", { opponentRoster, playerRoster });
             
-            // 로스터가 없으면 ownedAnimals 사용
             if (!opponentRoster || !opponentRoster.animals || opponentRoster.animals.length === 0) {
-                console.log("⚠️ 상대방 로스터 없음 - 기본 팀 사용");
-                opponentRoster = { animals: [{ id: 1, name: '동물1', icon: '🐶', level: 1 }, { id: 2, name: '동물2', icon: '🐱', level: 1 }, { id: 3, name: '동물3', icon: '🐭', level: 1 }] };
+                alert("상대방의 팀 정보를 찾을 수 없습니다.");
+                return;
             }
             
             if (!playerRoster || !playerRoster.animals || playerRoster.animals.length === 0) {
@@ -4488,26 +4531,25 @@ function renameAnimal() {
             
             // 친선전 모드 설정
             isFriendlyMatch = true;
-            friendlyMatchRosters = {
-                player: playerRoster.animals,
-                opponent: opponentRoster.animals
-            };
             opponentData = {
                 uid: opponentUid,
                 name: opponentName,
                 roster: opponentRoster.animals
             };
             
-            console.log("✅ 친선전 준비 완료:", { playerTeam: friendlyMatchRosters.player.length, opponentTeam: friendlyMatchRosters.opponent.length });
+            console.log("⚽ 친선전 준비 완료:", {
+                player: currentUser.displayName || currentUser.email,
+                opponent: opponentName,
+                playerTeam: playerRoster.animals.length,
+                opponentTeam: opponentRoster.animals.length
+            });
             
             // 게임 시작 (startGame이 changeTab(2)를 호출함)
             startGame();
             
         } catch (error) {
             console.error("친선전 시작 실패:", error);
-            alert("친선전 시작에 실패했습니다");
-            isFriendlyMatch = false;
-            opponentData = null;
+            alert("친선전 시작에 실패했습니다: " + error.message);
         }
     }
     
