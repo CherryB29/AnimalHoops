@@ -20,7 +20,7 @@
         #app-container { width: 100%; max-width: 450px; height: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
 
         /* --- Start Screen --- */
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a1a, #000); z-index: 400; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 400; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
         .logo-icon { font-size: 6rem; margin-bottom: 10px; animation: bounce 2s infinite ease-in-out; }
         .game-title { font-family: 'Black Han Sans', sans-serif; font-size: 3.5rem; color: var(--gold); text-shadow: 0 4px 15px rgba(255,215,0,0.4); text-align: center; line-height: 1.1; margin-bottom: 40px; }
         .btn-main { background: linear-gradient(45deg, var(--blue), #60a5fa); color: white; font-family: 'Black Han Sans', sans-serif; font-size: 2rem; padding: 15px 50px; border-radius: 30px; border: none; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4); cursor: pointer; transition: transform 0.1s; margin-bottom: 20px; }
@@ -37,8 +37,8 @@
         .stage-select { appearance: none; background: rgba(255,255,255,0.07); border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 14px; font-size: 0.85rem; font-weight: 800; min-width: 65px; }
 
         /* --- 구조 변경 (슬라이더 영역 스크롤 최적화) --- */
-        #view-slider { flex: 1; width: 300%; display: flex; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
-        .page { width: 33.333%; height: 100%; display: flex; flex-direction: column; }
+        #view-slider { flex: 1; width: 500%; display: flex; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; will-change: transform; }
+        .page { width: 20%; height: 100%; display: flex; flex-direction: column; }
         .page-content { padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .page-title { font-family: 'Black Han Sans', sans-serif; font-size: 2rem; color: white; margin-bottom: 10px; text-align: center; flex-shrink: 0; }
 
@@ -210,15 +210,48 @@
         .gacha-particle { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; pointer-events: none; opacity: 0; }
         @keyframes explodeOut { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
     </style>
+    
+    <!-- Firebase SDK (v9 compat - 전역 firebase 객체 제공) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase 설정 파일 -->
+    <script src="firebase-config.js"></script>
 </head>
 <body>
 
 <div id="app-container">
-    <div id="start-screen">
-        <div class="logo-icon">🏀🐶</div>
-        <div class="game-title">ANIMAL<br>HOOPS</div>
-        <button class="btn-main" onclick="startGame()">PLAY</button>
+    <!-- 로그인 화면 -->
+    <div id="login-screen" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #1a1a1a, #000); z-index:500; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:opacity 0.5s ease;">
+        <div style="text-align:center; color:white;">
+            <div style="font-size:5rem; margin-bottom:20px;">🏀🐶</div>
+            <div style="font-family:'Black Han Sans', sans-serif; font-size:3rem; color:#ffd700; margin-bottom:40px; text-shadow:0 4px 15px rgba(255,215,0,0.4);">ANIMAL HOOPS</div>
+            <div style="font-size:1.2rem; color:#aaa; margin-bottom:50px;">멀티플레이 경기에 참가하세요</div>
+            
+            <div style="display:flex; flex-direction:column; gap:15px; width:100%; max-width:300px; margin:0 auto;">
+                <button class="btn-main" onclick="loginWithGoogle()" style="background: #4285f4; width:100%; font-size:1.5rem;">
+                    구글 로그인
+                </button>
+                <button class="btn-main" onclick="loginAnonymously()" style="background: #34a853; width:100%; font-size:1.5rem;">
+                    익명 로그인
+                </button>
+            </div>
+            
+            <div style="margin-top:40px; font-size:0.8rem; color:#666; max-width:300px; line-height:1.6;">
+                <p>💡 구글 계정으로 로그인하면 순위가 저장됩니다.</p>
+                <p>익명 로그인은 언제든 재시작할 수 있습니다.</p>
+            </div>
+        </div>
     </div>
+
+    <div id="start-screen">
+        <div class="logo-icon">🏀</div>
+        <div class="game-title">ANIMAL<br>HOOPS</div>
+        <button id="play-btn" class="btn-main" onclick="startGame()">PLAY</button>
+    </div>
+    
+    <!-- 프로필 페이지 -->
 
     <div class="flash-white" id="flash-screen"></div>
 
@@ -383,6 +416,20 @@
         </div>
 
         <div id="view-slider">
+            <div class="page" id="page-gacha">
+                <div class="page-content" style="justify-content: center; align-items: center;">
+                    <div class="gacha-banner">🎁</div>
+                    <div class="page-title">프리미엄 스카우트</div>
+                    <div style="color: #ccc; font-weight: 800; text-align: center; margin-bottom: 30px; font-size: 0.9rem;">
+                        새로운 에이스를 영입하세요!<br>
+                        <span style="color:#ef4444; font-size:0.8rem;">Legendary 3% | Epic 15%</span>
+                    </div>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #d97706, #f59e0b); width: 85%; margin-bottom: 15px;" onclick="summon(1)">1회 뽑기 (500💰)</button>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #a855f7, #6366f1); width: 85%; margin-bottom: 15px;" onclick="summon(10)">10회 뽑기 (5,000💰)</button>
+                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #ef4444, #f97316); width: 85%;" onclick="summon(100)">100회 뽑기 (50,000💰)</button>
+                </div>
+            </div>
+
             <div class="page" id="page-team">
                 <div class="page-content">
                     <div class="page-title">팀 로스터</div>
@@ -430,25 +477,88 @@
                 </div>
             </div>
 
-            <div class="page" id="page-gacha">
-                <div class="page-content" style="justify-content: center; align-items: center;">
-                    <div class="gacha-banner">🎁</div>
-                    <div class="page-title">프리미엄 스카우트</div>
-                    <div style="color: #ccc; font-weight: 800; text-align: center; margin-bottom: 30px; font-size: 0.9rem;">
-                        새로운 에이스를 영입하세요!<br>
-                        <span style="color:#ef4444; font-size:0.8rem;">Legendary 3% | Epic 15%</span>
+            <!-- 랭킹 페이지 -->
+            <div class="page" id="page-ranking">
+                <div class="page-content">
+                    <div class="page-title">🏆 랭킹</div>
+                    
+                    <!-- 내 순위 -->
+                    <div id="my-rank-card" style="background:linear-gradient(135deg, #fbbf24, #f59e0b); padding:15px; border-radius:15px; margin-bottom:15px; text-align:center; display:none;">
+                        <div style="font-size:0.8rem; color:rgba(0,0,0,0.7); font-weight:900; margin-bottom:3px;">나의 순위</div>
+                        <div style="font-size:1.8rem; font-weight:900; color:white;">
+                            <span id="my-rank-number">#1</span>
+                        </div>
+                        <div id="my-rank-rating" style="font-size:0.9rem; font-weight:900; color:rgba(0,0,0,0.7);">1500 Pt</div>
                     </div>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #d97706, #f59e0b); width: 85%; margin-bottom: 15px;" onclick="summon(1)">1회 뽑기 (500💰)</button>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #a855f7, #6366f1); width: 85%; margin-bottom: 15px;" onclick="summon(10)">10회 뽑기 (5,000💰)</button>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #ef4444, #f97316); width: 85%;" onclick="summon(100)">100회 뽑기 (50,000💰)</button>
+                    
+                    <!-- 랭킹 테이블 -->
+                    <div style="font-size:0.8rem; font-weight:900; color:#666; display:grid; grid-template-columns:0.8fr 1fr 1fr 0.8fr; gap:8px; padding:8px; border-bottom:2px solid #333; margin-bottom:10px;">
+                        <div>순위</div>
+                        <div>닉네임</div>
+                        <div>전적</div>
+                        <div>레이팅</div>
+                    </div>
+                    
+                    <div id="ranking-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- 랭킹 항목이 여기에 추가됨 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 설정 페이지 (프로필) -->
+            <div class="page" id="page-profile">
+                <div class="page-content">
+                    <div class="page-title">⚙️ 설정</div>
+                    
+                    <!-- 사용자 정보 -->
+                    <div style="background:#1e1e1e; padding:20px; border-radius:15px; border:1px solid #333; text-align:center; margin-bottom:15px;">
+                        <div id="profile-avatar" style="font-size:3rem; margin-bottom:10px;">🐶</div>
+                        <div id="profile-nickname" style="font-size:1.4rem; font-weight:900; color:white; margin-bottom:5px;">플레이어</div>
+                        <div id="profile-email" style="font-size:0.8rem; color:#888;">user@example.com</div>
+                    </div>
+                    
+                    <!-- 전적 통계 -->
+                    <div style="background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; margin-bottom:15px;">
+                        <div style="font-size:1rem; font-weight:900; color:#ffd700; margin-bottom:10px;">📊 전적</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">
+                                <div style="font-size:0.75rem; color:#888; margin-bottom:3px;">승리</div>
+                                <div id="profile-wins" style="font-size:1.5rem; font-weight:900; color:#4ade80;">0</div>
+                            </div>
+                            <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">
+                                <div style="font-size:0.75rem; color:#888; margin-bottom:3px;">패배</div>
+                                <div id="profile-losses" style="font-size:1.5rem; font-weight:900; color:#ef4444;">0</div>
+                            </div>
+                            <div style="background:#222; padding:10px; border-radius:10px; text-align:center; grid-column:1/3;">
+                                <div style="font-size:0.75rem; color:#888; margin-bottom:3px;">승률</div>
+                                <div id="profile-winrate" style="font-size:1.5rem; font-weight:900; color:#60a5fa;">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 레이팅 -->
+                    <div style="background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; text-align:center; margin-bottom:15px;">
+                        <div style="font-size:1rem; font-weight:900; color:#ffd700; margin-bottom:8px;">⭐ 레이팅</div>
+                        <div style="font-size:2.5rem; font-weight:900; color:#60a5fa;">
+                            <span id="profile-rating">1500</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 액션 버튼 -->
+                    <div style="display:flex; gap:10px; flex-direction:column;">
+                        <button onclick="updateNicknameDialog()" style="background:#3b82f6; color:white; padding:12px; border-radius:10px; border:none; font-weight:900; cursor:pointer; font-size:0.9rem;">✏️ 닉네임 변경</button>
+                        <button onclick="logout()" style="background:#ef4444; color:white; padding:12px; border-radius:10px; border:none; font-weight:900; cursor:pointer; font-size:0.9rem;">🚪 로그아웃</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="bottom-nav">
-            <div class="nav-item" onclick="changeTab(0, this)"><div class="icon">📋</div><div class="label">팀 관리</div></div>
-            <div class="nav-item active" onclick="changeTab(1, this)"><div class="icon">🏀</div><div class="label">경기</div></div>
-            <div class="nav-item" onclick="changeTab(2, this)"><div class="icon">🎁</div><div class="label">뽑기</div></div>
+            <div class="nav-item" onclick="changeTab(0, this)"><div class="icon">🎁</div><div class="label">뽑기</div></div>
+            <div class="nav-item" onclick="changeTab(1, this)"><div class="icon">📋</div><div class="label">팀 관리</div></div>
+            <div class="nav-item active" onclick="changeTab(2, this)"><div class="icon">🏀</div><div class="label">경기</div></div>
+            <div class="nav-item" onclick="changeTab(3, this)"><div class="icon">🏆</div><div class="label">랭킹</div></div>
+            <div class="nav-item" onclick="changeTab(4, this)"><div class="icon">⚙️</div><div class="label">설정</div></div>
         </div>
     </div>
 </div>
@@ -486,10 +596,10 @@
         { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2 }, 
         
         { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1초간 도망치게 합니다.', maxUses: 2 },
-        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '불도저 덩크', skillDesc: '공을 잡으면 불꽃을 뿜으며 골대로 돌진해 수비를 날립니다.', maxUses: 2 },
+        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '가슴 두드리기', skillDesc: '가슴을 세게 두드려 넓은 범위 내 모든 적을 0.4초간 기절시킵니다.', maxUses: 3 },
         { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4 },
         { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2 },
-        { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '돌진 태클', skillDesc: '공을 들고 있는 적이 가까우면 돌진하여 넉백시키고 1.5초 기절시킵니다. 회복 후 1.5초간 약화됩니다.', maxUses: 2 },
+        { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '게임 차저', skillDesc: '공을 든 적을 감지하면 추진력을 모았다가 빠르게 돌진합니다. 경로상 모든 적을 강하게 날려버립니다. (기절 2초, 약화 2.5초)', maxUses: 2 },
         { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3 },
         
         { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2 }
@@ -529,7 +639,7 @@
 
     let state = { stage: 1, maxStage: 1, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1, redComposition: [] };
     let ownedAnimals = []; let selectedRosterIdx = 0; 
-    let isGameRunning = false; let isResetting = false; let currentTabIdx = 1; 
+    let isGameRunning = false; let isResetting = false; let currentTabIdx = 2; 
     let targetAnimUid = null;
     let gachaTimeout1, gachaTimeout2; 
     let currentPickedList = [];
@@ -552,22 +662,142 @@
                 allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
                 totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
             }));
-            const data = { gold: state.gold, stage: state.stage, maxStage: state.maxStage, ownedAnimals: animalsWithStats, roster: players.filter(p => p.team === 'blue').map(p => p.animal) };
+            const data = { 
+                gold: state.gold, 
+                stage: state.stage, 
+                maxStage: state.maxStage, 
+                ownedAnimals: animalsWithStats, 
+                roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+                lastSaved: new Date().toISOString()
+            };
+            
+            // 로컬 저장 (백업)
             localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
+            
+            // 서버 저장 (계정 기반)
+            const currentUser = getCurrentUser();
+            if (currentUser && typeof saveGameData === 'function') {
+                debouncedSave(currentUser.uid, data, 500);
+            }
         } catch(e) {
             console.error("Save Error:", e);
         }
     }
     
+    // 현재 게임 상태 반환 (자동 저장용)
+    function getGameData() {
+        const animalsWithStats = ownedAnimals.map(a => ({
+            ...a,
+            baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
+            allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
+            totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
+        }));
+        return { 
+            gold: state.gold, 
+            stage: state.stage, 
+            maxStage: state.maxStage, 
+            ownedAnimals: animalsWithStats, 
+            roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+            lastSaved: new Date().toISOString()
+        };
+    }
+    
+    // 즉시 저장 함수 (중요 이벤트용)
+    function saveDataImmediate() {
+        try {
+            const animalsWithStats = ownedAnimals.map(a => ({
+                ...a,
+                baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
+                allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
+                totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
+            }));
+            const data = { 
+                gold: state.gold, 
+                stage: state.stage, 
+                maxStage: state.maxStage, 
+                ownedAnimals: animalsWithStats, 
+                roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+                lastSaved: new Date().toISOString()
+            };
+            
+            // 로컬 저장 (백업)
+            localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
+            
+            // 서버 즉시 저장
+            const currentUser = getCurrentUser();
+            if (currentUser && typeof immediateSave === 'function') {
+                immediateSave(currentUser.uid, data);
+            }
+        } catch(e) {
+            console.error("Save Immediate Error:", e);
+        }
+    }
+    
+    // 서버에서 데이터 로드 시도
+    async function loadFromServer() {
+        const currentUser = getCurrentUser();
+        if (!currentUser || typeof loadGameData !== 'function') {
+            console.log("📭 서버 로드 불가 - 로컬 데이터 사용");
+            return null;
+        }
+        
+        try {
+            const serverData = await loadGameData(currentUser.uid);
+            if (serverData) {
+                console.log("🔄 서버 데이터로 로드");
+                return serverData;
+            }
+            return null;
+        } catch (error) {
+            console.error("❌ 서버 로드 실패:", error);
+            return null;
+        }
+    }
+    
     function loadData() {
+        // 1. 서버 데이터 먼저 시도 (로그인된 경우)
+        const currentUser = getCurrentUser();
+        if (currentUser && typeof loadGameData === 'function') {
+            loadFromServer().then(serverData => {
+                if (serverData) {
+                    // 서버 데이터로 복원
+                    applyLoadedData(serverData);
+                    // 자동 저장 시작
+                    startAutoSave(currentUser.uid, getGameData, 30000);
+                } else {
+                    // 서버 데이터 없음 - 로컬 데이터 사용
+                    loadLocalData();
+                    // 자동 저장 시작
+                    startAutoSave(currentUser.uid, getGameData, 30000);
+                }
+            });
+        } else {
+            // 로그인 안됨 - 로컬 데이터만 사용
+            loadLocalData();
+        }
+    }
+    
+    // 로컬 데이터 로드
+    function loadLocalData() {
         const saved = localStorage.getItem('animalHoopsRPGSave3');
         if (saved) {
-            const data = JSON.parse(saved);
-            if (data.gold !== undefined) state.gold = data.gold;
-            if (data.stage !== undefined) state.stage = data.stage;
-            if (data.maxStage !== undefined) state.maxStage = data.maxStage;
-            else state.maxStage = state.stage;
-            if (data.ownedAnimals) {
+            try {
+                const data = JSON.parse(saved);
+                applyLoadedData(data);
+                console.log("📁 로컬 데이터로 로드");
+            } catch (e) {
+                console.error("로컬 데이터 파싱 오류:", e);
+            }
+        }
+    }
+    
+    // 로드된 데이터 적용
+    function applyLoadedData(data) {
+        if (data.gold !== undefined) state.gold = data.gold;
+        if (data.stage !== undefined) state.stage = data.stage;
+        if (data.maxStage !== undefined) state.maxStage = data.maxStage;
+        else state.maxStage = state.stage;
+        if (data.ownedAnimals) {
                 ownedAnimals = data.ownedAnimals;
                 // 모든 동물에 대해 스탯 초기화 및 포인트 시스템 갱신
                 ownedAnimals.forEach(a => {
@@ -604,7 +834,7 @@
                     a.totalAvailablePoints = getAvailablePoints(a.level);
                 });
             }
-            if (data.roster && data.roster.length === 3) {
+        if (data.roster && data.roster.length === 3) {
                 let bluePlayers = players.filter(p => p.team === 'blue');
                 for(let i=0; i<3; i++) {
                     bluePlayers[i].animal = data.roster[i];
@@ -648,7 +878,6 @@
                     bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
                 }
             }
-        }
     }
 
     let touchStartX = 0; let touchStartY = 0;
@@ -667,14 +896,17 @@
         setTimeout(() => {
             document.getElementById('start-screen').style.display = 'none'; document.getElementById('game-ui').style.display = 'flex';
             setTimeout(() => { document.getElementById('game-ui').style.opacity = '1'; }, 50);
-            changeTab(1, document.querySelectorAll('.nav-item')[1]); 
+            changeTab(2, document.querySelectorAll('.nav-item')[2]); 
             if(!isGameRunning) { initGame(); isGameRunning = true; }
         }, 500);
     }
     
     function changeTab(index, element) {
-        currentTabIdx = index; document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active')); element.classList.add('active');
-        document.getElementById('view-slider').style.transform = `translateX(${-(index * 33.333)}%)`;
+        currentTabIdx = index;
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        if (element) element.classList.add('active');
+        // 5개 페이지: 각 페이지 20% 너비
+        document.getElementById('view-slider').style.transform = `translateX(${-(index * 20)}%)`;
         if (index === 0) renderInventory();
     }
     
@@ -2064,7 +2296,7 @@ function renameAnimal() {
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0 };
+        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, chargePrep: 0, chargeDx: 0, chargeDy: 0, chargeSpeed: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0 };
         // red 플레이어만 스킬 타입 추가 (나중에 applyEnemyStats에서 할당)
         if (team === 'red') {
             player.skillType = null;
@@ -2129,7 +2361,7 @@ function renameAnimal() {
             p.tx = p.team === 'blue' ? 30 : 70; p.ty = 20 + p.roleIdx * 30;
             // x, y는 현재 위치 유지 (순간이동 안 함!)
             p.vx = 0; p.vy = 0; 
-            p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; p.speedDebuffTimer = 0; p.bisonRecoveryTimer = 0; 
+            p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; p.speedDebuffTimer = 0; p.bisonRecoveryTimer = 0; p.chargePrep = 0; 
             if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
             // 적 팀 스킬 초기화
             if(p.team === 'red') {
@@ -2373,7 +2605,68 @@ function renameAnimal() {
             
             if (p.isShooting) return;
             if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
-            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--; if (p.speedDebuffTimer > 0) p.speedDebuffTimer--; if (p.bisonRecoveryTimer > 0) p.bisonRecoveryTimer--; if (p.chargeTimer > 0) p.chargeTimer--;
+            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--; if (p.speedDebuffTimer > 0) p.speedDebuffTimer--; if (p.bisonRecoveryTimer > 0) p.bisonRecoveryTimer--; if (p.chargeTimer > 0) p.chargeTimer--; if (p.chargePrep > 0) p.chargePrep--;
+            
+            // 넉백 타이머 감소 (넉백 중에는 모든 이동 중단 - 넉백만 적용)
+            // 단, 들소 돌진 중에는 넉백 무시 (들소는 돌진을 멈추지 않음)
+            let isBisonCharging = p.chargeTimer > 0 && p.chargeDx !== undefined && p.chargeDx !== 0;
+            let isKnockbackActive = p.knockbackTimer > 0 && !isBisonCharging;
+            if (isKnockbackActive) {
+                p.knockbackTimer--;
+                // 넉백 속도 적용 (점점 감속)
+                p.vx *= 0.92;
+                p.vy *= 0.92;
+                // 넉백이 끝나면 속도 초기화
+                if (p.knockbackTimer <= 0) {
+                    p.vx = 0;
+                    p.vy = 0;
+                }
+                // 넉백 중에는 모든 이동 로직 건너뜀 (continue 대신 flag로 처리)
+            }
+            
+            // 들소 돌진 중이면 모든 이동 로직 무시하고 돌진만 수행
+            if (p.chargeTimer > 0 && p.chargeDx !== undefined && p.chargeDx !== 0) {
+                // 돌진 속도 업데이트 (다른 로직보다 먼저)
+                if (p.chargeSpeed < 60) {
+                    p.chargeSpeed += 0.8;
+                }
+                p.vx = p.chargeDx * p.chargeSpeed;
+                p.vy = p.chargeDy * p.chargeSpeed;
+                // 목표 지점을 돌진 방향으로 설정 (덮어써기 방지)
+                p.tx = p.x + p.chargeDx * 100;
+                p.ty = p.y + p.chargeDy * 100;
+                
+                // 경로상 모든 적과 충돌 처리 (부딪혀도 멈추지 않음)
+                let enemies = players.filter(e => e.team !== p.team && e.stunTimer <= 0);
+                for (let enemy of enemies) {
+                    let distToEnemy = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+                    if (distToEnemy < 12) {
+                        // 충돌! 적을 매우 멀리 뒤로 날아가게 하고 기절
+                        let dx = enemy.x - p.x;
+                        let dy = enemy.y - p.y;
+                        let dist = Math.hypot(dx, dy);
+                        if (dist > 0) {
+                            // 적을 매우 멀리 날아가게 함 (더 강한 넉백)
+                            enemy.vx = -(dx / dist) * 80;
+                            enemy.vy = -(dy / dist) * 80;
+                            // 넉백 타이머 먼저 설정 (덮어써기 방지)
+                            enemy.knockbackTimer = 20; // 넉백 0.33초
+                        }
+                        enemy.stunTimer = 150; // 2.5초 기절
+                        enemy.bisonRecoveryTimer = 300; // 5초간 약화
+                        
+                        createVfx(enemy.x, enemy.y, 'power', '#ef4444');
+                        createVfx(enemy.x, enemy.y, 'wave', '#ef4444');
+                        createVfx(enemy.x, enemy.y, 'roar', '#ef4444');
+                        
+                        // 충격파 이펙트
+                        for (let i = 0; i < 12; i++) {
+                            createVfx(enemy.x + (Math.random()-0.5)*25, enemy.y + (Math.random()-0.5)*25, 'spark', '#ef4444');
+                        }
+                        // 들소는 멈추지 않고 계속 돌진 (chargeTimer는 유지)
+                    }
+                }
+            }
             
             // 들소 돌진 충돌 감지
             if (p.animal && p.animal.id === 'bison' && p.chargeTimer > 0 && p.chargeTarget) {
@@ -2389,6 +2682,7 @@ function renameAnimal() {
                     }
                     p.chargeTarget.stunTimer = 90;
                     p.chargeTarget.bisonRecoveryTimer = 180;
+                    p.chargeTarget.knockbackTimer = 15; // 넉백 0.25초
                     
                     createVfx(p.chargeTarget.x, p.chargeTarget.y, 'power', '#ef4444');
                     createVfx(p.chargeTarget.x, p.chargeTarget.y, 'wave', '#ef4444');
@@ -2746,7 +3040,25 @@ function renameAnimal() {
                     }
                 }
                 else if (p.animal.id === 'wolf') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 10) { enemies.forEach(e => { e.stunTimer = 80; }); createVfx(p.x, p.y, 'howl', '#a855f7'); createVfx(p.x, p.y, 'wave', '#a855f7'); skillUsed = true; } }
-                else if (p.animal.id === 'gorilla') { if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && distToHoop < p.animal.shootRange + 5 && skillProbability < 10) { enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 15).forEach(e => e.stunTimer = 60); createVfx(p.x, p.y, 'power', '#ef4444'); createVfx(p.x, p.y, 'fire'); shoot(p); skillUsed = true; } } 
+                else if (p.animal.id === 'gorilla') {
+                    // 고릴라: 가슴 두드리기 - 맵 전체 광역 공포 (0.4초)
+                    if ((ball.holder && ball.holder.team !== p.team) && skillProbability < 35) {
+                        // 맵 전체의 모든 적에게 0.4초 공포 적용
+                        enemies.forEach(e => {
+                            e.stunTimer = 24; // 0.4초 (60fps * 0.4 = 24프레임)
+                        });
+                        
+                        // 고릴라는 0.4초간 정지
+                        p.chargeTimer = 24;
+                        
+                        // VFX: 가슴 두드리기 이펙트
+                        createVfx(p.x, p.y, 'roar', '#ef4444');
+                        createVfx(p.x, p.y, 'power', '#ef4444');
+                        createVfx(p.x, p.y, 'wave', '#ef4444');
+                        
+                        skillUsed = true;
+                    }
+                }
                 else if (p.animal.id === 'unicorn') { 
                     let cuttingTeammate = players.find(t => t.team === p.team && t.isCutting && t !== p); 
                     if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && cuttingTeammate && skillProbability < 10) { 
@@ -2772,25 +3084,128 @@ function renameAnimal() {
                     } 
                 }
                 else if (p.animal.id === 'bison') {
-                    // 공을 들고 있는 적이 거리 50 이내면 돌진
+                    // === 게임 차저 (Rampage) 스킬: 3단계 메커니즘 ===
+                    // 1단계: 공을 든 적 감지 (거리 50 이상)
                     if ((ball.holder && ball.holder.team !== p.team) || (ball.isFake && ball.fakeHolder && ball.fakeHolder.team !== p.team)) {
                         let holder = ball.holder && ball.holder.team !== p.team ? ball.holder : ball.fakeHolder;
                         let dist = Math.hypot(holder.x - p.x, holder.y - p.y);
-                        if (dist < 50 && dist > 0 && skillProbability < 25) {
-                            // 돌진 시작
-                            p.chargeTimer = 60; // 1초
+                        
+                        // 돌진 대기 상태 (chargeTimer가 0이고 준비 상태가 아님)
+                        if (dist >= 50 && dist <= 85 && p.chargeTimer <= 0 && p.chargePrep <= 0 && skillProbability < 30 && p.skillUsesLeft > 0) {
+                            // 준비 단계 시작 (0.5초)
+                            p.chargePrep = 30;
                             p.chargeTarget = holder;
-                            // 돌진 방향 설정
-                            p.chargeDx = holder.x - p.x;
-                            p.chargeDy = holder.y - p.y;
-                            let chargeDist = Math.hypot(p.chargeDx, p.chargeDy);
-                            if (chargeDist > 0) {
-                                p.chargeDx /= chargeDist;
-                                p.chargeDy /= chargeDist;
+                            
+                            // 목표 방향 계산
+                            let dx = holder.x - p.x;
+                            let dy = holder.y - p.y;
+                            let d = Math.hypot(dx, dy);
+                            if (d > 0) {
+                                p.chargeDx = dx / d;
+                                p.chargeDy = dy / d;
                             }
+                            
+                            // 준비 비주얼 이펙트 (약간의 광우)
+                            createVfx(p.x, p.y, 'ring', '#fbbf24');
+                            createVfx(p.x, p.y, 'ring', '#f59e0b');
+                        }
+                    }
+                    
+                    // 2단계: 준비 중 (충전)
+                    if (p.chargePrep > 0) {
+                        p.chargePrep--;
+                        
+                        // 준비 중 비주얼 이펙트 (매 프레임)
+                        if (p.chargePrep % 6 === 0) {
+                            createVfx(p.x + (Math.random()-0.5)*8, p.y + (Math.random()-0.5)*8, 'spark', '#fbbf24');
+                        }
+                        
+                        // 준비 단계 끝: 돌진 시작
+                        if (p.chargePrep <= 0) {
+                            p.chargeTimer = 60; // 1초 돌진
+                            p.chargeSpeed = 20; // 초기 속도
+                            
+                            // 돌진 시작 이펙트
+                            createVfx(p.x, p.y, 'power', '#ef4444');
+                            createVfx(p.x, p.y, 'roar', '#ef4444');
                             createVfx(p.x, p.y, 'speed', '#fbbf24');
+                            
                             skillUsed = true;
                         }
+                    }
+                    
+                    // 3단계: 돌진 중
+                    if (p.chargeTimer > 0) {
+                        // 가속 적용 (프레임당 1.0 증가)
+                        if (p.chargeSpeed < 70) {
+                            p.chargeSpeed += 1.0;
+                        }
+                        
+                        // 속도 업데이트
+                        p.vx = p.chargeDx * p.chargeSpeed;
+                        p.vy = p.chargeDy * p.chargeSpeed;
+                        
+                        // 돌진 중 목표점 (돌진 방향으로)
+                        p.tx = p.x + p.chargeDx * 100;
+                        p.ty = p.y + p.chargeDy * 100;
+                        
+                        // 돌진 비주얼 이펙트 (잔상)
+                        if (p.chargeTimer % 3 === 0) {
+                            createVfx(p.x, p.y, 'speed', '#fbbf24');
+                            createVfx(p.x + (Math.random()-0.5)*5, p.y + (Math.random()-0.5)*5, 'spark', '#ef4444');
+                        }
+                        
+                        // 경로상 모든 적과 충돌 처리
+                        let enemies = players.filter(e => e.team !== p.team);
+                        for (let enemy of enemies) {
+                            let distToEnemy = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+                            
+                            // 충돌 범위: 13
+                            if (distToEnemy < 13 && !enemy.bison_hit_this_frame) {
+                                // 충돌 마크 (중복 충돌 방지)
+                                enemy.bison_hit_this_frame = true;
+                                
+                                // 돌진 방향으로 강하게 넉백
+                                let dx = enemy.x - p.x;
+                                let dy = enemy.y - p.y;
+                                let dist = Math.hypot(dx, dy);
+                                
+                                if (dist > 0) {
+                                    // 강한 넉백 (90의 힘)
+                                    enemy.vx = -(dx / dist) * 90;
+                                    enemy.vy = -(dy / dist) * 90;
+                                    enemy.knockbackTimer = 25; // 0.4초 넉백
+                                }
+                                
+                                // 게임 차저의 효과
+                                enemy.stunTimer = 120; // 2초 기절
+                                enemy.bisonRecoveryTimer = 150; // 2.5초 약화
+                                
+                                // 충돌 비주얼 이펙트
+                                createVfx(enemy.x, enemy.y, 'power', '#ef4444');
+                                createVfx(enemy.x, enemy.y, 'power', '#ef4444');
+                                createVfx(enemy.x, enemy.y, 'roar', '#ef4444');
+                                createVfx(enemy.x, enemy.y, 'wave', '#fbbf24');
+                                
+                                // 충격파 이펙트
+                                for (let i = 0; i < 15; i++) {
+                                    createVfx(
+                                        enemy.x + (Math.random()-0.5)*35, 
+                                        enemy.y + (Math.random()-0.5)*35, 
+                                        'spark', 
+                                        Math.random() > 0.5 ? '#ef4444' : '#fbbf24'
+                                    );
+                                }
+                            }
+                        }
+                        
+                        // 돌진 타이머 감소
+                        p.chargeTimer--;
+                    }
+                    
+                    // 중복 충돌 마크 초기화 (매 프레임)
+                    if (p.chargeTimer > 0) {
+                        players.forEach(e => e.bison_hit_this_frame = false);
                     }
                 }
                 
@@ -3207,6 +3622,275 @@ function renameAnimal() {
         
         alert(info);
     }
+    
+    // ===========================
+    // 🔐 Firebase 로그인 로직
+    // ===========================
+    
+    let currentUserData = null;
+    
+    // 페이지 로드 시 인증 상태 확인
+    window.addEventListener('DOMContentLoaded', () => {
+        onAuthStateChanged((user) => {
+            const loginScreen = document.getElementById('login-screen');
+            const startScreen = document.getElementById('start-screen');
+            const gameUI = document.getElementById('game-ui');
+            
+            if (user) {
+                // 사용자가 로그인되어 있음
+                console.log("로그인됨:", user.uid);
+                currentUserData = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName
+                };
+                
+                // 로그인 화면 숨기기
+                loginScreen.style.display = 'none';
+                loginScreen.style.zIndex = '-1';
+                
+                // 게임 시작 화면 보이기
+                startScreen.style.display = 'flex';
+                
+                // 프로필 로드
+                loadUserProfile(user.uid);
+            } else {
+                // 사용자가 로그인되지 않음
+                console.log("로그인 필요");
+                
+                // 로그인 화면 보이기
+                loginScreen.style.display = 'flex';
+                loginScreen.style.zIndex = '500';
+                startScreen.style.display = 'none';
+                gameUI.style.display = 'none';
+            }
+        });
+    });
+    
+    // ===========================
+    // 👤 프로필 페이지 로직
+    // ===========================
+    
+    async function loadUserProfile(uid) {
+        try {
+            const profile = await getUserProfile(uid);
+            if (profile) {
+                // 프로필 화면 업데이트
+                document.getElementById('profile-nickname').textContent = profile.nickname || '플레이어';
+                document.getElementById('profile-email').textContent = profile.email || '익명';
+                document.getElementById('profile-avatar').textContent = profile.avatar || '🐶';
+                document.getElementById('profile-wins').textContent = profile.wins || 0;
+                document.getElementById('profile-losses').textContent = profile.losses || 0;
+                document.getElementById('profile-rating').textContent = profile.rating || 1500;
+                
+                const totalMatches = (profile.wins || 0) + (profile.losses || 0);
+                const winRate = totalMatches > 0 ? ((profile.wins || 0) / totalMatches * 100).toFixed(1) : 0;
+                document.getElementById('profile-winrate').textContent = winRate + '%';
+            }
+        } catch (error) {
+            console.error("프로필 로드 실패:", error);
+        }
+    }
+    
+    // ===========================
+    // 🔐 게임 시작 함수 수정
+    // ===========================
+    
+    // PLAY 버튼 클릭 핸들러를 직접 변경하여 중복 호출 방지
+    document.addEventListener('DOMContentLoaded', () => {
+        const playBtn = document.getElementById('play-btn');
+        if (playBtn) {
+            playBtn.onclick = async function() {
+                // 이미 게임이 실행 중이면 무시
+                if (isGameRunning) {
+                    console.log("⚠️ 게임이 이미 실행 중입니다.");
+                    return;
+                }
+                
+                // PLAY 버튼 비활성화
+                playBtn.disabled = true;
+                playBtn.style.opacity = '0.5';
+                
+                try {
+                    // Firebase가 초기화될 때까지 최대 3초 대기
+                    let waitTime = 0;
+                    while ((!auth || !db) && waitTime < 3000) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        waitTime += 100;
+                    }
+                    
+                    const currentUser = getCurrentUser();
+                    
+                    if (currentUser && db && auth) {
+                        try {
+                            // 현재 로스터를 Firebase에 저장
+                            const blueTeam = players.filter(p => p.team === 'blue');
+                            const rosterData = blueTeam.map(p => ({
+                                id: p.animal.id,
+                                name: p.animal.name,
+                                level: p.animal.level || 1,
+                                icon: p.animal.icon
+                            }));
+                            
+                            await saveRoster(currentUser.uid, rosterData, "내 팀");
+                            console.log("✅ 로스터 저장 완료");
+                        } catch (error) {
+                            console.error("⚠️ 로스터 저장 실패:", error);
+                        }
+                    } else {
+                        console.log("⚠️ Firebase 미초기화 또는 로그인되지 않음 - 오프라인 모드로 진행");
+                    }
+                } catch (error) {
+                    console.error("⚠️ Firebase 대기 중 오류:", error);
+                } finally {
+                    // 로스터 저장 성공/실패 상관없이 게임 시작
+                    console.log("🎮 게임 시작...");
+                    startGame();
+                    
+                    // 600ms 후 버튼 재활성화
+                    setTimeout(() => {
+                        if (playBtn && !isGameRunning) {
+                            playBtn.disabled = false;
+                            playBtn.style.opacity = '1';
+                        }
+                    }, 600);
+                }
+            };
+        }
+    });
+    
+    function updateNicknameDialog() {
+        const currentUser = getCurrentUser();
+        if (!currentUser) return;
+        
+        const newNickname = prompt("새로운 닉네임을 입력하세요:", document.getElementById('profile-nickname').textContent);
+        
+        if (newNickname && newNickname.trim()) {
+            updateNickname(currentUser.uid, newNickname.trim())
+                .then(() => {
+                    alert("닉네임이 변경되었습니다!");
+                    loadUserProfile(currentUser.uid);
+                })
+                .catch(error => {
+                    alert("닉네임 변경 실패: " + error.message);
+                });
+        }
+    }
+    
+    // ===========================
+    // 🏠 화면 전환 함수들
+    // ===========================
+    
+    function showStartScreen() {
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('game-ui').style.display = 'none';
+    }
+    function showProfilePage() {
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+        
+        // 게임 시작이 필요하면 먼저 시작
+        if (!isGameRunning) {
+            startGame();
+        }
+        
+        // 프로필 탭으로 이동
+        setTimeout(() => {
+            const navItems = document.querySelectorAll('.nav-item');
+            changeTab(3, navItems[3]);
+            loadUserProfile(currentUser.uid);
+        }, 100);
+    }
+    
+    // ===========================
+    // 🏆 랭킹 페이지 로직
+    // ===========================
+    
+    async function showRankingPage() {
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+        
+        // 게임 시작이 필요하면 먼저 시작
+        if (!isGameRunning) {
+            startGame();
+        }
+        
+        // 랭킹 탭으로 이동
+        setTimeout(() => {
+            const navItems = document.querySelectorAll('.nav-item');
+            changeTab(4, navItems[4]);
+            loadRankingList(currentUser.uid);
+        }, 100);
+    }
+    
+    async function loadRankingList(uid) {
+        try {
+            // 상위 50명 랭킹 조회
+            const rankings = await getTopRankings(50);
+            const rankingList = document.getElementById('ranking-list');
+            rankingList.innerHTML = '';
+            
+            let myRankIndex = -1;
+            
+            rankings.forEach((rank, index) => {
+                const isMe = rank.userId === uid;
+                if (isMe) myRankIndex = index;
+                
+                const rankCard = document.createElement('div');
+                rankCard.style.cssText = `
+                    background: ${isMe ? 'linear-gradient(135deg, #60a5fa, #3b82f6)' : '#1e1e1e'};
+                    padding: 15px;
+                    border-radius: 10px;
+                    border: ${isMe ? '2px solid #60a5fa' : '1px solid #333'};
+                    display: grid;
+                    grid-template-columns: 0.8fr 1fr 1fr 0.8fr;
+                    gap: 10px;
+                    align-items: center;
+                    cursor: pointer;
+                    transition: 0.2s;
+                `;
+                
+                rankCard.onmouseover = () => rankCard.style.background = isMe ? 'linear-gradient(135deg, #60a5fa, #3b82f6)' : '#252525';
+                rankCard.onmouseout = () => rankCard.style.background = isMe ? 'linear-gradient(135deg, #60a5fa, #3b82f6)' : '#1e1e1e';
+                
+                const rankNum = rank.rank || (index + 1);
+                const rankEmoji = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : `${rankNum}`;
+                
+                rankCard.innerHTML = `
+                    <div style="font-weight:900; color:${isMe ? 'white' : '#ffd700'}; font-size:1.1rem;">${rankEmoji}</div>
+                    <div style="color:${isMe ? 'white' : '#ccc'}; font-weight:900;">${rank.nickname}</div>
+                    <div style="color:${isMe ? 'white' : '#888'}; font-size:0.9rem;">${rank.wins}승 ${rank.losses}패</div>
+                    <div style="color:${isMe ? 'white' : '#fbbf24'}; font-weight:900;">${rank.rating}</div>
+                `;
+                
+                rankingList.appendChild(rankCard);
+            });
+            
+            // 내 순위 표시
+            if (myRankIndex >= 0) {
+                const myRankCard = document.getElementById('my-rank-card');
+                const myRank = rankings[myRankIndex];
+                document.getElementById('my-rank-number').textContent = '#' + (myRank.rank || (myRankIndex + 1));
+                document.getElementById('my-rank-rating').textContent = myRank.rating + ' Pt';
+                myRankCard.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("랭킹 로드 실패:", error);
+            document.getElementById('ranking-list').innerHTML = '<div style="text-align:center; color:#888;">랭킹을 불러올 수 없습니다.</div>';
+        }
+    }
+    
+    // ===========================
+    // 🎮 게임 시작 함수 - 중복 방지 (유일한 정의)
+    // ===========================
+    
+    // 이미 위에서 한 번 정의되었으므로 여기서는 제거합니다.
     
 </script>
 </body>
