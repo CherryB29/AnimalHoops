@@ -216,7 +216,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
-    <!-- Firebase 설정 파일 -->
+    <!-- Firebase 설정 파일 (SDK 로드 후 실행) -->
     <script src="firebase-config.js"></script>
 </head>
 <body>
@@ -230,10 +230,10 @@
             <div style="font-size:1.2rem; color:#aaa; margin-bottom:50px;">멀티플레이 경기에 참가하세요</div>
             
             <div style="display:flex; flex-direction:column; gap:15px; width:100%; max-width:300px; margin:0 auto;">
-                <button class="btn-main" onclick="loginWithGoogle()" style="background: #4285f4; width:100%; font-size:1.5rem;">
+                <button id="btn-google-login" class="btn-main" style="background: #4285f4; width:100%; font-size:1.5rem;">
                     구글 로그인
                 </button>
-                <button class="btn-main" onclick="loginAnonymously()" style="background: #34a853; width:100%; font-size:1.5rem;">
+                <button id="btn-anon-login" class="btn-main" style="background: #34a853; width:100%; font-size:1.5rem;">
                     익명 로그인
                 </button>
             </div>
@@ -3891,6 +3891,90 @@ function renameAnimal() {
     // ===========================
     
     // 이미 위에서 한 번 정의되었으므로 여기서는 제거합니다.
+    
+    // ===========================
+    // 🔐 로그인 버튼 이벤트 핸들러
+    // ===========================
+    
+    // Firebase SDK 로드 완료 대기 후 버튼 이벤트 추가
+    function setupLoginButtons() {
+        const googleBtn = document.getElementById('btn-google-login');
+        const anonBtn = document.getElementById('btn-anon-login');
+        
+        if (googleBtn) {
+            googleBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                this.disabled = true;
+                this.textContent = '로그인 중...';
+                try {
+                    await loginWithGoogle();
+                    // 로그인 성공 후 게임 시작
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('start-screen').style.display = 'flex';
+                } catch (error) {
+                    console.error("로그인 오류:", error);
+                    this.textContent = '구글 로그인 실패 - 다시 시도';
+                    this.disabled = false;
+                    alert('로그인에 실패했습니다. 다시 시도해주세요.');
+                }
+            });
+        }
+        
+        if (anonBtn) {
+            anonBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                this.disabled = true;
+                this.textContent = '로그인 중...';
+                try {
+                    await loginAnonymously();
+                    // 로그인 성공 후 게임 시작
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('start-screen').style.display = 'flex';
+                } catch (error) {
+                    console.error("익명 로그인 오류:", error);
+                    this.textContent = '익명 로그인 실패 - 다시 시도';
+                    this.disabled = false;
+                    alert('로그인에 실패했습니다. 다시 시도해주세요.');
+                }
+            });
+        }
+    }
+    
+    // 페이지 로드 완료 후 버튼 설정
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupLoginButtons);
+    } else {
+        setupLoginButtons();
+    }
+    
+    // Firebase 초기화 완료 후 인증 상태 감시
+    function setupAuthStateListener() {
+        onAuthStateChanged(function(user) {
+            if (user) {
+                console.log("✅ 로그인됨:", user.uid);
+                // 로그인 화면 숨기기
+                const loginScreen = document.getElementById('login-screen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'none';
+                    // 게임 시작 화면 보이기
+                    const startScreen = document.getElementById('start-screen');
+                    if (startScreen) {
+                        startScreen.style.display = 'flex';
+                    }
+                }
+            } else {
+                console.log("❌ 로그인 안됨");
+                // 로그인 화면 보이기
+                const loginScreen = document.getElementById('login-screen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'flex';
+                }
+            }
+        });
+    }
+    
+    // 인증 리스너 설정 대기 (firebase-config.js 로드 후)
+    setTimeout(setupAuthStateListener, 500);
     
 </script>
 </body>
