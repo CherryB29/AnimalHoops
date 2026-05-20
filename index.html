@@ -449,6 +449,141 @@
             await saveGameData(uid, data);
           }, delay);
         }
+
+        // ===========================
+        // 👤 프로필 관련 함수
+        // ===========================
+
+        async function getUserProfile(uid) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return null;
+            }
+            const doc = await db.collection('users').doc(uid).get();
+            return doc.exists ? doc.data() : null;
+          } catch (error) {
+            console.error("프로필 조회 실패:", error);
+            throw error;
+          }
+        }
+
+        async function updateNickname(uid, newNickname) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return;
+            }
+            await db.collection('users').doc(uid).update({
+              nickname: newNickname,
+              lastUpdated: new Date()
+            });
+            console.log("✅ 닉네임 업데이트 성공");
+          } catch (error) {
+            console.error("닉네임 업데이트 실패:", error);
+            throw error;
+          }
+        }
+
+        async function updateAvatar(uid, newAvatar) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return;
+            }
+            await db.collection('users').doc(uid).update({
+              avatar: newAvatar,
+              lastUpdated: new Date()
+            });
+            console.log("✅ 아바타 업데이트 성공");
+          } catch (error) {
+            console.error("아바타 업데이트 실패:", error);
+            throw error;
+          }
+        }
+
+        // ===========================
+        // 🏆 랭킹 관련 함수
+        // ===========================
+
+        async function getTopRankings(limit = 50) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return [];
+            }
+            const snapshot = await db.collection('rankings')
+              .orderBy('rating', 'desc')
+              .limit(limit)
+              .get();
+            
+            const rankings = [];
+            snapshot.forEach((doc, index) => {
+              rankings.push({
+                rank: index + 1,
+                ...doc.data()
+              });
+            });
+            return rankings;
+          } catch (error) {
+            console.error("랭킹 조회 실패:", error);
+            return [];
+          }
+        }
+
+        async function getMyRank(uid) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return null;
+            }
+            const snapshot = await db.collection('rankings')
+              .where('userId', '==', uid)
+              .get();
+            
+            return snapshot.empty ? null : snapshot.docs[0].data();
+          } catch (error) {
+            console.error("내 순위 조회 실패:", error);
+            return null;
+          }
+        }
+
+        // ===========================
+        // 🏀 로스터 관련 함수
+        // ===========================
+
+        async function saveRoster(uid, animals, teamName = "My Team") {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return;
+            }
+            await db.collection('rosters').doc(uid).set({
+              userId: uid,
+              teamName: teamName,
+              animals: animals,
+              lastSaved: new Date()
+            });
+            console.log("✅ 로스터 저장됨");
+          } catch (error) {
+            console.error("로스터 저장 실패:", error);
+            throw error;
+          }
+        }
+
+        async function getRoster(uid) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return null;
+            }
+            const doc = await db.collection('rosters').doc(uid).get();
+            return doc.exists ? doc.data() : null;
+          } catch (error) {
+            console.error("로스터 조회 실패:", error);
+            throw error;
+          }
+        }
     </script>
 
 </head>
@@ -1141,6 +1276,14 @@
         // 5개 페이지: 각 페이지 20% 너비
         document.getElementById('view-slider').style.transform = `translateX(${-(index * 20)}%)`;
         if (index === 0) renderInventory();
+        if (index === 3) loadRankings(); // 랭킹 페이지 로드 시 데이터 새로고침
+        if (index === 4) {
+            // 설정 페이지로 이동 시 프로필 새로고침
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                loadUserProfile(currentUser.uid);
+            }
+        }
     }
     
     function toggleSpeed() {
@@ -3857,7 +4000,7 @@ function renameAnimal() {
     }
     
     // ===========================
-    // 🔐 Firebase 로그인 로직
+    // Firebase 로그인 로직
     // ===========================
     
     let currentUserData = null;
@@ -3871,7 +4014,7 @@ function renameAnimal() {
             
             if (user) {
                 // 사용자가 로그인되어 있음
-                console.log("로그인됨:", user.uid);
+                console.log("✅ 로그인됨:", user.uid);
                 currentUserData = {
                     uid: user.uid,
                     email: user.email,
@@ -3887,9 +4030,12 @@ function renameAnimal() {
                 
                 // 프로필 로드
                 loadUserProfile(user.uid);
+                
+                // 랭킹 로드
+                loadRankings();
             } else {
                 // 사용자가 로그인되지 않음
-                console.log("로그인 필요");
+                console.log("❌ 로그인 필요");
                 
                 // 로그인 화면 보이기
                 loginScreen.style.display = 'flex';
@@ -3910,7 +4056,7 @@ function renameAnimal() {
             if (profile) {
                 // 프로필 화면 업데이트
                 document.getElementById('profile-nickname').textContent = profile.nickname || '플레이어';
-                document.getElementById('profile-email').textContent = profile.email || '익명';
+                document.getElementById('profile-email').textContent = profile.email ? profile.email.substring(0, profile.email.indexOf('@') + 5) + '...' : '익명';
                 document.getElementById('profile-avatar').textContent = profile.avatar || '🐶';
                 document.getElementById('profile-wins').textContent = profile.wins || 0;
                 document.getElementById('profile-losses').textContent = profile.losses || 0;
@@ -3922,6 +4068,73 @@ function renameAnimal() {
             }
         } catch (error) {
             console.error("프로필 로드 실패:", error);
+        }
+    }
+
+    // ===========================
+    // 🏆 랭킹 로드 함수
+    // ===========================
+
+    async function loadRankings() {
+        try {
+            const currentUser = getCurrentUser();
+            const rankings = await getTopRankings(50);
+            const rankingList = document.getElementById('ranking-list');
+            
+            if (rankingList) {
+                rankingList.innerHTML = '';
+                
+                if (rankings.length === 0) {
+                    rankingList.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">랭킹 데이터를 불러올 수 없습니다.</div>';
+                    return;
+                }
+                
+                rankings.forEach(rank => {
+                    const rankItem = document.createElement('div');
+                    rankItem.style.cssText = 'display:grid; grid-template-columns:0.8fr 1fr 1fr 0.8fr; gap:8px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:6px; font-size:0.85rem; font-weight:800; align-items:center;';
+                    
+                    // 순위에 따른 색상 (1-3등 특별)
+                    let rankColor = '#888';
+                    if (rank.rank === 1) rankColor = '#ffd700';
+                    else if (rank.rank === 2) rankColor = '#c0c0c0';
+                    else if (rank.rank === 3) rankColor = '#cd7f32';
+                    
+                    const rankDisplay = rank.rank <= 3 ? 
+                        (rank.rank === 1 ? '🥇' : rank.rank === 2 ? '🥈' : '🥉') + ' ' + rank.rank :
+                        '#' + rank.rank;
+                    
+                    rankItem.innerHTML = `
+                        <div style="color:${rankColor}; font-weight:900;">${rankDisplay}</div>
+                        <div style="color:#ffd700;">${rank.nickname || '알 수 없음'}</div>
+                        <div style="color:#aaa;">${rank.wins || 0}승 ${rank.losses || 0}패</div>
+                        <div style="color:#60a5fa; font-weight:900;">${rank.rating || 0}</div>
+                    `;
+                    
+                    // 현재 사용자 강조
+                    if (currentUser && rank.userId === currentUser.uid) {
+                        rankItem.style.background = 'linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0))';
+                        rankItem.style.borderLeft = '4px solid #3b82f6';
+                        rankItem.style.paddingLeft = '10px';
+                    }
+                    
+                    rankingList.appendChild(rankItem);
+                });
+            }
+            
+            // 내 순위 표시
+            if (currentUser) {
+                const myRank = await getMyRank(currentUser.uid);
+                const myRankCard = document.getElementById('my-rank-card');
+                
+                if (myRank && myRankCard) {
+                    document.getElementById('my-rank-number').textContent = '#' + (rankings.findIndex(r => r.userId === currentUser.uid) + 1 || '?');
+                    document.getElementById('my-rank-rating').textContent = (myRank.rating || 1500) + ' Pt';
+                    myRankCard.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error("랭킹 로드 실패:", error);
+            document.getElementById('ranking-list').innerHTML = '<div style="text-align:center; color:#888;">랭킹을 불러올 수 없습니다.</div>';
         }
     }
     
@@ -4180,34 +4393,7 @@ function renameAnimal() {
         setupLoginButtons();
     }
     
-    // Firebase 초기화 완료 후 인증 상태 감시
-    function setupAuthStateListener() {
-        onAuthStateChanged(function(user) {
-            if (user) {
-                console.log("✅ 로그인됨:", user.uid);
-                // 로그인 화면 숨기기
-                const loginScreen = document.getElementById('login-screen');
-                if (loginScreen) {
-                    loginScreen.style.display = 'none';
-                    // 게임 시작 화면 보이기
-                    const startScreen = document.getElementById('start-screen');
-                    if (startScreen) {
-                        startScreen.style.display = 'flex';
-                    }
-                }
-            } else {
-                console.log("❌ 로그인 안됨");
-                // 로그인 화면 보이기
-                const loginScreen = document.getElementById('login-screen');
-                if (loginScreen) {
-                    loginScreen.style.display = 'flex';
-                }
-            }
-        });
-    }
-    
-    // 인증 리스너 설정 대기 (firebase-config.js 로드 후)
-    setTimeout(setupAuthStateListener, 500);
+    // 로그인 버튼 이벤트 리스너 설정 완료
     
 </script>
 </body>
