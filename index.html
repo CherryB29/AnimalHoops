@@ -216,8 +216,241 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
-    <!-- Firebase 설정 파일 (SDK 로드 후 실행) -->
-    <script src="firebase-config.js"></script>
+    <!-- Firebase 설정 및 인증 함수 (인라인) -->
+    <script>
+        // ===========================
+        // 🔥 Firebase 설정
+        // ===========================
+        const firebaseConfig = {
+          apiKey: "AIzaSyAgHXz-02nosVhld4DbeiyxHtXWNHJhk24",
+          authDomain: "animalhoops.firebaseapp.com",
+          projectId: "animalhoops",
+          storageBucket: "animalhoops.firebasestorage.app",
+          messagingSenderId: "22969368737",
+          appId: "1:22969368737:web:67dde6dd5794921c58b0e0",
+          measurementId: "G-DC23374H2B"
+        };
+
+        // Firebase 서비스 (전역 변수)
+        let db = null;
+        let auth = null;
+
+        // Firebase 초기화 함수
+        function initializeFirebase() {
+          try {
+            if (typeof firebase === 'undefined') {
+              console.warn("Firebase SDK 로드 대기 중...");
+              setTimeout(initializeFirebase, 100);
+              return;
+            }
+
+            if (firebase.apps.length === 0) {
+              firebase.initializeApp(firebaseConfig);
+              console.log("✅ Firebase 초기화");
+            }
+            
+            db = firebase.firestore();
+            auth = firebase.auth();
+            console.log("✅ Firestore & Auth 준비 완료");
+          } catch (error) {
+            console.error("Firebase 초기화 오류:", error);
+            setTimeout(initializeFirebase, 500);
+          }
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initializeFirebase);
+        } else {
+          setTimeout(initializeFirebase, 100);
+        }
+
+        // ===========================
+        // 🔐 인증 함수
+        // ===========================
+        
+        async function loginWithGoogle() {
+          try {
+            if (!auth || !db) {
+              await new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                  if (auth && db) {
+                    clearInterval(checkInterval);
+                    resolve();
+                  }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+              });
+            }
+            
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+            
+            await db.collection('users').doc(user.uid).set({
+              uid: user.uid,
+              email: user.email,
+              nickname: user.displayName || "Player",
+              avatar: "🐶",
+              rating: 1500,
+              wins: 0,
+              losses: 0,
+              winRate: 0,
+              createdAt: new Date(),
+              lastUpdated: new Date()
+            }, { merge: true });
+            
+            return user;
+          } catch (error) {
+            console.error("Google 로그인 실패:", error);
+            throw error;
+          }
+        }
+
+        async function loginAnonymously() {
+          try {
+            if (!auth || !db) {
+              await new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                  if (auth && db) {
+                    clearInterval(checkInterval);
+                    resolve();
+                  }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+              });
+            }
+            
+            const result = await auth.signInAnonymously();
+            const user = result.user;
+            
+            const nicknames = ["Player", "Gamer", "Champ", "Pro", "Star"];
+            const randomNick = nicknames[Math.floor(Math.random() * nicknames.length)] + "_" + Math.random().toString(36).substr(2, 5);
+            
+            await db.collection('users').doc(user.uid).set({
+              uid: user.uid,
+              email: null,
+              nickname: randomNick,
+              avatar: "🐶",
+              rating: 1500,
+              wins: 0,
+              losses: 0,
+              winRate: 0,
+              createdAt: new Date(),
+              lastUpdated: new Date()
+            }, { merge: true });
+            
+            return user;
+          } catch (error) {
+            console.error("익명 로그인 실패:", error);
+            throw error;
+          }
+        }
+
+        async function logout() {
+          try {
+            if (auth) {
+              await auth.signOut();
+              console.log("✅ 로그아웃 완료");
+            }
+          } catch (error) {
+            console.error("로그아웃 실패:", error);
+            throw error;
+          }
+        }
+
+        function getCurrentUser() {
+          if (auth) {
+            return auth.currentUser;
+          }
+          return null;
+        }
+
+        function onAuthStateChanged(callback) {
+          const checkAndRegister = () => {
+            if (auth) {
+              auth.onAuthStateChanged(callback);
+            } else {
+              setTimeout(checkAndRegister, 100);
+            }
+          };
+          checkAndRegister();
+        }
+
+        // 게임 데이터 저장/로드
+        async function saveGameData(uid, gameData) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return;
+            }
+            
+            await db.collection('gameData').doc(uid).set({
+              uid: uid,
+              gold: gameData.gold,
+              stage: gameData.stage,
+              maxStage: gameData.maxStage,
+              ownedAnimals: gameData.ownedAnimals,
+              roster: gameData.roster,
+              lastSaved: new Date()
+            }, { merge: true });
+            
+            console.log("✅ 게임 데이터 저장됨");
+          } catch (error) {
+            console.error("게임 데이터 저장 실패:", error);
+          }
+        }
+
+        async function loadGameData(uid) {
+          try {
+            if (!db) {
+              console.warn("Firestore가 아직 초기화되지 않았습니다.");
+              return null;
+            }
+            
+            const doc = await db.collection('gameData').doc(uid).get();
+            if (doc.exists) {
+              console.log("✅ 게임 데이터 로드됨");
+              return doc.data();
+            }
+            return null;
+          } catch (error) {
+            console.error("게임 데이터 로드 실패:", error);
+            return null;
+          }
+        }
+
+        function startAutoSave(uid, getGameDataFn, interval = 30000) {
+          return setInterval(async () => {
+            try {
+              const gameData = getGameDataFn();
+              await saveGameData(uid, gameData);
+              console.log("⏱️ 자동 저장 완료");
+            } catch (error) {
+              console.error("자동 저장 오류:", error);
+            }
+          }, interval);
+        }
+
+        async function immediateSave(uid, gameData) {
+          try {
+            await saveGameData(uid, gameData);
+            console.log("🔄 즉시 저장 완료");
+          } catch (error) {
+            console.error("즉시 저장 오류:", error);
+          }
+        }
+
+        function debouncedSave(uid, data, delay = 1000) {
+          if (window.saveTimeout) {
+            clearTimeout(window.saveTimeout);
+          }
+          
+          window.saveTimeout = setTimeout(async () => {
+            await saveGameData(uid, data);
+          }, delay);
+        }
+    </script>
+
 </head>
 <body>
 
