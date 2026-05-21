@@ -164,6 +164,56 @@
         .vfx-flight { position: absolute; width: 30px; height: 80px; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; animation: flightTrail 0.5s ease-out forwards; }
         @keyframes flightTrail { 0% { opacity: 0.8; transform: translate(-50%, -50%) scaleY(0.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scaleY(1.5); } }
 
+        /* --- 자동판매 애니메이션 --- */
+        @keyframes animalToGold { 
+            0% { 
+                font-size: 3rem; 
+                opacity: 1; 
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+                font-size: 2rem;
+                transform: translate(-50%, -50%) scale(1.2) rotate(15deg);
+            }
+            100% { 
+                font-size: 0.1rem;
+                opacity: 0;
+                transform: translate(-50%, 30%) scale(0.3) rotate(360deg);
+            }
+        }
+
+        @keyframes animalToGoldInPlace { 
+            0% { 
+                opacity: 1; 
+                transform: scale(1);
+                font-size: 1.8rem;
+            }
+            50% { 
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+            100% { 
+                opacity: 0;
+                transform: scale(0.2);
+                font-size: 1.8rem;
+            }
+        }
+
+        @keyframes priceFloat { 
+            0% { 
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            30% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-15px) scale(1.2);
+            }
+            100% { 
+                opacity: 0;
+                transform: translateX(-50%) translateY(-50px) scale(0.8);
+            }
+        }
+
         /* --- Modals & Gacha --- */
         #full-overlay, #info-modal, #gacha-anim-overlay, #bulk-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; overflow: hidden; }
         .anim-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -960,9 +1010,16 @@
                     
                     <!-- 사용자 정보 -->
                     <div style="background:#1e1e1e; padding:20px; border-radius:15px; border:1px solid #333; text-align:center; margin-bottom:15px;">
-                        <div id="profile-avatar" style="font-size:3rem; margin-bottom:10px;">🐶</div>
+                        <div id="profile-avatar" onclick="toggleAnimalSelector()" style="font-size:3rem; margin-bottom:10px; cursor:pointer; transition:0.2s;" title="클릭하여 동물 변경">🐶</div>
+                        <div style="font-size:0.7rem; color:#888;">클릭하여 변경</div>
                         <div id="profile-nickname" style="font-size:1.4rem; font-weight:900; color:white; margin-bottom:5px;">플레이어</div>
                         <div id="profile-email" style="font-size:0.8rem; color:#888;">user@example.com</div>
+                    </div>
+                    
+                    <!-- 동물 선택기 (숨김) -->
+                    <div id="animal-selector" style="display:none; background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; margin-bottom:15px; max-height:200px; overflow-y:auto;">
+                        <div style="font-size:0.85rem; color:#ffd700; font-weight:900; margin-bottom:10px;">프로필 동물 선택</div>
+                        <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;" id="animal-list"></div>
                     </div>
                     
                     <!-- 전적 통계 -->
@@ -980,6 +1037,21 @@
                             <div style="background:#222; padding:10px; border-radius:10px; text-align:center; grid-column:1/3;">
                                 <div style="font-size:0.75rem; color:#888; margin-bottom:3px;">승률</div>
                                 <div id="profile-winrate" style="font-size:1.5rem; font-weight:900; color:#60a5fa;">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 게임 설정 -->
+                    <div style="background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; margin-bottom:15px;">
+                        <div style="font-size:1rem; font-weight:900; color:#ffd700; margin-bottom:12px;">⚙️ 게임 설정</div>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#222; border-radius:8px;">
+                                <span style="font-size:0.85rem; color:#ddd;">커먼 자동 판매</span>
+                                <input type="checkbox" id="autosell-common" onchange="updateGameSettings()" style="width:20px; height:20px; cursor:pointer;">
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#222; border-radius:8px;">
+                                <span style="font-size:0.85rem; color:#ddd;">레어 자동 판매</span>
+                                <input type="checkbox" id="autosell-rare" onchange="updateGameSettings()" style="width:20px; height:20px; cursor:pointer;">
                             </div>
                         </div>
                     </div>
@@ -1005,44 +1077,44 @@
 
 <script>
     const ANIMAL_LIBRARY = [
-        { id: 'duck', name: '오리', grade: 'Normal', speed: 0.6, accel: 0.06, shoot: 42, iq: 40, icon: '🦆', color: '#a8a29e', shootRange: 16, passRate: 0.4 },
-        { id: 'hamster', name: '햄스터', grade: 'Normal', speed: 0.7, accel: 0.07, shoot: 36, iq: 28, icon: '🐹', color: '#a8a29e', shootRange: 15, passRate: 0.5 },
+        { id: 'duck', name: '오리', grade: 'Normal', speed: 0.6, accel: 0.06, shoot: 42, iq: 40, icon: '🦆', color: '#a8a29e', shootRange: 16, passRate: 0.4, weight: 80 },
+        { id: 'hamster', name: '햄스터', grade: 'Normal', speed: 0.7, accel: 0.07, shoot: 36, iq: 28, icon: '🐹', color: '#a8a29e', shootRange: 15, passRate: 0.5, weight: 40 },
 
-        { id: 'panda', name: '판다', grade: 'Rare', speed: 0.5, accel: 0.04, shoot: 55, iq: 60, icon: '🐼', color: '#3b82f6', shootRange: 22, passRate: 0.3 },
-        { id: 'meerkat', name: '미어캣', grade: 'Rare', speed: 0.8, accel: 0.09, shoot: 48, iq: 80, icon: '🦫', color: '#3b82f6', shootRange: 20, passRate: 0.6 },
-        { id: 'otter', name: '수달', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 52, iq: 55, icon: '🦦', color: '#3b82f6', shootRange: 19, passRate: 0.5 },
+        { id: 'panda', name: '판다', grade: 'Rare', speed: 0.5, accel: 0.04, shoot: 55, iq: 60, icon: '🐼', color: '#3b82f6', shootRange: 22, passRate: 0.3, weight: 170 },
+        { id: 'meerkat', name: '미어캣', grade: 'Rare', speed: 0.8, accel: 0.09, shoot: 48, iq: 80, icon: '🦫', color: '#3b82f6', shootRange: 20, passRate: 0.6, weight: 85 },
+        { id: 'otter', name: '수달', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 52, iq: 55, icon: '🦦', color: '#3b82f6', shootRange: 19, passRate: 0.5, weight: 90 },
 
-        { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '마크맨을 강력하게 밀쳐내 기절시킵니다.', maxUses: 3 },
-        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 18, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '공중에 떠있는 공을 빠르게 낚아채 소유합니다. 비행 후 2초간 속도 25% 감소.', maxUses: 1 },
-        { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3 },
+        { id: 'elephant', name: '코끼리', grade: 'Epic', speed: 0.4, accel: 0.03, shoot: 80, iq: 70, icon: '🐘', color: '#a855f7', shootRange: 30, passRate: 0.2, skill: '압도적 체중', skillDesc: '마크맨을 강력하게 밀쳐내 기절시킵니다.', maxUses: 3, weight: 220 },
+        { id: 'falcon', name: '매', grade: 'Epic', speed: 1.2, accel: 0.13, shoot: 18, iq: 60, icon: '🦅', color: '#a855f7', shootRange: 35, passRate: 0.3, skill: '공중 낚아채기', skillDesc: '공중에 떠있는 공을 빠르게 낚아채 소유합니다. 비행 후 2초간 속도 25% 감소.', maxUses: 1, weight: 30 },
+        { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3, weight: 130 },
 
-        { id: 'orca', name: '범고래', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 70, iq: 70, icon: '🐋', color: '#ef4444', shootRange: 32, passRate: 0.4, skill: '파괴의 돌진', skillDesc: '공격 시 주변 상대 3명을 0.7초간 기절시키고 2.4초간 50% 둔화시킵니다.', maxUses: 2 },
-        { id: 'dog', name: '바둑이', grade: 'Normal', speed: 0.5, accel: 0.05, shoot: 40, iq: 30, icon: '🐶', color: '#a8a29e', shootRange: 22, passRate: 0.3 },
-        { id: 'turtle', name: '거북이', grade: 'Normal', speed: 0.2, accel: 0.02, shoot: 50, iq: 60, icon: '🐢', color: '#a8a29e', shootRange: 10, passRate: 0.1 },
-        { id: 'penguin', name: '펭귄', grade: 'Normal', speed: 0.8, accel: 0.02, shoot: 35, iq: 40, icon: '🐧', color: '#a8a29e', shootRange: 18, passRate: 0.4 },
-        { id: 'zebra', name: '얼룩말', grade: 'Normal', speed: 0.6, accel: 0.06, shoot: 45, iq: 45, icon: '🦓', color: '#a8a29e', shootRange: 22, passRate: 0.3 },
-        { id: 'cat', name: '고양이', grade: 'Normal', speed: 0.7, accel: 0.05, shoot: 45, iq: 50, icon: '🐱', color: '#a8a29e', shootRange: 20, passRate: 0.4 }, 
-        { id: 'pig', name: '돼지', grade: 'Normal', speed: 0.3, accel: 0.03, shoot: 55, iq: 60, icon: '🐷', color: '#a8a29e', shootRange: 15, passRate: 0.5 }, 
+        { id: 'orca', name: '범고래', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 70, iq: 70, icon: '🐋', color: '#ef4444', shootRange: 32, passRate: 0.4, skill: '파괴의 돌진', skillDesc: '공격 시 주변 상대 3명을 0.7초간 기절시키고 2.4초간 50% 둔화시킵니다.', maxUses: 2, weight: 190 },
+        { id: 'dog', name: '바둑이', grade: 'Normal', speed: 0.5, accel: 0.05, shoot: 40, iq: 30, icon: '🐶', color: '#a8a29e', shootRange: 22, passRate: 0.3, weight: 100 },
+        { id: 'turtle', name: '거북이', grade: 'Normal', speed: 0.2, accel: 0.02, shoot: 50, iq: 60, icon: '🐢', color: '#a8a29e', shootRange: 10, passRate: 0.1, weight: 250 },
+        { id: 'penguin', name: '펭귄', grade: 'Normal', speed: 0.8, accel: 0.02, shoot: 35, iq: 40, icon: '🐧', color: '#a8a29e', shootRange: 18, passRate: 0.4, weight: 80 },
+        { id: 'zebra', name: '얼룩말', grade: 'Normal', speed: 0.6, accel: 0.06, shoot: 45, iq: 45, icon: '🦓', color: '#a8a29e', shootRange: 22, passRate: 0.3, weight: 140 },
+        { id: 'cat', name: '고양이', grade: 'Normal', speed: 0.7, accel: 0.05, shoot: 45, iq: 50, icon: '🐱', color: '#a8a29e', shootRange: 20, passRate: 0.4, weight: 70 }, 
+        { id: 'pig', name: '돼지', grade: 'Normal', speed: 0.3, accel: 0.03, shoot: 55, iq: 60, icon: '🐷', color: '#a8a29e', shootRange: 15, passRate: 0.5, weight: 180 }, 
         
         { id: 'giraffe', name: '지라프', grade: 'Epic', speed: 0.5, accel: 0.04, shoot: 75, iq: 65, icon: '🦒', color: '#a855f7', shootRange: 80, passRate: 0.2, skill: '다이렉트 슛', skillDesc: '현재 위치에서 즉시 상대 골대로 슛을 날립니다(40% 확률 발동).', maxUses: 3 },
-        { id: 'rabbit', name: '토끼', grade: 'Rare', speed: 0.9, accel: 0.1, shoot: 40, iq: 30, icon: '🐰', color: '#3b82f6', shootRange: 18, passRate: 0.5 },
-        { id: 'owl', name: '부엉이', grade: 'Rare', speed: 0.5, accel: 0.05, shoot: 50, iq: 90, icon: '🦉', color: '#3b82f6', shootRange: 25, passRate: 0.6 },
-        { id: 'kangaroo', name: '캥거루', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 60, iq: 50, icon: '🦘', color: '#3b82f6', shootRange: 35, passRate: 0.2 },
-        { id: 'monkey', name: '원숭이', grade: 'Rare', speed: 0.8, accel: 0.08, shoot: 55, iq: 70, icon: '🐵', color: '#3b82f6', shootRange: 28, passRate: 0.5 }, 
+        { id: 'rabbit', name: '토끼', grade: 'Rare', speed: 0.9, accel: 0.1, shoot: 40, iq: 30, icon: '🐰', color: '#3b82f6', shootRange: 18, passRate: 0.5, weight: 75 },
+        { id: 'owl', name: '부엉이', grade: 'Rare', speed: 0.5, accel: 0.05, shoot: 50, iq: 90, icon: '🦉', color: '#3b82f6', shootRange: 25, passRate: 0.6, weight: 100 },
+        { id: 'kangaroo', name: '캥거루', grade: 'Rare', speed: 0.7, accel: 0.08, shoot: 60, iq: 50, icon: '🦘', color: '#3b82f6', shootRange: 35, passRate: 0.2, weight: 130 },
+        { id: 'monkey', name: '원숭이', grade: 'Rare', speed: 0.8, accel: 0.08, shoot: 55, iq: 70, icon: '🐵', color: '#3b82f6', shootRange: 28, passRate: 0.5, weight: 95 }, 
 
-        { id: 'cheetah', name: '치타', grade: 'Epic', speed: 1.0, accel: 0.12, shoot: 50, iq: 50, icon: '🐆', color: '#a855f7', shootRange: 18, passRate: 0.1, skill: '초고속 질주', skillDesc: '이동 속도가 잠시 3배로 증가합니다.', maxUses: 2 },
-        { id: 'bear', name: '불곰', grade: 'Epic', speed: 0.55, accel: 0.04, shoot: 30, iq: 75, icon: '🐻', color: '#a855f7', shootRange: 20, passRate: 0.0, skill: '철벽 방어', skillDesc: '2초간 공을 뺏기지 않으며, 패스하지 않고 적 골대로만 돌진합니다.', maxUses: 2 },
-        { id: 'fox', name: '여우', grade: 'Epic', speed: 0.8, accel: 0.09, shoot: 65, iq: 85, icon: '🦊', color: '#a855f7', shootRange: 30, passRate: 0.5, skill: '공 도둑', skillDesc: '적이 공을 들고 있을 때 3.5초간 가짜 공을 소환해 공을 뺏습니다. 라운드당 1회.', maxUses: 1 },
-        { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2 }, 
+        { id: 'cheetah', name: '치타', grade: 'Epic', speed: 1.0, accel: 0.12, shoot: 50, iq: 50, icon: '🐆', color: '#a855f7', shootRange: 18, passRate: 0.1, skill: '초고속 질주', skillDesc: '이동 속도가 잠시 3배로 증가합니다.', maxUses: 2, weight: 70 },
+        { id: 'bear', name: '불곰', grade: 'Epic', speed: 0.55, accel: 0.04, shoot: 30, iq: 75, icon: '🐻', color: '#a855f7', shootRange: 20, passRate: 0.0, skill: '철벽 방어', skillDesc: '2초간 공을 뺏기지 않으며, 주변 15칸 내 모든 적을 강하게 밀어냅니다.', maxUses: 2, weight: 200 },
+        { id: 'fox', name: '여우', grade: 'Epic', speed: 0.8, accel: 0.09, shoot: 65, iq: 85, icon: '🦊', color: '#a855f7', shootRange: 30, passRate: 0.5, skill: '공 도둑', skillDesc: '적이 공을 들고 있을 때 3.5초간 가짜 공을 소환해 공을 뺏습니다. 라운드당 1회.', maxUses: 1, weight: 100 },
+        { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2, weight: 140 }, 
         
-        { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1초간 도망치게 합니다.', maxUses: 2 },
-        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '가슴 두드리기', skillDesc: '가슴을 세게 두드려 넓은 범위 내 모든 적을 0.4초간 공포에 빠뜨려 도망치게 합니다.', maxUses: 3 },
-        { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4 },
-        { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2 },
-        { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '게임 차저', skillDesc: '공을 든 적을 감지하면 추진력을 모았다가 빠르게 돌진합니다. 경로상 모든 적을 강하게 날려버립니다. (기절 2초, 약화 2.5초)', maxUses: 2 },
-        { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3 },
+        { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1초간 도망치게 합니다.', maxUses: 2, weight: 180 },
+        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '가슴 두드리기', skillDesc: '가슴을 세게 두드려 넓은 범위 내 모든 적을 0.4초간 공포에 빠뜨려 도망치게 합니다.', maxUses: 3, weight: 210 },
+        { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4, weight: 120 },
+        { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2, weight: 200 },
+        { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '게임 차저', skillDesc: '공을 든 적을 감지하면 추진력을 모았다가 빠르게 돌진합니다. 경로상 모든 적을 강하게 날려버립니다. (기절 2초, 약화 2.5초)', maxUses: 2, weight: 190 },
+        { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3, weight: 35 },
         
-        { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2 }
+        { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2, weight: 150 }
     ];
 
     const genUid = () => Math.random().toString(36).substr(2, 9);
@@ -1067,8 +1139,7 @@
             passRate: baseObj.passRate || 0.3,
             skill: baseObj.skill || null,
             skillDesc: baseObj.skillDesc || '',
-            maxUses: baseObj.maxUses || 0,
-            weight: baseObj.weight || 0.7
+            maxUses: baseObj.maxUses || 0
         };
         const animal = { ...JSON.parse(JSON.stringify(defaultAnimal)), level: lvl, uid: genUid() };
         // 스탯 포인트 시스템
@@ -1352,7 +1423,8 @@
         if (element) element.classList.add('active');
         // 5개 페이지: 각 페이지 20% 너비
         document.getElementById('view-slider').style.transform = `translateX(${-(index * 20)}%)`;
-        if (index === 0) renderInventory();
+        if (index === 0) renderInventory(); // 뽑기 페이지 - 동물 목록
+        if (index === 1) renderInventory(); // 팀 로스터 페이지 - 동물 목록
         if (index === 3) loadRankings(); // 랭킹 페이지 로드 시 데이터 새로고침
         if (index === 4) {
             // 설정 페이지로 이동 시 프로필 새로고침
@@ -2438,6 +2510,49 @@ function renameAnimal() {
         console.log(`스테이지가 ${stage}로 변경되었습니다.`);
     }
 
+    // 🔄 자동판매 함수
+    function autoSellAnimals() {
+        const settings = window.gameSettings || {};
+        let soldAnimals = [];
+        
+        ownedAnimals = ownedAnimals.filter(animal => {
+            // 스탯이 배분되었거나 즐겨찾기된 동물은 판매 안 함
+            let hasAllocated = (animal.allocatedPoints.speed || 0) + (animal.allocatedPoints.shoot || 0) + (animal.allocatedPoints.iq || 0) > 0;
+            if (hasAllocated || animal.favorite) return true;
+            
+            // 현재 팀에 속한 동물은 판매 안 함
+            if (players.some(p => p.animal && p.animal.uid === animal.uid)) return true;
+            
+            // 자동판매 설정 확인
+            if (settings.autosellCommon && animal.grade === 'Normal') {
+                let sellPrice = animal.level * 100;
+                soldAnimals.push({ animal, price: sellPrice });
+                return false;
+            }
+            
+            if (settings.autosellRare && animal.grade === 'Rare') {
+                let sellPrice = animal.level * 100;
+                soldAnimals.push({ animal, price: sellPrice });
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // 판매된 동물들의 골드 추가
+        let totalGold = 0;
+        soldAnimals.forEach(item => {
+            state.gold += item.price;
+            totalGold += item.price;
+        });
+        
+        if (soldAnimals.length > 0) {
+            updateUI();
+        }
+        
+        return soldAnimals;
+    }
+
     function summon(count = 1) {
         const cost = count === 100 ? 50000 : (count === 10 ? 5000 : 500);
         if (state.gold < cost) return alert("골드가 부족합니다!");
@@ -2532,6 +2647,9 @@ function renameAnimal() {
     document.getElementById('gacha-anim-overlay').style.display = 'none';
     document.getElementById('flash-screen').style.animation = '';
     
+    // 🎯 자동판매 실행 및 판매 목록 받기
+    let soldAnimals = autoSellAnimals();
+    
     const overlay = document.getElementById('full-overlay');
     
     if (currentPickedList.length === 1) {
@@ -2543,12 +2661,65 @@ function renameAnimal() {
     } else {
         document.getElementById('overlay-icon').innerText = "🎉";
         document.getElementById('overlay-title').innerText = "스카우트 완료!";
-        let gridHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height: 250px; overflow-y:auto;">';
-        currentPickedList.forEach(p => {
-            gridHtml += `<div style="font-size:1.8rem; background:rgba(0,0,0,0.5); border: 2px solid ${p.color}; border-radius:10px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">${p.icon}</div>`;
+        let gridHtml = '<div id="gacha-result-grid" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height: 250px; overflow-y:auto; position:relative;">';
+        currentPickedList.forEach((p, idx) => {
+            let isSold = soldAnimals.some(s => s.animal.uid === p.uid);
+            gridHtml += `<div class="gacha-result-icon" data-uid="${p.uid}" data-icon="${p.icon}" data-color="${p.color}" data-price="${p.level * 100}" style="font-size:1.8rem; background:rgba(0,0,0,0.5); border: 2px solid ${p.color}; border-radius:10px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.3s ease; position:relative;">${p.icon}</div>`;
         });
         gridHtml += '</div>';
         document.getElementById('overlay-sub').innerHTML = gridHtml;
+        
+        // 자동판매 동물들의 아이콘을 돈으로 변환하는 애니메이션 (화면에 보이는 순서)
+        if (soldAnimals.length > 0) {
+            // 화면에 보이는 순서대로 정렬 (왼쪽→오른쪽, 위→아래)
+            // currentPickedList 순서대로 인덱스 생성
+            let orderedIndices = [];
+            currentPickedList.forEach((p, idx) => {
+                let soldIdx = soldAnimals.findIndex(s => s.animal.uid === p.uid);
+                if (soldIdx >= 0 && !orderedIndices.includes(soldIdx)) {
+                    orderedIndices.push(soldIdx);
+                }
+            });
+            
+            orderedIndices.forEach((idx, order) => {
+                let item = soldAnimals[idx];
+                setTimeout(() => {
+                    let icons = document.querySelectorAll('.gacha-result-icon');
+                    let targetIcon = null;
+                    
+                    // uid로 찾기
+                    icons.forEach(icon => {
+                        if (icon.getAttribute('data-uid') === item.animal.uid && !targetIcon) {
+                            targetIcon = icon;
+                        }
+                    });
+                    
+                    if (targetIcon) {
+                        targetIcon.style.animation = 'animalToGoldInPlace 0.2s ease-in forwards';
+                        targetIcon.innerHTML = '💰';
+                        
+                        // +가격 표시
+                        let priceDiv = document.createElement('div');
+                        priceDiv.style.cssText = `
+                            position: absolute;
+                            font-size: 0.65rem;
+                            font-weight: 900;
+                            color: #4ade80;
+                            top: -18px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            animation: priceFloat 1.5s ease-out forwards;
+                            pointer-events: none;
+                            white-space: nowrap;
+                        `;
+                        priceDiv.innerText = `+${item.price}`;
+                        targetIcon.appendChild(priceDiv);
+                        
+                        setTimeout(() => priceDiv.remove(), 1500);
+                    }
+                }, order * 25); // 25ms 간격으로 초고속 랜덤 변환 (한번에 2개씩)
+            });
+        }
     }
 
     overlay.style.display = 'flex';
@@ -2557,18 +2728,11 @@ function renameAnimal() {
     void iconEl.offsetWidth; 
     iconEl.className = 'anim-pop';
 
-    // --- 🌟 추가된 부분: 화면 터치 시 창 닫기 ---
     overlay.onclick = function() {
-        // 1. 결과 창 숨기기
         overlay.style.display = 'none';
-        
-        // 2. 창이 닫힐 때 새로 뽑은 동물이 바로 보이도록 인벤토리 새로고침
         if (typeof renderInventory === 'function') renderInventory();
-        
-        // 3. 중복 클릭 방지를 위해 이벤트 초기화
         overlay.onclick = null; 
     };
-    // ------------------------------------------
 }
 
     function createVfx(x, y, type, color = 'red') {
@@ -2787,7 +2951,7 @@ function renameAnimal() {
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, chargePrep: 0, chargeDx: 0, chargeDy: 0, chargeSpeed: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0 };
+        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, chargePrep: 0, chargeDx: 0, chargeDy: 0, chargeSpeed: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0, bearSkillTimer: 0 };
         // red 플레이어만 스킬 타입 추가 (나중에 applyEnemyStats에서 할당)
         if (team === 'red') {
             player.skillType = null;
@@ -3180,8 +3344,26 @@ function renameAnimal() {
             
             if (p.isShooting) return;
             if (p.cooldown > 0) p.cooldown--; if (p.cutTimer > 0) p.cutTimer--; else p.isCutting = false;
-            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--; if (p.speedDebuffTimer > 0) p.speedDebuffTimer--; if (p.bisonRecoveryTimer > 0) p.bisonRecoveryTimer--; if (p.chargeTimer > 0) p.chargeTimer--; if (p.chargePrep > 0) p.chargePrep--;
+            if (p.activeBuff > 0) p.activeBuff--; if (p.flightBuffTimer > 0) p.flightBuffTimer--; if (p.stealImmune > 0) p.stealImmune--; if (p.invisible > 0) p.invisible--; if (p.speedDebuffTimer > 0) p.speedDebuffTimer--; if (p.bisonRecoveryTimer > 0) p.bisonRecoveryTimer--; if (p.chargeTimer > 0) p.chargeTimer--; if (p.chargePrep > 0) p.chargePrep--; if (p.bearSkillTimer > 0) p.bearSkillTimer--;
             
+            // 고도 스킬 지속 동안 주변 적들 기절 (독 링 뒤)
+            if (p.bearSkillTimer > 0) {
+                // 30 프레임마다 (0.5초마다) 주변 적들을 기절시키기
+                if (p.bearSkillTimer % 30 === 0) {
+                    let enemies = players.filter(e => e.team !== p.team && e !== p);
+                    enemies.forEach(e => {
+                        let dx = e.x - p.x;
+                        let dy = e.y - p.y;
+                        let dist = Math.hypot(dx, dy);
+                        
+                        // 15 범위 내 적들 기절
+                        if (dist < 15 && dist > 0) {
+                            e.stunTimer = 20; // 0.33초 기절
+                            createVfx(e.x, e.y, 'wave', '#a855f7');
+                        }
+                    });
+                }
+            }
             // 넉백 타이머 감소 (넉백 중에는 모든 이동 중단 - 넉백만 적용)
             // 단, 들소 돌진 중에는 넉백 무시 (들소는 돌진을 멈추지 않음)
             let isBisonCharging = p.chargeTimer > 0 && p.chargeDx !== undefined && p.chargeDx !== 0;
@@ -3221,16 +3403,9 @@ function renameAnimal() {
                         let dy = enemy.y - p.y;
                         let dist = Math.hypot(dx, dy);
                         if (dist > 0) {
-                            // 무게 기반 넉백 계산
-                            let chargerWeight = p.animal ? p.animal.weight : 0.7;
-                            let enemyWeight = enemy.animal ? enemy.animal.weight : 0.7;
-                            
-                            // 상대 무게가 가벼울수록 더 크게 넉백됨
-                            let weightFactor = 1 + (1 - enemyWeight / (chargerWeight + enemyWeight)) * 0.5;
-                            
-                            // 적을 매우 멀리 날아가게 함 (더 강한 넉백, 무게 조정)
-                            enemy.vx = -(dx / dist) * 80 * weightFactor;
-                            enemy.vy = -(dy / dist) * 80 * weightFactor;
+                            // 적을 매우 멀리 날아가게 함 (더 강한 넉백)
+                            enemy.vx = -(dx / dist) * 80;
+                            enemy.vy = -(dy / dist) * 80;
                             // 넉백 타이머 먼저 설정 (덮어써기 방지)
                             enemy.knockbackTimer = 20; // 넉백 0.33초
                         }
@@ -3481,11 +3656,16 @@ function renameAnimal() {
                     } 
                 } 
                 else if (p.animal.id === 'bear') { 
-                    // 2초간(120프레임) 공 뺏기지 않음 + 패스 안 하고 적 골대로만 감
+                    // 2초간(120프레임) 공 뺏기지 않음 + 2초간 주변 적 지속 기절
                     if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 10) { 
                         p.stealImmune = 120; // 2초간 뺏기지 않음 (60fps * 2 = 120)
+                        p.bearSkillTimer = 120; // 2초 동안 주변 적들 기절 지속
+                        
                         createVfx(p.x, p.y, 'aura', '#a855f7'); 
                         createVfx(p.x, p.y, 'ring', '#a855f7');
+                        // 곰 아이콘 강한 효과
+                        p.el.style.transform = 'translate(-50%, -50%) scale(1.4)';
+                        setTimeout(() => { p.el.style.transform = 'translate(-50%, -50%) scale(1)'; }, 300);
                         skillUsed = true; 
                     } 
                 } 
@@ -3766,16 +3946,9 @@ function renameAnimal() {
                                 let dist = Math.hypot(dx, dy);
                                 
                                 if (dist > 0) {
-                                    // 무게 기반 넉백 계산
-                                    let bisonWeight = p.animal ? p.animal.weight : 0.7;
-                                    let enemyWeight = enemy.animal ? enemy.animal.weight : 0.7;
-                                    
-                                    // 상대 무게가 가벼울수록 더 크게 넉백됨
-                                    let weightFactor = 1 + (1 - enemyWeight / (bisonWeight + enemyWeight)) * 0.5;
-                                    
-                                    // 강한 넉백 (90의 힘 * 무게 계수)
-                                    enemy.vx = -(dx / dist) * 90 * weightFactor;
-                                    enemy.vy = -(dy / dist) * 90 * weightFactor;
+                                    // 강한 넉백 (90의 힘)
+                                    enemy.vx = -(dx / dist) * 90;
+                                    enemy.vy = -(dy / dist) * 90;
                                     enemy.knockbackTimer = 25; // 0.4초 넉백
                                 }
                                 
@@ -3945,19 +4118,12 @@ function renameAnimal() {
                     let dy = tempY - other.y;
                     let d = Math.hypot(dx, dy);
                     if (d > 0.1) {
-                        // 무게 기반 넉백 계산 (무거운 상대에게는 더 크게 밀림)
-                        let pWeight = p.animal ? p.animal.weight : 0.7;
-                        let otherWeight = other.animal ? other.animal.weight : 0.7;
-                        
-                        // 상대 무게가 클수록 더 크게 밀려남 (무게 비율 이용)
-                        let weightRatio = otherWeight / (pWeight + otherWeight);
-                        
-                        // 충돌 회피: 더 강하게 밀어내기 (무게에 따라 조정)
+                        // 충돌 회피: 더 강하게 밀어내기
                         let avoidX = dx / d;
                         let avoidY = dy / d;
                         let avoidStrength = (minCollisionDist - distToOther) / minCollisionDist;
-                        p.vx += avoidX * avoidStrength * 0.5 * (1 + weightRatio);
-                        p.vy += avoidY * avoidStrength * 0.5 * (1 + weightRatio);
+                        p.vx += avoidX * avoidStrength * 0.5;
+                        p.vy += avoidY * avoidStrength * 0.5;
                     }
                 } else if (distToOther < separationDist) {
                     // 왈츠 방지: 서로의 목표점이 겹치지 않도록 조정
@@ -4018,17 +4184,12 @@ function renameAnimal() {
                     
                     // 마크 대상 넉백 습격
                     if (child.markedTarget && Math.hypot(child.x - child.markedTarget.x, child.y - child.markedTarget.y) < 12 && child.cooldown <= 0) {
-                        // 무게 기반 넉백 계산
-                        let childWeight = child.animal ? child.animal.weight : 0.7;
-                        let targetWeight = child.markedTarget.animal ? child.markedTarget.animal.weight : 0.7;
-                        let weightFactor = 1 + (1 - targetWeight / (childWeight + targetWeight)) * 0.4;
-                        
                         // 넉백 공격 - 벽 쪽으로 강하게 밀어내기
                         let targetX = child.markedTarget.x < 50 ? 2 : 98; // 더 가까운 벽 쪽으로
                         let targetY = child.markedTarget.y < 50 ? 5 : 95; // 빠른 명령
                         let wallAngle = Math.atan2(targetY - child.markedTarget.y, targetX - child.markedTarget.x);
-                        child.markedTarget.vx = Math.cos(wallAngle) * 14 * weightFactor; // 벽으로 강한 넉백 (무게 조정)
-                        child.markedTarget.vy = Math.sin(wallAngle) * 14 * weightFactor;
+                        child.markedTarget.vx = Math.cos(wallAngle) * 14; // 벽으로 강한 넉백
+                        child.markedTarget.vy = Math.sin(wallAngle) * 14;
                         // 넉백 후 짧은 스턴 추가
                         child.markedTarget.stunTimer = 30; // 0.5초 스턴
                         createVfx(child.markedTarget.x, child.markedTarget.y, 'spark', '#ff8c00');
@@ -4303,8 +4464,67 @@ function renameAnimal() {
                 const winRate = totalMatches > 0 ? ((profile.wins || 0) / totalMatches * 100).toFixed(1) : 0;
                 document.getElementById('profile-winrate').textContent = winRate + '%';
             }
+            
+            // 게임 설정 로드
+            loadGameSettings();
+            initAnimalSelector();
         } catch (error) {
             console.error("프로필 로드 실패:", error);
+        }
+    }
+    
+    // ===========================
+    // ⚙️ 게임 설정 함수
+    // ===========================
+    
+    function loadGameSettings() {
+        const settings = JSON.parse(localStorage.getItem('gameSettings') || '{"autosellCommon":false,"autosellRare":false,"profileAnimal":"🐶"}');
+        document.getElementById('autosell-common').checked = settings.autosellCommon || false;
+        document.getElementById('autosell-rare').checked = settings.autosellRare || false;
+        document.getElementById('profile-avatar').textContent = settings.profileAnimal || '🐶';
+        window.gameSettings = settings;
+    }
+    
+    function updateGameSettings() {
+        const settings = {
+            autosellCommon: document.getElementById('autosell-common').checked,
+            autosellRare: document.getElementById('autosell-rare').checked,
+            profileAnimal: document.getElementById('profile-avatar').textContent
+        };
+        localStorage.setItem('gameSettings', JSON.stringify(settings));
+        window.gameSettings = settings;
+        
+        // 동물 정보창 업데이트
+        updateAnimalInfoDisplay();
+    }
+    
+    function toggleAnimalSelector() {
+        const selector = document.getElementById('animal-selector');
+        selector.style.display = selector.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function initAnimalSelector() {
+        const animalList = document.getElementById('animal-list');
+        animalList.innerHTML = '';
+        ANIMAL_LIBRARY.forEach(animal => {
+            const div = document.createElement('div');
+            div.style.cssText = 'font-size:1.8rem; padding:5px; border-radius:8px; background:#222; cursor:pointer; transition:0.2s;';
+            div.textContent = animal.icon;
+            div.onclick = () => selectProfileAnimal(animal.icon);
+            animalList.appendChild(div);
+        });
+    }
+    
+    function selectProfileAnimal(icon) {
+        document.getElementById('profile-avatar').textContent = icon;
+        document.getElementById('animal-selector').style.display = 'none';
+        updateGameSettings();
+    }
+    
+    function updateAnimalInfoDisplay() {
+        // 동물 정보 UI 업데이트 (실제로는 동물 클릭 시 표시되는 정보)
+        if (window.gameSettings && window.gameSettings.showHiddenStats) {
+            // 숨겨진 수치 표시 ON
         }
     }
 
@@ -4466,6 +4686,9 @@ function renameAnimal() {
     
     // PLAY 버튼 클릭 핸들러를 직접 변경하여 중복 호출 방지
     document.addEventListener('DOMContentLoaded', () => {
+        // 페이지 로드 시 로컬 데이터 초기화
+        loadLocalData();
+        
         const playBtn = document.getElementById('play-btn');
         if (playBtn) {
             playBtn.onclick = async function() {
