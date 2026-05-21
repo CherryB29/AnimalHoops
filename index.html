@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Animal Hoops🏀</title>
+    <!-- Favicon (404 에러 방지) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🏀</text></svg>">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Montserrat:wght@800;900&display=swap');
 
@@ -209,6 +211,20 @@
         
         .gacha-particle { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; pointer-events: none; opacity: 0; }
         @keyframes explodeOut { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
+        
+        /* === 커스텀 팝업 모달 === */
+        #popup-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 500; }
+        .popup-card { background: #1a1a1a; border: 2px solid #333; border-radius: 20px; padding: 30px; width: 85%; max-width: 340px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.9); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .popup-title { font-family: 'Black Han Sans', sans-serif; font-size: 1.5rem; color: white; margin-bottom: 15px; word-break: keep-all; line-height: 1.4; }
+        .popup-message { font-size: 0.95rem; color: #ddd; margin-bottom: 20px; word-break: keep-all; line-height: 1.6; white-space: pre-wrap; }
+        .popup-input { width: 100%; padding: 12px; border: 2px solid #333; border-radius: 10px; background: #222; color: white; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; margin-bottom: 20px; box-sizing: border-box; }
+        .popup-input:focus { outline: none; border-color: var(--blue); }
+        .popup-buttons { display: flex; gap: 10px; justify-content: center; }
+        .popup-btn { padding: 12px 20px; border: none; border-radius: 10px; font-family: 'Black Han Sans', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: 0.1s; flex: 1; max-width: 150px; }
+        .popup-btn:active { transform: scale(0.95); }
+        .popup-btn-confirm { background: var(--blue); color: white; }
+        .popup-btn-cancel { background: #444; color: #aaa; }
+        .popup-btn-ok { background: var(--gold); color: black; grid-column: span 2; max-width: none; }
     </style>
     
     <!-- Firebase SDK (v9 compat - 전역 firebase 객체 제공) -->
@@ -854,6 +870,16 @@
         </div>
     </div>
 
+    <!-- 커스텀 팝업 모달 -->
+    <div id="popup-modal" onclick="if(event.target.id === 'popup-modal') closePopup()">
+        <div class="popup-card" onclick="event.stopPropagation()">
+            <div class="popup-title" id="popup-title"></div>
+            <div class="popup-message" id="popup-message"></div>
+            <input type="text" id="popup-input" class="popup-input" style="display:none;" placeholder="입력해주세요">
+            <div class="popup-buttons" id="popup-buttons"></div>
+        </div>
+    </div>
+
     <div id="game-ui">
         <div class="top-bar">
             <div style="display:flex; align-items:center; gap:10px;">
@@ -1036,7 +1062,7 @@
         { id: 'wolf', name: '늑대', grade: 'Epic', speed: 0.9, accel: 0.1, shoot: 60, iq: 65, icon: '🐺', color: '#a855f7', shootRange: 25, passRate: 0.3, skill: '맹수의 약탈', skillDesc: '공격수 모드에서 한 번에 모든 상대 선수를 기절시킵니다.', maxUses: 2 }, 
         
         { id: 'lion', name: '사자', grade: 'Legendary', speed: 0.7, accel: 0.06, shoot: 75, iq: 70, icon: '🦁', color: '#ef4444', shootRange: 28, passRate: 0.2, skill: '왕의 포효', skillDesc: '강력한 포효로 주변 적을 공포에 빠뜨려 1초간 도망치게 합니다.', maxUses: 2 },
-        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '가슴 두드리기', skillDesc: '가슴을 세게 두드려 넓은 범위 내 모든 적을 0.4초간 기절시킵니다.', maxUses: 3 },
+        { id: 'gorilla', name: '고릴라', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 80, iq: 35, icon: '🦍', color: '#ef4444', shootRange: 25, passRate: 0.01, skill: '가슴 두드리기', skillDesc: '가슴을 세게 두드려 넓은 범위 내 모든 적을 0.4초간 공포에 빠뜨려 도망치게 합니다.', maxUses: 3 },
         { id: 'unicorn', name: '유니콘', grade: 'Legendary', speed: 0.5, accel: 0.05, shoot: 75, iq: 85, icon: '🦄', color: '#ef4444', shootRange: 50, passRate: 0.8, skill: '매직 패스', skillDesc: '거리 무관하게 팀원에게 순간이동 패스를 줍니다. 받은 선수는 0.5초간 공을 뺏기지 않습니다.', maxUses: 4 },
         { id: 'dragon', name: '드래곤', grade: 'Legendary', speed: 0.8, accel: 0.1, shoot: 85, iq: 75, icon: '🐲', color: '#ef4444', shootRange: 40, passRate: 0.1, skill: '메테오 슈팅', skillDesc: '공중에서 운석을 떨어뜨려 적을 기절시키고 슛을 쏩니다.', maxUses: 2 },
         { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '게임 차저', skillDesc: '공을 든 적을 감지하면 추진력을 모았다가 빠르게 돌진합니다. 경로상 모든 적을 강하게 날려버립니다. (기절 2초, 약화 2.5초)', maxUses: 2 },
@@ -1083,11 +1109,124 @@
     let targetAnimUid = null;
     let gachaTimeout1, gachaTimeout2; 
     let currentPickedList = [];
+    let isFriendlyMatch = false; // 친선전 모드 여부 (선언을 위로 이동)
+    let opponentData = null; // 친선전 상대 정보 (선언을 위로 이동)
     
     // 라운드 시작 관련 전역 변수
     let waitingForPlayersArrive = false;
     let roundResetStartTime = 0;
     let possessionTeamForRound = 'red';
+
+    // === 팝업 모달 관련 ===
+    let popupResolve = null;
+
+    function closePopup() {
+        document.getElementById('popup-modal').style.display = 'none';
+    }
+
+    function showAlert(message) {
+        return new Promise(resolve => {
+            const modal = document.getElementById('popup-modal');
+            const title = document.getElementById('popup-title');
+            const msg = document.getElementById('popup-message');
+            const input = document.getElementById('popup-input');
+            const buttons = document.getElementById('popup-buttons');
+            
+            title.textContent = '알림';
+            msg.textContent = message;
+            input.style.display = 'none';
+            buttons.innerHTML = '';
+            
+            const btn = document.createElement('button');
+            btn.className = 'popup-btn popup-btn-ok';
+            btn.textContent = '확인';
+            btn.onclick = () => {
+                closePopup();
+                resolve(true);
+            };
+            buttons.appendChild(btn);
+            
+            modal.style.display = 'flex';
+            input.value = '';
+        });
+    }
+
+    function showConfirm(message) {
+        return new Promise(resolve => {
+            const modal = document.getElementById('popup-modal');
+            const title = document.getElementById('popup-title');
+            const msg = document.getElementById('popup-message');
+            const input = document.getElementById('popup-input');
+            const buttons = document.getElementById('popup-buttons');
+            
+            title.textContent = '확인';
+            msg.textContent = message;
+            input.style.display = 'none';
+            buttons.innerHTML = '';
+            buttons.style.gap = '10px';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'popup-btn popup-btn-cancel';
+            cancelBtn.textContent = '취소';
+            cancelBtn.onclick = () => {
+                closePopup();
+                resolve(false);
+            };
+            buttons.appendChild(cancelBtn);
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'popup-btn popup-btn-confirm';
+            confirmBtn.textContent = '확인';
+            confirmBtn.onclick = () => {
+                closePopup();
+                resolve(true);
+            };
+            buttons.appendChild(confirmBtn);
+            
+            modal.style.display = 'flex';
+            input.value = '';
+        });
+    }
+
+    function showPrompt(message, defaultValue = '') {
+        return new Promise(resolve => {
+            const modal = document.getElementById('popup-modal');
+            const title = document.getElementById('popup-title');
+            const msg = document.getElementById('popup-message');
+            const input = document.getElementById('popup-input');
+            const buttons = document.getElementById('popup-buttons');
+            
+            title.textContent = '입력';
+            msg.textContent = message;
+            input.style.display = 'block';
+            input.value = defaultValue;
+            buttons.innerHTML = '';
+            buttons.style.gap = '10px';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'popup-btn popup-btn-cancel';
+            cancelBtn.textContent = '취소';
+            cancelBtn.onclick = () => {
+                closePopup();
+                resolve(null);
+            };
+            buttons.appendChild(cancelBtn);
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'popup-btn popup-btn-confirm';
+            confirmBtn.textContent = '확인';
+            confirmBtn.onclick = () => {
+                const value = input.value;
+                closePopup();
+                resolve(value);
+            };
+            buttons.appendChild(confirmBtn);
+            
+            modal.style.display = 'flex';
+            input.focus();
+            input.select();
+        });
+    }
 
     const court = document.getElementById('court-area');
     let players = [];
@@ -1194,26 +1333,28 @@
         }
     }
     
-    function loadData() {
+    async function loadData() {
         // 1. 서버 데이터 먼저 시도 (로그인된 경우)
         const currentUser = getCurrentUser();
         if (currentUser && typeof loadGameData === 'function') {
-            loadFromServer().then(serverData => {
-                if (serverData) {
-                    // 서버 데이터로 복원
-                    applyLoadedData(serverData);
-                    // 자동 저장 시작
-                    startAutoSave(currentUser.uid, getGameData, 30000);
-                } else {
-                    // 서버 데이터 없음 - 로컬 데이터 사용
-                    loadLocalData();
-                    // 자동 저장 시작
-                    startAutoSave(currentUser.uid, getGameData, 30000);
-                }
-            });
+            const serverData = await loadFromServer();
+            if (serverData) {
+                // 서버 데이터로 복원
+                applyLoadedData(serverData);
+                console.log("✅ 서버 데이터 로드 완료");
+                // 자동 저장 시작
+                startAutoSave(currentUser.uid, getGameData, 30000);
+            } else {
+                // 서버 데이터 없음 - 로컬 데이터 사용
+                loadLocalData();
+                console.log("✅ 로컬 데이터 로드 완료");
+                // 자동 저장 시작
+                startAutoSave(currentUser.uid, getGameData, 30000);
+            }
         } else {
             // 로그인 안됨 - 로컬 데이터만 사용
             loadLocalData();
+            console.log("✅ 로컬 데이터 로드 완료 (로그인 안됨)");
         }
     }
     
@@ -1331,13 +1472,13 @@
         }
     }, {passive: true});
 
-    function startGame() {
+    async function startGame() {
         document.getElementById('start-screen').style.opacity = '0';
-        setTimeout(() => {
+        setTimeout(async () => {
             document.getElementById('start-screen').style.display = 'none'; document.getElementById('game-ui').style.display = 'flex';
             setTimeout(() => { document.getElementById('game-ui').style.opacity = '1'; }, 50);
             changeTab(2, document.querySelectorAll('.nav-item')[2]); 
-            if(!isGameRunning) { initGame(); isGameRunning = true; }
+            if(!isGameRunning) { await initGame(); isGameRunning = true; }
         }, 500);
     }
     
@@ -1741,32 +1882,32 @@
         saveData();
     }
 
-    function sellCurrent() {
+    async function sellCurrent() {
         let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
         if(!anim) return;
         
         // 즐겨찾기된 동물은 판매 불가
         if (anim.favorite) {
-            alert(`❤️ ${anim.icon} ${anim.name}은(는) 즐겨찾기되어 있어 판매할 수 없습니다.\n\n즐겨찾기를 해제한 후 다시 시도하세요.`);
+            await showAlert(`❤️ ${anim.icon} ${anim.name}은(는) 즐겨찾기되어 있어 판매할 수 없습니다.\n\n즐겨찾기를 해제한 후 다시 시도하세요.`);
             return;
         }
         
         const sellPrice = anim.level * 100;
-        if(confirm(`${anim.icon} ${anim.name} Lv.${anim.level}을(를) ${sellPrice}💰에 판매하시겠습니까?`)) {
+        if(await showConfirm(`${anim.icon} ${anim.name} Lv.${anim.level}을(를) ${sellPrice}💰에 판매하시겠습니까?`)) {
             state.gold += sellPrice;
             ownedAnimals = ownedAnimals.filter(a => a.uid !== targetAnimUid);
             closeInfo(); renderInventory(); updateUI(); saveData();
         }
     }
 
-    function mergeCurrent() {
+    async function mergeCurrent() {
         let anim = ownedAnimals.find(a => a.uid === targetAnimUid);
         if(!anim) return;
         let copies = ownedAnimals.filter(a => a.id === anim.id && a.level === anim.level);
-        if(copies.length < 2) return alert("동일한 종류와 레벨의 동물이 2마리 필요합니다.");
+        if(copies.length < 2) return await showAlert("동일한 종류와 레벨의 동물이 2마리 필요합니다.");
         
         let cost = anim.level * 300;
-        if(state.gold < cost) return alert("골드가 부족합니다.");
+        if(state.gold < cost) return await showAlert("골드가 부족합니다.");
         
         state.gold -= cost;
         
@@ -1825,24 +1966,25 @@
     if (!anim) return;
     
     // 정말 초기화할 건지 묻기
-    if (!confirm("배분한 스탯을 모두 초기화하시겠습니까?")) return;
-    
-    // 스탯 초기화 처리
-    anim.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-    anim.speed = anim.baseStats.speed;
-    anim.shoot = anim.baseStats.shoot;
-    anim.iq = anim.baseStats.iq;
-    
-    // 현재 열려있는 모달창의 스탯 숫자 즉시 새로고침
-    updateStatDisplay(anim);
-    
-    // 메인 화면(인벤토리 및 로스터) UI도 안전하게 새로고침
-    if (typeof renderInventory === 'function') renderInventory();
-    if (typeof updateRosterUI === 'function') updateRosterUI(); 
-    
-    // 저장
-    saveData();
-}
+    showConfirm("배분한 스탯을 모두 초기화하시겠습니까?").then(result => {
+        if (!result) return;
+        
+        // 스탯 초기화 처리
+        anim.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+        anim.speed = anim.baseStats.speed;
+        anim.shoot = anim.baseStats.shoot;
+        anim.iq = anim.baseStats.iq;
+        
+        // 현재 열려있는 모달창의 스탯 숫자 즉시 새로고침
+        updateStatDisplay(anim);
+        
+        // 메인 화면(인벤토리 및 로스터) UI도 안전하게 새로고침
+        if (typeof renderInventory === 'function') renderInventory();
+        if (typeof updateRosterUI === 'function') updateRosterUI(); 
+        
+        // 저장
+        saveData();
+    });
     
 function toggleFavorite() {
     // 1. 인벤토리(ownedAnimals)에서 먼저 동물 찾기
@@ -1890,37 +2032,37 @@ function renameAnimal() {
     
     // 현재 이름 표시
     let currentName = anim.customName || anim.name;
-    let newName = prompt(`동물의 새 이름을 입력하세요.\n\n현재 이름: ${currentName}`, currentName);
+    showPrompt(`동물의 새 이름을 입력하세요.\n\n현재 이름: ${currentName}`, currentName).then(async newName => {
+        // 취소 버튼 누름
+        if (newName === null) return;
+        
+        // 공백만 입력한 경우
+        if (newName.trim().length === 0) {
+            await showAlert('이름은 비워둘 수 없습니다.');
+            return;
+        }
+        
+        // 이름 길이 제한 (10자 이내)
+        if (newName.length > 10) {
+            await showAlert('이름은 10자 이내여야 합니다.');
+            return;
+        }
+        
+        // 커스텀 이름 저장
+        anim.customName = newName.trim();
     
-    // 취소 버튼 누름
-    if (newName === null) return;
-    
-    // 공백만 입력한 경우
-    if (newName.trim().length === 0) {
-        alert('이름은 비워둘 수 없습니다.');
-        return;
-    }
-    
-    // 이름 길이 제한 (10자 이내)
-    if (newName.length > 10) {
-        alert('이름은 10자 이내여야 합니다.');
-        return;
-    }
-    
-    // 커스텀 이름 저장
-    anim.customName = newName.trim();
-    
-    // UI 업데이트 (모달에 표시되는 이름 변경)
-    document.getElementById('info-name').innerHTML = `${anim.customName} <span style="color:var(--red); font-size:1.2rem;">Lv.${anim.level}</span>`;
-    
-    // 인벤토리와 로스터 새로고침
-    renderInventory();
-    if (typeof updateRosterUI === 'function') updateRosterUI(); 
-    
-    // 저장
-    saveData();
-    
-    showEvent(`이름 변경: ${anim.customName}`, 50, 50, 'var(--gold)', '1.2rem');
+        // UI 업데이트 (모달에 표시되는 이름 변경)
+        document.getElementById('info-name').innerHTML = `${anim.customName} <span style="color:var(--red); font-size:1.2rem;">Lv.${anim.level}</span>`;
+        
+        // 인벤토리와 로스터 새로고침
+        renderInventory();
+        if (typeof updateRosterUI === 'function') updateRosterUI(); 
+        
+        // 저장
+        saveData();
+        
+        showEvent(`이름 변경: ${anim.customName}`, 50, 50, 'var(--gold)', '1.2rem');
+    });
 }
     
     // 일괄 작업 모달 (복사 버그 완벽 수정)
@@ -2022,7 +2164,7 @@ function renameAnimal() {
         }
     }
     
-    function bulkMerge() {
+    async function bulkMerge() {
         const filtered = getBulkFilteredAnimals();
         const groups = {};
         
@@ -2082,13 +2224,13 @@ function renameAnimal() {
             updateUI();
             saveData();
             
-            alert(`✨ ${mergedCount}회 합성 완료! (소모 골드: ${totalCost}💰)\n정보창에서 스탯을 배분해주세요.`);
+            await showAlert(`✨ ${mergedCount}회 합성 완료! (소모 골드: ${totalCost}💰)\n정보창에서 스탯을 배분해주세요.`);
         } else {
-            alert('합성 가능한 동물이 없습니다. 같은 종류와 레벨의 동물이 2마리 이상 필요합니다.');
+            await showAlert('합성 가능한 동물이 없습니다. 같은 종류와 레벨의 동물이 2마리 이상 필요합니다.');
         }
     }
     
-    function bulkSell() {
+    async function bulkSell() {
         let filtered = getBulkFilteredAnimals();
         
         // 즐겨찾기된 동물은 제외
@@ -2097,9 +2239,9 @@ function renameAnimal() {
         
         if (filtered.length === 0) { 
             if (favoriteAnimals.length > 0) {
-                alert('❤️ 즐겨찾기된 동물은 판매할 수 없습니다.\n\n판매 가능한 동물이 없습니다.');
+                await showAlert('❤️ 즐겨찾기된 동물은 판매할 수 없습니다.\n\n판매 가능한 동물이 없습니다.');
             } else {
-                alert('판매할 동물이 없습니다.');
+                await showAlert('판매할 동물이 없습니다.');
             }
             return; 
         }
@@ -2117,24 +2259,24 @@ function renameAnimal() {
         if (highGradeCount > 0) {
             // Epic/Legendary가 포함된 경우 강화된 경고
             const animalList = highGradeAnimals.map(a => `• ${a.icon} Lv.${a.level} ${a.grade}`).join('\n');
-            const firstConfirm = confirm(`⚠️ 경고! 판매 목록에 희귀 동물 포함!\n\n${animalList}\n\n총 ${highGradeCount}마리${excludedMsg}\n\n정말 판매하시겠습니까? (취소 권장)`);
+            const firstConfirm = await showConfirm(`⚠️ 경고! 판매 목록에 희귀 동물 포함!\n\n${animalList}\n\n총 ${highGradeCount}마리${excludedMsg}\n\n정말 판매하시겠습니까? (취소 권장)`);
             if (!firstConfirm) return;
             
             // 2차 확인
-            const secondConfirm = confirm(`❗ 최종 확인 ❗\n\nEpic/Legendary ${highGradeCount}마리를 영구 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n\n판매하시겠습니까?`);
+            const secondConfirm = await showConfirm(`❗ 최종 확인 ❗\n\nEpic/Legendary ${highGradeCount}마리를 영구 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n\n판매하시겠습니까?`);
             if (!secondConfirm) return;
             
             const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
             state.gold += totalGold;
             ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
-            alert(`✨ ${totalGold}💰 획득!\n\n${highGradeCount}마리 판매됨${excludedMsg}`);
+            await showAlert(`✨ ${totalGold}💰 획득!\n\n${highGradeCount}마리 판매됨${excludedMsg}`);
         } else {
             // 일반 동물만 판매
             const totalGold = filtered.reduce((sum, a) => sum + a.level * 100, 0);
-            if (confirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?${excludedMsg}`)) {
+            if (await showConfirm(`총 ${filtered.length}마리를 판매하여 ${totalGold}💰를 획득하시겠습니까?${excludedMsg}`)) {
                 state.gold += totalGold;
                 ownedAnimals = ownedAnimals.filter(a => !filtered.some(f => f.uid === a.uid));
-                alert(`✨ ${totalGold}💰 획득!${excludedMsg}`);
+                await showAlert(`✨ ${totalGold}💰 획득!${excludedMsg}`);
             } else {
                 return;
             }
@@ -2150,10 +2292,10 @@ function renameAnimal() {
     function updateUI() { document.getElementById('ui-gold').innerText = Math.floor(state.gold).toLocaleString(); document.getElementById('score-b').innerText = state.scoreB; document.getElementById('score-r').innerText = state.scoreR; document.getElementById('ui-stage').innerText = state.stage; }
 
 
-    function openStageSelect() {
+    async function openStageSelect() {
         let maxSelectable = Math.max(1, state.maxStage);
         if (maxSelectable < 2) {
-            alert('아직 다른 스테이지를 선택할 수 없습니다.\n\n최소 스테이지 2 이상에서 다른 스테이지로 변경할 수 있습니다.');
+            await showAlert('아직 다른 스테이지를 선택할 수 없습니다.\n\n최소 스테이지 2 이상에서 다른 스테이지로 변경할 수 있습니다.');
             return;
         }
         
@@ -2433,9 +2575,12 @@ function renameAnimal() {
         console.log(`스테이지가 ${stage}로 변경되었습니다.`);
     }
 
-    function summon(count = 1) {
+    async function summon(count = 1) {
         const cost = count === 100 ? 50000 : (count === 10 ? 5000 : 500);
-        if (state.gold < cost) return alert("골드가 부족합니다!");
+        if (state.gold < cost) {
+            await showAlert("골드가 부족합니다!");
+            return;
+        }
         state.gold -= cost; updateUI();
         
         currentPickedList = [];
@@ -2610,7 +2755,7 @@ function renameAnimal() {
         });
     }
 
-    function initGame() {
+    async function initGame() {
         ball.shadow = document.createElement('div'); ball.shadow.className = 'ball-shadow'; court.appendChild(ball.shadow);
         ball.el = document.createElement('div'); ball.el.className = 'ball'; court.appendChild(ball.el);
         for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
@@ -2639,7 +2784,8 @@ function renameAnimal() {
         // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
         syncPlayerStats();
         
-        loadData(); 
+        // 데이터 로드 - 완료될 때까지 대기
+        await loadData(); 
         
         // 친선전 모드가 아닌 경우만 applyEnemyStats 적용 (스테이지 기반)
         if (!isFriendlyMatch) {
@@ -2909,7 +3055,11 @@ function renameAnimal() {
                 let reward = state.stage * 100 + 500; state.gold += reward; state.stage++; state.maxStage = Math.max(state.maxStage, state.stage); applyEnemyStats();
                 showEvent("STAGE CLEAR!", 50, 40, "var(--gold)", "3.5rem");
                 setTimeout(() => showEvent(`+${reward}💰`, 50, 55, "var(--gold)", "2rem"), 1000);
-            } else { showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); }
+            } else { 
+                // 게임을 졌을 때도 적 스탯 재초기화 (현재 스테이지)
+                applyEnemyStats();
+                showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); 
+            }
             setTimeout(() => { state.scoreB = 0; state.scoreR = 0; saveData(); updateUI(); resetPositions('red'); }, 3500);
         }
     }
@@ -3610,16 +3760,29 @@ function renameAnimal() {
                     if ((ball.holder && ball.holder.team !== p.team) && skillProbability < 35) {
                         // 맵 전체의 모든 적에게 0.4초 공포 적용
                         enemies.forEach(e => {
-                            e.stunTimer = 24; // 0.4초 (60fps * 0.4 = 24프레임)
+                            // 공포 효과: 고릴라에서 멀어지는 방향으로 도망치게 함
+                            let dx = e.x - p.x;
+                            let dy = e.y - p.y;
+                            let dist = Math.hypot(dx, dy);
+                            if (dist > 0) {
+                                e.slowTimer = 24; // 0.4초간 둔화
+                                // 방향 고정 (도망치는 방향으로 이동이 고정됨)
+                                e.fearDir = { dx: dx / dist, dy: dy / dist };
+                                // 속도 직접 설정
+                                e.vx = (dx / dist) * 0.15;
+                                e.vy = (dy / dist) * 0.15;
+                            }
+                            createVfx(e.x, e.y, 'aura', '#ef4444');
+                            createVfx(e.x, e.y, 'wave', '#ef4444');
                         });
-                        
-                        // 고릴라는 0.4초간 정지
-                        p.chargeTimer = 24;
                         
                         // VFX: 가슴 두드리기 이펙트
                         createVfx(p.x, p.y, 'roar', '#ef4444');
-                        createVfx(p.x, p.y, 'power', '#ef4444');
-                        createVfx(p.x, p.y, 'wave', '#ef4444');
+                        createVfx(p.x, p.y, 'aura', '#ef4444');
+                        
+                        // 고릴라 아이콘 우왕 효과
+                        p.el.style.transform = 'translate(-50%, -50%) scale(1.3)';
+                        setTimeout(() => { p.el.style.transform = 'translate(-50%, -50%) scale(1)'; }, 300);
                         
                         skillUsed = true;
                     }
@@ -4153,9 +4316,9 @@ function renameAnimal() {
         setTimeout(() => div.remove(), 1200);
     }
     
-    function showStageInfo() {
+    async function showStageInfo() {
         if (state.stage < 50) {
-            alert(`STAGE ${state.stage}\n일반 적팀 (스킬 없음)`);
+            await showAlert(`STAGE ${state.stage}\n일반 적팀 (스킬 없음)`);
             return;
         }
         
@@ -4185,7 +4348,7 @@ function renameAnimal() {
         info += `▬ 💥 광역 기절\n공을 들 때 근처 모든 선수\n1.5초 기절\n\n`;
         info += `● 📍 롱 패스\n매우 먼 거리의 정확한 패스\n팀원에게 패스`;
         
-        alert(info);
+        await showAlert(info);
     }
     
     // ===========================
@@ -4478,21 +4641,20 @@ function renameAnimal() {
         }
     });
     
-    function updateNicknameDialog() {
+    async function updateNicknameDialog() {
         const currentUser = getCurrentUser();
         if (!currentUser) return;
         
-        const newNickname = prompt("새로운 닉네임을 입력하세요:", document.getElementById('profile-nickname').textContent);
+        const newNickname = await showPrompt("새로운 닉네임을 입력하세요:", document.getElementById('profile-nickname').textContent);
         
         if (newNickname && newNickname.trim()) {
-            updateNickname(currentUser.uid, newNickname.trim())
-                .then(() => {
-                    alert("닉네임이 변경되었습니다!");
-                    loadUserProfile(currentUser.uid);
-                })
-                .catch(error => {
-                    alert("닉네임 변경 실패: " + error.message);
-                });
+            try {
+                await updateNickname(currentUser.uid, newNickname.trim());
+                await showAlert("닉네임이 변경되었습니다!");
+                loadUserProfile(currentUser.uid);
+            } catch (error) {
+                await showAlert("닉네임 변경 실패: " + error.message);
+            }
         }
     }
     
@@ -4500,14 +4662,11 @@ function renameAnimal() {
     // ⚽ 친선전(대전) 함수
     // ===========================
     
-    let opponentData = null; // 친선전 상대 정보
-    let isFriendlyMatch = false; // 친선전 모드 여부
-    
     window.startFriendlyMatch = async function(opponentUid, opponentName) {
         try {
             const currentUser = getCurrentUser();
             if (!currentUser) {
-                alert("로그인이 필요합니다.");
+                await showAlert("로그인이 필요합니다.");
                 return;
             }
             
@@ -4520,12 +4679,12 @@ function renameAnimal() {
             console.log("로스터 로드 결과:", { opponentRoster, playerRoster });
             
             if (!opponentRoster || !opponentRoster.animals || opponentRoster.animals.length === 0) {
-                alert("상대방의 팀 정보를 찾을 수 없습니다.");
+                await showAlert("상대방의 팀 정보를 찾을 수 없습니다.");
                 return;
             }
             
             if (!playerRoster || !playerRoster.animals || playerRoster.animals.length === 0) {
-                alert("내 팀 정보를 찾을 수 없습니다. PLAY 버튼으로 팀을 먼저 구성하세요.");
+                await showAlert("내 팀 정보를 찾을 수 없습니다. PLAY 버튼으로 팀을 먼저 구성하세요.");
                 return;
             }
             
@@ -4545,11 +4704,11 @@ function renameAnimal() {
             });
             
             // 게임 시작 (startGame이 changeTab(2)를 호출함)
-            startGame();
+            await startGame();
             
         } catch (error) {
             console.error("친선전 시작 실패:", error);
-            alert("친선전 시작에 실패했습니다: " + error.message);
+            await showAlert("친선전 시작에 실패했습니다: " + error.message);
         }
     }
     
@@ -4562,10 +4721,10 @@ function renameAnimal() {
         document.getElementById('start-screen').style.display = 'flex';
         document.getElementById('game-ui').style.display = 'none';
     }
-    function showProfilePage() {
+    async function showProfilePage() {
         const currentUser = getCurrentUser();
         if (!currentUser) {
-            alert("로그인이 필요합니다.");
+            await showAlert("로그인이 필요합니다.");
             return;
         }
         
@@ -4589,7 +4748,7 @@ function renameAnimal() {
     async function showRankingPage() {
         const currentUser = getCurrentUser();
         if (!currentUser) {
-            alert("로그인이 필요합니다.");
+            await showAlert("로그인이 필요합니다.");
             return;
         }
         
@@ -4692,7 +4851,7 @@ function renameAnimal() {
                     console.error("로그인 오류:", error);
                     this.textContent = '구글 로그인 실패 - 다시 시도';
                     this.disabled = false;
-                    alert('로그인에 실패했습니다. 다시 시도해주세요.');
+                    await showAlert('로그인에 실패했습니다. 다시 시도해주세요.');
                 }
             });
         }
@@ -4711,7 +4870,7 @@ function renameAnimal() {
                     console.error("익명 로그인 오류:", error);
                     this.textContent = '익명 로그인 실패 - 다시 시도';
                     this.disabled = false;
-                    alert('로그인에 실패했습니다. 다시 시도해주세요.');
+                    await showAlert('로그인에 실패했습니다. 다시 시도해주세요.');
                 }
             });
         }
@@ -4723,9 +4882,8 @@ function renameAnimal() {
     } else {
         setupLoginButtons();
     }
-    
-    // 로그인 버튼 이벤트 리스너 설정 완료
-    
+}
+
 </script>
 </body>
 </html>
