@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Animal Hoops🏀</title>
+    
+    <!-- 농구공 이모지 아이콘 설정 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🏀</text></svg>" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><text y='135' font-size='140'>🏀</text></svg>">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Animal Hoops">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Animal Hoops%22,%22short_name%22:%22Hoops%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><text y='144' font-size='140'>🏀</text></svg>%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22},{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><text y='384' font-size='380'>🏀</text></svg>%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}],%22background_color%22:%22#121212%22,%22display%22:%22standalone%22,%22theme_color%22:%22#ffd700%22}">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Montserrat:wght@800;900&display=swap');
 
@@ -3491,6 +3501,7 @@ function renameAnimal() {
                 applyEnemyStats();
                 showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); 
             }
+            
             // 로딩 화면 표시
             document.getElementById('loading-screen').classList.add('active');
             
@@ -3501,7 +3512,7 @@ function renameAnimal() {
                 updateUI(); 
                 resetPositions('red');
                 
-                // 친선전 결과 저장은 백그라운드에서 수행 (await하지 않음)
+                // Firestore 업데이트는 백그라운드에서 비동기로 수행 (UI를 막지 않음)
                 (async () => {
                     try {
                         const currentUser = getCurrentUser();
@@ -3529,23 +3540,24 @@ function renameAnimal() {
                         const currentUser = getCurrentUser();
                         if (currentUser) {
                             const mostUsedAnimal = await getMostUsedAnimal(currentUser.uid);
-                        if (mostUsedAnimal && mostUsedAnimal.id && db) {
-                            if (animalInfo) {
-                                await db.collection('users').doc(currentUser.uid).update({
-                                    avatar: animalInfo.icon,
-                                    lastAvatarUpdate: new Date()
-                                });
+                            if (mostUsedAnimal && mostUsedAnimal.id && db) {
+                                const animalInfo = window.animalData?.find(a => a.id === mostUsedAnimal.id);
+                                if (animalInfo) {
+                                    await db.collection('users').doc(currentUser.uid).update({
+                                        avatar: animalInfo.icon,
+                                        lastAvatarUpdate: new Date()
+                                    });
+                                }
                             }
                         }
+                    } catch (error) {
+                        console.log("프로필 업데이트 실패 (계속 진행):", error);
                     }
-                } catch (error) {
-                    console.log("프로필 업데이트 실패 (계속 진행):", error);
-                }
                 })();
                 
                 // 로딩 화면 숨기기
                 document.getElementById('loading-screen').classList.remove('active');
-            }, 1500);
+            }, 3500);
         }
     }
     
