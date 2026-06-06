@@ -249,6 +249,50 @@
         #page-gacha { background: radial-gradient(circle at top, #2d1b4e, #111); justify-content: center; align-items: center; }
         .gacha-banner { font-size: 5rem; animation: float 3s ease-in-out infinite; margin-bottom: 20px; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        
+        /* 가챠 버튼 스타일 */
+        .gacha-btn { 
+            padding: 14px; 
+            border-radius: 14px; 
+            border: none;
+            border-bottom: 3px solid rgba(0, 0, 0, 0.3);
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            font-family: 'Black Han Sans', sans-serif;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gacha-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .gacha-btn:hover::before {
+            left: 100%;
+        }
+        
+        .gacha-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 255, 255, 0.12);
+        }
+        
+        .gacha-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.08);
+        }
 
         /* 가챠 연출 애니메이션 */
         .shaking-box { font-size: 8rem; animation: shake 0.1s infinite; transition: filter 0.3s; z-index: 10; }
@@ -690,11 +734,56 @@
               return null;
             }
 
+            // 먼저 rosters 컬렉션에서 조회
             const doc = await db.collection('rosters').doc(uid).get();
             if (doc.exists) {
+              console.log("✅ rosters 컬렉션에서 최근 로스터 로드:", doc.data());
               return doc.data();
             }
-            return null;
+            
+            // rosters 컬렉션에 없으면 gameData에서 동물 정보 직접 가져오기
+            const gameDataDoc = await db.collection('gameData').doc(uid).get();
+            if (!gameDataDoc.exists) {
+              console.warn("📭 gameData 문서를 찾을 수 없습니다:", uid);
+              return null;
+            }
+            
+            const gameData = gameDataDoc.data();
+            
+            // roster 필드가 있으면 우선 사용
+            if (gameData.roster && Array.isArray(gameData.roster) && gameData.roster.length > 0) {
+              console.log("✅ gameData.roster에서 로스터 로드:", gameData.roster);
+              return {
+                userId: uid,
+                teamName: '팀',
+                animals: gameData.roster.map(animal => ({
+                  id: animal.id || 'unknown',
+                  name: animal.name || '알 수 없음',
+                  icon: animal.icon || '🐶',
+                  level: animal.level || 1
+                }))
+              };
+            }
+            
+            // roster가 없으면 ownedAnimals에서 첫 3마리 사용
+            if (!gameData.ownedAnimals || !Array.isArray(gameData.ownedAnimals) || gameData.ownedAnimals.length === 0) {
+              console.warn("📭 ownedAnimals가 없습니다:", uid);
+              return null;
+            }
+            
+            const teamAnimals = gameData.ownedAnimals.slice(0, 3).map(animal => ({
+              id: animal.id || 'unknown',
+              name: animal.name || '알 수 없음',
+              icon: animal.icon || '🐶',
+              level: animal.level || 1
+            }));
+            
+            console.log("✅ ownedAnimals에서 로스터 로드:", teamAnimals);
+            return {
+              userId: uid,
+              teamName: '팀',
+              animals: teamAnimals
+            };
           } catch (error) {
             console.error("최근 로스터 조회 실패:", error);
             return null;
@@ -1152,16 +1241,32 @@
 
         <div id="view-slider">
             <div class="page" id="page-gacha">
-                <div class="page-content" style="justify-content: center; align-items: center;">
-                    <div class="gacha-banner">🎁</div>
-                    <div class="page-title">프리미엄 스카우트</div>
-                    <div style="color: #ccc; font-weight: 800; text-align: center; margin-bottom: 30px; font-size: 0.9rem;">
-                        새로운 에이스를 영입하세요!<br>
-                        <span style="color:#ef4444; font-size:0.8rem;">Legendary 3% | Epic 15%</span>
+                <div class="page-content" style="justify-content: center; align-items: center; padding: 20px 15px;">
+                    <div class="gacha-banner" style="font-size: 3.5rem; animation: float 3s ease-in-out infinite; margin-bottom: 12px;">🎁</div>
+                    <div class="page-title" style="font-size: 2rem; margin-bottom: 8px; background: linear-gradient(135deg, #ffd700, #ffed4e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">프리미엄 스카우트</div>
+                    
+                    <div style="text-align: center; margin-bottom: 18px;">
+                        <div style="color: #ddd; font-weight: 800; font-size: 0.9rem; margin-bottom: 6px; letter-spacing: 0.5px;">새로운 에이스를 영입하세요!</div>
+                        <div style="display: flex; justify-content: center; gap: 12px; font-weight: 900; font-size: 0.8rem; flex-wrap: wrap;">
+                            <div style="background: rgba(168, 85, 247, 0.2); padding: 5px 12px; border-radius: 10px; border-left: 2px solid #a855f7; color: #d8b4fe;">🔥 Legendary 3%</div>
+                            <div style="background: rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 10px; border-left: 2px solid #f59e0b; color: #fbbf24;">⭐ Epic 15%</div>
+                        </div>
                     </div>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #d97706, #f59e0b); width: 85%; margin-bottom: 15px;" onclick="summon(1)">1회 뽑기 (500💰)</button>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #a855f7, #6366f1); width: 85%; margin-bottom: 15px;" onclick="summon(10)">10회 뽑기 (5,000💰)</button>
-                    <button class="btn-main" style="font-size: 1.2rem; padding: 12px 20px; background: linear-gradient(45deg, #ef4444, #f97316); width: 85%;" onclick="summon(100)">100회 뽑기 (50,000💰)</button>
+                    
+                    <div style="width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px;">
+                        <button class="gacha-btn" style="background: linear-gradient(135deg, #d97706, #f59e0b); border-bottom: 3px solid #92400e; color: white; padding: 14px;" onclick="summon(1)">
+                            <div style="font-weight: 900; font-size: 1.1rem;">1회 뽑기</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">500 💰</div>
+                        </button>
+                        <button class="gacha-btn" style="background: linear-gradient(135deg, #a855f7, #c084fc); border-bottom: 3px solid #6b21a8; color: white; padding: 14px;" onclick="summon(10)">
+                            <div style="font-weight: 900; font-size: 1.1rem;">10회 뽑기</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">5,000 💰</div>
+                        </button>
+                        <button class="gacha-btn" style="background: linear-gradient(135deg, #ef4444, #f87171); border-bottom: 3px solid #7f1d1d; color: white; padding: 14px;" onclick="summon(100)">
+                            <div style="font-weight: 900; font-size: 1.1rem;">100회 뽑기</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">50,000 💰</div>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1410,7 +1515,7 @@
         
         { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2, weight: 150 },
         
-        { id: 'chameleon', name: '카멜레온', grade: 'Legendary', speed: 0.85, accel: 0.09, shoot: 62, iq: 80, icon: '🦎', color: '#ef4444', shootRange: 24, passRate: 0.45, skill: '색채 위장', skillDesc: '1.5초간 투명화되어 시야에서 사라집니다. 이 동안 상대가 공을 뺏을 수 없습니다.', maxUses: 3, weight: 65 },
+        { id: 'chameleon', name: '카멜레온', grade: 'Legendary', speed: 0.85, accel: 0.09, shoot: 21, iq: 80, icon: '🦎', color: '#ef4444', shootRange: 24, passRate: 0.45, skill: '색채 위장', skillDesc: '1.5초간 투명화되어 시야에서 사라집니다. 이 동안 상대가 공을 뺏을 수 없습니다.', maxUses: 3, weight: 65 },
         
         { id: 'crocodile', name: '악어', grade: 'Epic', speed: 0.35, accel: 0.04, shoot: 0, iq: 75, icon: '🐊', color: '#a855f7', shootRange: 0, passRate: 0.0, weight: 240, canHoldBall: false, isHunter: true, maxUses: 0, skillDesc: '공에는 관심이 없고 적들을 사냥합니다. 적을 표적으로 삼아 달려가 기절시키며(4초), 기절 풀린 후 5초간 상대 이동속도 40% 감소 & 슈팅 정확도 35% 하락.' }
     ];
@@ -3374,7 +3479,7 @@ function renameAnimal() {
                     changeTab(3, document.querySelectorAll('.nav-item')[3]); // 랭킹 페이지로 이동
                     loadRankings(); // 랭킹 새로고침
                 }, 500);
-            }, 3500);
+            }, 1500);
         } else {
             // 일반 스테이지 모드
             if (isWin) {
@@ -3386,40 +3491,45 @@ function renameAnimal() {
                 applyEnemyStats();
                 showEvent("STAGE FAILED...", 50, 40, "var(--red)", "3rem"); 
             }
+            // 로딩 화면 표시
+            document.getElementById('loading-screen').classList.add('active');
+            
             setTimeout(async () => { 
                 state.scoreB = 0; 
                 state.scoreR = 0; 
                 saveData();
+                updateUI(); 
+                resetPositions('red');
                 
-                // 사용한 동물 통계 업데이트
-                try {
-                    const currentUser = getCurrentUser();
-                    if (currentUser) {
-                        // 파랑 팀 플레이어들의 동물 모두 수집
-                        const usedAnimals = players
-                            .filter(p => p.team === 'blue' && p.animal && p.animal.id)
-                            .map(p => ({
-                                id: p.animal.id,
-                                name: p.animal.name,
-                                icon: p.animal.icon || '🐶'
-                            }));
-                        
-                        if (usedAnimals.length > 0) {
-                            console.log("📤 endStage에서 updateAnimalUsageStats 호출:", currentUser.uid, usedAnimals);
-                            await updateAnimalUsageStats(currentUser.uid, usedAnimals);
+                // 친선전 결과 저장은 백그라운드에서 수행 (await하지 않음)
+                (async () => {
+                    try {
+                        const currentUser = getCurrentUser();
+                        if (currentUser) {
+                            // 파랑 팀 플레이어들의 동물 모두 수집
+                            const usedAnimals = players
+                                .filter(p => p.team === 'blue' && p.animal && p.animal.id)
+                                .map(p => ({
+                                    id: p.animal.id,
+                                    name: p.animal.name,
+                                    icon: p.animal.icon || '🐶'
+                                }));
+                            
+                            if (usedAnimals.length > 0) {
+                                console.log("📤 endStage에서 updateAnimalUsageStats 호출:", currentUser.uid, usedAnimals);
+                                await updateAnimalUsageStats(currentUser.uid, usedAnimals);
+                            }
                         }
+                    } catch (error) {
+                        console.log("동물 통계 업데이트 실패 (계속 진행):", error);
                     }
-                } catch (error) {
-                    console.log("동물 통계 업데이트 실패 (계속 진행):", error);
-                }
-                
-                // 프로필 아이콘을 가장 많이 사용한 동물로 업데이트
-                try {
-                    const currentUser = getCurrentUser();
-                    if (currentUser) {
-                        const mostUsedAnimal = await getMostUsedAnimal(currentUser.uid);
+                    
+                    // 프로필 아이콘을 가장 많이 사용한 동물로 업데이트
+                    try {
+                        const currentUser = getCurrentUser();
+                        if (currentUser) {
+                            const mostUsedAnimal = await getMostUsedAnimal(currentUser.uid);
                         if (mostUsedAnimal && mostUsedAnimal.id && db) {
-                            const animalInfo = window.animalData?.find(a => a.id === mostUsedAnimal.id);
                             if (animalInfo) {
                                 await db.collection('users').doc(currentUser.uid).update({
                                     avatar: animalInfo.icon,
@@ -3431,10 +3541,11 @@ function renameAnimal() {
                 } catch (error) {
                     console.log("프로필 업데이트 실패 (계속 진행):", error);
                 }
+                })();
                 
-                updateUI(); 
-                resetPositions('red'); 
-            }, 3500);
+                // 로딩 화면 숨기기
+                document.getElementById('loading-screen').classList.remove('active');
+            }, 1500);
         }
     }
     
@@ -5097,6 +5208,23 @@ function renameAnimal() {
     
     async function showPlayerInfoPopup(playerData) {
         try {
+            // ⚠️ playerData 검증
+            if (!playerData) {
+                alert("플레이어 정보를 찾을 수 없습니다.");
+                return;
+            }
+            
+            // userId가 없으면 추가
+            if (!playerData.userId) {
+                console.warn("⚠️ playerData에 userId가 없음. 자동 설정 시도");
+                // userId 필드를 찾기
+                if (playerData.uid) playerData.userId = playerData.uid;
+                else {
+                    alert("플레이어 정보가 불완전합니다.");
+                    return;
+                }
+            }
+            
             currentPopupPlayer = playerData;
             
             // 🐾 가장 많이 사용한 동물로 프로필 아이콘 설정
@@ -5305,13 +5433,18 @@ function renameAnimal() {
     }
     
     async function startFriendlyFromPopup() {
-        if (!currentPopupPlayer) {
+        if (!currentPopupPlayer || !currentPopupPlayer.userId) {
             alert("플레이어 정보가 없습니다.");
+            console.error("❌ currentPopupPlayer:", currentPopupPlayer);
             return;
         }
         
+        // ⚠️ 값을 먼저 저장한 후 팝업 닫기 (closePlayerInfoPopup이 currentPopupPlayer를 null로 만들기 때문)
+        const userId = currentPopupPlayer.userId;
+        const nickname = currentPopupPlayer.nickname;
+        
         closePlayerInfoPopup();
-        await startFriendlyMatch(currentPopupPlayer.userId, currentPopupPlayer.nickname);
+        await startFriendlyMatch(userId, nickname);
     }
 
     // ===========================
