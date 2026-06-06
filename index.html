@@ -28,7 +28,7 @@
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
         /* --- UI Components --- */
-        #game-ui { display: none; flex-direction: column; height: 100%; width: 100%; opacity: 0; transition: opacity 0.5s ease; }
+        #game-ui { display: none; flex-direction: column; height: 100%; width: 100%; opacity: 0; transition: opacity 0.5s ease; position: relative; }
         .top-bar { padding: 15px 20px; background: rgba(0,0,0,0.9); display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #333; flex-shrink: 0; }
         .top-bar .stage-info { font-weight: 900; font-size: 1.2rem; color: white; font-family: 'Black Han Sans', sans-serif; }
         .top-bar .stage-info span { color: var(--red); text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); cursor: pointer; }
@@ -309,12 +309,12 @@
         @keyframes loadingDots { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-15px); } }
 
         /* --- 저장 중 표시 --- */
-        #save-indicator { position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.85); padding: 12px 16px; border-radius: 20px; display: none; align-items: center; gap: 10px; z-index: 250; border: 1px solid #333; backdrop-filter: blur(5px); }
+        #save-indicator { background: rgba(0, 0, 0, 0.85); padding: 12px 16px; border-radius: 20px; display: none; align-items: center; gap: 10px; z-index: 250; border: 1px solid #333; backdrop-filter: blur(5px); }
         #save-indicator.active { display: flex; animation: slideIn 0.3s ease-out; }
         .save-ball { font-size: 1.3rem; animation: saveBounce 0.6s ease-in-out infinite; }
         .save-text { font-size: 0.75rem; color: #ffd700; font-weight: 900; white-space: nowrap; }
         @keyframes saveBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes slideIn { from { transform: translateX(150px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(-150px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
     
     <!-- Firebase SDK (v9 compat - 전역 firebase 객체 제공) -->
@@ -974,12 +974,6 @@
         </div>
     </div>
 
-    <!-- 저장 중 표시 -->
-    <div id="save-indicator">
-        <div class="save-ball">🏀</div>
-        <div class="save-text">저장 중..</div>
-    </div>
-
     <div id="start-screen">
         <div class="logo-icon">🏀</div>
         <div class="game-title">ANIMAL<br>HOOPS</div>
@@ -1148,6 +1142,12 @@
                 <button id="btn-stage-info" style="background: #333; border: none; color: #ffd700; font-weight: 900; padding: 2px 6px; border-radius: 50%; cursor: pointer; font-size: 0.85rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;" onclick="showStageInfo()">i</button>
             </div>
             <div class="gold-box"><span>💰</span> <span id="ui-gold">2,500</span></div>
+        </div>
+        
+        <!-- 저장 중 표시 -->
+        <div id="save-indicator" style="position: absolute; top: 60px; left: 20px;">
+            <div class="save-ball">🏀</div>
+            <div class="save-text">저장 중..</div>
         </div>
 
         <div id="view-slider">
@@ -1408,7 +1408,11 @@
         { id: 'bison', name: '들소', grade: 'Legendary', speed: 0.55, accel: 0.08, shoot: 75, iq: 70, icon: '🦬', color: '#ef4444', shootRange: 25, passRate: 0.2, skill: '게임 차저', skillDesc: '공을 든 적을 감지하면 추진력을 모았다가 빠르게 돌진합니다. 경로상 모든 적을 강하게 날려버립니다. (기절 2초, 약화 2.5초)', maxUses: 2, weight: 190 },
         { id: 'parrot', name: '앵무새', grade: 'Legendary', speed: 0.9, accel: 0.15, shoot: 85, iq: 85, icon: '🦜', color: '#ef4444', shootRange: 30, passRate: 0.3, skill: '공중 비행', skillDesc: '공을 잡으면 0.6초간 하늘을 날아 돌진합니다.', maxUses: 3, weight: 35 },
         
-        { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2, weight: 150 }
+        { id: 'camel', name: '낙타', grade: 'Epic', speed: 0.6, accel: 0.08, shoot: 70, iq: 90, icon: '🐫', color: '#a855f7', shootRange: 24, passRate: 0.4, skill: '분열 능력', skillDesc: '공을 들고 있을 때 발동하면 단봉낙타 🐪 2마리로 분열합니다. 상대를 강하게 밀어내 벽에 붙입니다.', maxUses: 2, weight: 150 },
+        
+        { id: 'chameleon', name: '카멜레온', grade: 'Legendary', speed: 0.85, accel: 0.09, shoot: 62, iq: 80, icon: '🦎', color: '#ef4444', shootRange: 24, passRate: 0.45, skill: '색채 위장', skillDesc: '1.5초간 투명화되어 시야에서 사라집니다. 이 동안 상대가 공을 뺏을 수 없습니다.', maxUses: 3, weight: 65 },
+        
+        { id: 'crocodile', name: '악어', grade: 'Epic', speed: 0.35, accel: 0.04, shoot: 0, iq: 75, icon: '🐊', color: '#a855f7', shootRange: 0, passRate: 0.0, weight: 240, canHoldBall: false, isHunter: true, skillDesc: '공에는 관심이 없고 적들을 사냥합니다. 적을 표적으로 삼아 달려가 기절시키며(1초), 기절 풀린 후 5초간 상대 이동속도 40% 감소 & 슈팅 정확도 35% 하락.' }
     ];
 
     const genUid = () => Math.random().toString(36).substr(2, 9);
