@@ -1527,7 +1527,7 @@
         
         { id: 'chameleon', name: '카멜레온', grade: 'Legendary', speed: 0.85, accel: 0.09, shoot: 21, iq: 80, icon: '🦎', color: '#ef4444', shootRange: 24, passRate: 0.45, skill: '색채 위장', skillDesc: '1.5초간 투명화되어 시야에서 사라집니다. 이 동안 상대가 공을 뺏을 수 없습니다.', maxUses: 3, weight: 65 },
         
-        { id: 'crocodile', name: '악어', grade: 'Epic', speed: 0.35, accel: 0.04, shoot: 0, iq: 75, icon: '🐊', color: '#a855f7', shootRange: 0, passRate: 0.0, weight: 240, canHoldBall: false, isHunter: true, maxUses: 0, skillDesc: '공에는 관심이 없고 적들을 사냥합니다. 적을 표적으로 삼아 달려가 기절시키며(4초), 기절 풀린 후 5초간 상대 이동속도 40% 감소 & 슈팅 정확도 35% 하락.' }
+        { id: 'crocodile', name: '악어', grade: 'Epic', speed: 0.35, accel: 0.04, shoot: 0, iq: 75, icon: '🐊', color: '#a855f7', shootRange: 0, passRate: 0.0, weight: 240, canHoldBall: false, isHunter: true, maxUses: -1, skill: '사냥꾼 본능', skillDesc: '공에는 관심이 없고 적들을 사냥합니다. 적을 표적으로 삼아 달려가 기절시키며(4초), 기절 풀린 후 5초간 상대 이동속도 40% 감소 & 슈팅 정확도 35% 하락.' }
     ];
 
     const genUid = () => Math.random().toString(36).substr(2, 9);
@@ -1552,7 +1552,7 @@
             passRate: baseObj.passRate || 0.3,
             skill: baseObj.skill || null,
             skillDesc: baseObj.skillDesc || '',
-            maxUses: baseObj.maxUses || 0
+            maxUses: baseObj.maxUses !== undefined ? baseObj.maxUses : 0
         };
         const animal = { ...JSON.parse(JSON.stringify(defaultAnimal)), level: lvl, uid: genUid() };
         // 스탯 포인트 시스템
@@ -1724,9 +1724,12 @@
     function applyLoadedData(data) {
         if (data.gold !== undefined) state.gold = data.gold;
         if (data.maxStage !== undefined) state.maxStage = data.maxStage;
-        else state.maxStage = data.stage || 1;
-        // 게임 시작 시 현재 최고 스테이지로 이동
-        state.stage = state.maxStage;
+        if (data.stage !== undefined) {
+            state.stage = data.stage;
+        } else if (state.maxStage !== undefined) {
+            state.stage = state.maxStage;
+        }
+        state.maxStage = Math.max(state.stage || 1, state.maxStage || 1);
         if (data.ownedAnimals) {
                 ownedAnimals = data.ownedAnimals;
                 // 모든 동물에 대해 스탯 초기화 및 포인트 시스템 갱신
@@ -1791,7 +1794,7 @@
                             bluePlayers[i].animal.iq = originalRoster.iq * iqMult;
                             
                             bluePlayers[i].animal.totalAvailablePoints = getAvailablePoints(bluePlayers[i].animal.level);
-                            bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
+                            bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses !== undefined ? (bluePlayers[i].animal.maxUses < 0 ? Infinity : bluePlayers[i].animal.maxUses) : 0;
                         }
                     }
                     console.log("✅ 로스터 로드 및 적용 완료");
@@ -2223,7 +2226,7 @@
         
         targetPlayer.animal = anim; 
         targetPlayer.el.innerHTML = anim.icon + '<div class="stun-fx">💫</div>'; 
-        targetPlayer.skillUsesLeft = anim.maxUses || 0;
+        targetPlayer.skillUsesLeft = anim.maxUses !== undefined ? (anim.maxUses < 0 ? Infinity : anim.maxUses) : 0;
         
         let idx = ownedAnimals.findIndex(a => a.uid === targetAnimUid);
         ownedAnimals[idx] = tempAnimal; 
@@ -2882,7 +2885,7 @@ function renameAnimal() {
             p.speedBoostTimer = 0;
             p.markedTarget = null;
             if (p.team === 'blue' && p.animal) {
-                p.skillUsesLeft = p.animal.maxUses || 0;
+                p.skillUsesLeft = p.animal.maxUses !== undefined ? (p.animal.maxUses < 0 ? Infinity : p.animal.maxUses) : 0;
             }
         });
         
@@ -3368,7 +3371,7 @@ function renameAnimal() {
         let animal = team === 'blue' ? createAnimal(ANIMAL_LIBRARY[0]) : null;
         if(team === 'blue') el.innerHTML += animal.icon; else el.innerText = ""; 
         court.appendChild(el);
-        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses ? animal.maxUses : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, chargePrep: 0, chargeDx: 0, chargeDy: 0, chargeSpeed: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0, bearSkillTimer: 0 };
+        let player = { el, shadow, stunFx, team, roleIdx, animal, x: team==='blue'? 30:70, y: 20+roleIdx*30, z: 0, vx: 0, vy: 0, tx: 50, ty: 50, cooldown: 0, isShooting: false, isCutting: false, cutTimer: 0, stunTimer: 0, slowTimer: 0, flyTimer: 0, flightBuffTimer: 0, activeBuff: 0, skillUsesLeft: (animal && animal.maxUses !== undefined ? (animal.maxUses < 0 ? Infinity : animal.maxUses) : 0), stealImmune: 0, fearDir: null, invisible: 0, speedDebuffTimer: 0, bisonRecoveryTimer: 0, chargeTimer: 0, chargeTarget: null, chargePrep: 0, chargeDx: 0, chargeDy: 0, chargeSpeed: 0, fragmentChild: null, fragmentTimer: 0, fragmentHighlightTimer: 0, bearSkillTimer: 0 };
         // red 플레이어만 스킬 타입 추가 (나중에 applyEnemyStats에서 할당)
         if (team === 'red') {
             player.skillType = null;
@@ -3434,7 +3437,7 @@ function renameAnimal() {
             // x, y는 현재 위치 유지 (순간이동 안 함!)
             p.vx = 0; p.vy = 0; 
             p.stunTimer = 0; p.slowTimer = 0; p.flyTimer = 0; p.isShooting = false; p.invisible = 0; p.speedDebuffTimer = 0; p.bisonRecoveryTimer = 0; p.chargePrep = 0; 
-            if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses || 0;
+            if(p.team === 'blue' && p.animal) p.skillUsesLeft = p.animal.maxUses !== undefined ? (p.animal.maxUses < 0 ? Infinity : p.animal.maxUses) : 0;
             // 적 팀 스킬 초기화
             if(p.team === 'red') {
                 p.skillCooldown = 0;
@@ -3503,7 +3506,6 @@ function renameAnimal() {
             }
             
             // 로딩 화면 표시
-            document.getElementById('loading-screen').classList.add('active');
             
             setTimeout(async () => { 
                 state.scoreB = 0; 
@@ -4565,13 +4567,18 @@ function renameAnimal() {
                             p.ty = closestEnemy.y;
                             targetSpeed *= 2.0; // 빠르게 추격
                             
-                            // 적 플레이어와 접촉하면 기절시킴 (4초 = 240프레임)
+                            // 적 플레이어와 접촉하면 기절시킴
                             if (Math.hypot(p.x - closestEnemy.x, p.y - closestEnemy.y) < 5 && p.cooldown <= 0) {
-                                closestEnemy.stunTimer = 240; // 4초 기절
+                                p.crocodileStunCount = (p.crocodileStunCount || 0) + 1;
+                                const extraStun = Math.min(60, p.crocodileStunCount * 12);
+                                closestEnemy.stunTimer = 240 + extraStun; // 4초 + 점진적 증가
                                 closestEnemy.slowTimer = 300; // 5초 약화 (감속 40%)
                                 closestEnemy.speedDebuffTimer = 300; // 5초 슈팅 정확도 하락 (35%)
+                                p.crocodileSpeedBonus = Math.min(0.35, p.crocodileStunCount * 0.03);
+                                p.extraScale = Math.min(0.16, (p.extraScale || 0) + 0.035);
                                 createVfx(closestEnemy.x, closestEnemy.y, 'power', '#10b981');
                                 createVfx(closestEnemy.x, closestEnemy.y, 'freeze', '#10b981');
+                                createVfx(p.x, p.y, 'roar', '#10b981');
                                 p.cooldown = 30;
                             }
                         } else {
