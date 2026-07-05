@@ -1412,6 +1412,14 @@
                         </div>
                     </div>
                     
+                    <!-- 오프라인 보상 -->
+                    <div style="background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; margin-bottom:15px;">
+                        <div style="font-size:1rem; font-weight:900; color:#ffd700; margin-bottom:12px;">⏱️ 오프라인 보상</div>
+                        <div style="font-size:0.85rem; color:#bbb; margin-bottom:8px;">잠수한 시간에 따라 골드와 랜덤 동물을 받습니다.</div>
+                        <div id="offline-reward-status" style="font-size:0.85rem; color:#60a5fa; margin-bottom:8px;">대기 중</div>
+                        <button onclick="const reward = calculateOfflineReward(); if(reward){ showOfflineRewardPopup(reward); } else { alert('1분 이상 잠수해야 보상이 지급됩니다.'); }" style="background:#2563eb; color:white; padding:10px 12px; border-radius:10px; border:none; font-weight:900; cursor:pointer; width:100%;">보상 확인</button>
+                    </div>
+
                     <!-- 게임 설정 -->
                     <div style="background:#1e1e1e; padding:15px; border-radius:15px; border:1px solid #333; margin-bottom:15px;">
                         <div style="font-size:1rem; font-weight:900; color:#ffd700; margin-bottom:12px;">⚙️ 게임 설정</div>
@@ -1518,6 +1526,11 @@
         { id: 'dolphin', name: '돌고래', grade: 'Epic', speed: 0.9, accel: 0.11, shoot: 65, iq: 85, icon: '🐬', color: '#a855f7', shootRange: 28, passRate: 0.5, skill: '파도 패스', skillDesc: '스킬 발동 시 잠시 팀원 속도 2배 버프', maxUses: 3, weight: 130 },
 
         { id: 'orca', name: '범고래', grade: 'Legendary', speed: 0.6, accel: 0.08, shoot: 70, iq: 70, icon: '🐋', color: '#ef4444', shootRange: 32, passRate: 0.4, skill: '파괴의 돌진', skillDesc: '공격 시 주변 상대 3명을 0.7초간 기절시키고 2.4초간 50% 둔화시킵니다.', maxUses: 2, weight: 190 },
+        { id: 'seal', name: '물개', grade: 'Rare', speed: 0.8, accel: 0.09, shoot: 48, iq: 70, icon: '🦭', color: '#3b82f6', shootRange: 20, passRate: 0.45, skill: '급속 돌진', skillDesc: '공을 잡으면 짧게 돌진해 가장 가까운 적을 0.4초 기절시킵니다.', maxUses: 2, weight: 110 },
+        { id: 'squid', name: '오징어', grade: 'Epic', speed: 0.75, accel: 0.08, shoot: 55, iq: 90, icon: '🐙', color: '#a855f7', shootRange: 24, passRate: 0.5, skill: '촉수 속박', skillDesc: '주변 적 2명을 0.8초간 둔화시키고 공을 뺏기 쉬운 상태로 만듭니다.', maxUses: 2, weight: 80 },
+        { id: 'jellyfish', name: '해파리', grade: 'Epic', speed: 0.5, accel: 0.05, shoot: 40, iq: 85, icon: '🪼', color: '#a855f7', shootRange: 16, passRate: 0.4, skill: '전기 방출', skillDesc: '주변 적을 잠시 마비시키고 팀원의 이동 속도를 올려줍니다.', maxUses: 3, weight: 60 },
+        { id: 'manatee', name: '매너티', grade: 'Rare', speed: 0.45, accel: 0.04, shoot: 60, iq: 78, icon: '🫧', color: '#3b82f6', shootRange: 18, passRate: 0.35, skill: '평온한 보호', skillDesc: '공을 들고 있을 때 주변 팀원에게 짧은 보호 버프를 줍니다.', maxUses: 2, weight: 180 },
+        { id: 'shark', name: '상어', grade: 'Legendary', speed: 1.0, accel: 0.12, shoot: 72, iq: 68, icon: '🦈', color: '#ef4444', shootRange: 26, passRate: 0.25, skill: '사냥 본능', skillDesc: '공을 들고 있으면 가장 가까운 적을 추적해 순간적으로 기절시킵니다.', maxUses: 2, weight: 170 },
         { id: 'dog', name: '바둑이', grade: 'Normal', speed: 0.5, accel: 0.05, shoot: 40, iq: 30, icon: '🐶', color: '#a8a29e', shootRange: 22, passRate: 0.3, weight: 100 },
         { id: 'turtle', name: '거북이', grade: 'Normal', speed: 0.2, accel: 0.02, shoot: 50, iq: 60, icon: '🐢', color: '#a8a29e', shootRange: 10, passRate: 0.1, weight: 250 },
         { id: 'penguin', name: '펭귄', grade: 'Normal', speed: 0.8, accel: 0.02, shoot: 35, iq: 40, icon: '🐧', color: '#a8a29e', shootRange: 18, passRate: 0.4, weight: 80 },
@@ -1583,6 +1596,12 @@
     }
 
     let state = { stage: 1, maxStage: 1, gold: 6000, scoreB: 0, scoreR: 0, time: 0, gameSpeed: 1, redComposition: [] };
+    let offlineRewardState = {
+        lastSeenAt: null,
+        totalDiveSeconds: 0,
+        lastOfflineRewardAt: null,
+        pendingReward: null
+    };
     let ownedAnimals = []; let selectedRosterIdx = 0; 
     let isGameRunning = false; let isResetting = false; let currentTabIdx = 2; 
     let targetAnimUid = null;
@@ -1645,6 +1664,7 @@
             maxStage: state.maxStage, 
             ownedAnimals: animalsWithStats, 
             roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+            offlineRewardState,
             lastSaved: new Date().toISOString()
         };
     }
@@ -1664,6 +1684,7 @@
                 maxStage: state.maxStage, 
                 ownedAnimals: animalsWithStats, 
                 roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+                offlineRewardState,
                 lastSaved: new Date().toISOString()
             };
             
@@ -1743,6 +1764,7 @@
     // 로드된 데이터 적용
     function applyLoadedData(data) {
         if (data.gold !== undefined) state.gold = data.gold;
+        if (data.offlineRewardState) offlineRewardState = { ...offlineRewardState, ...data.offlineRewardState };
         if (data.maxStage !== undefined) state.maxStage = data.maxStage;
         else state.maxStage = data.stage || 1;
         // 게임 시작 시 현재 최고 스테이지로 이동
@@ -2666,6 +2688,69 @@ function renameAnimal() {
 
     function updateUI() { document.getElementById('ui-gold').innerText = Math.floor(state.gold).toLocaleString(); document.getElementById('score-b').innerText = state.scoreB; document.getElementById('score-r').innerText = state.scoreR; document.getElementById('ui-stage').innerText = state.stage; }
 
+    function getOfflineRewardInfo(seconds) {
+        const minSeconds = 60;
+        const maxSeconds = 2 * 24 * 60 * 60;
+        const clamped = Math.max(minSeconds, Math.min(maxSeconds, seconds));
+        const hours = clamped / 3600;
+        const gold = Math.floor((state.maxStage || 1) * 5000 * Math.min(1, clamped / maxSeconds));
+        const animalCount = Math.max(1, Math.floor((state.maxStage || 1) * 2 * Math.min(1, clamped / maxSeconds)));
+        return { gold, animalCount, seconds: clamped, hours };
+    }
+
+    function calculateOfflineReward() {
+        const now = Date.now();
+        const lastSeen = offlineRewardState.lastSeenAt || now;
+        const elapsed = Math.max(0, Math.floor((now - lastSeen) / 1000));
+        if (elapsed < 60) return null;
+        const reward = getOfflineRewardInfo(elapsed);
+        return { ...reward, elapsedSeconds: elapsed, claimedAt: now };
+    }
+
+    function applyOfflineReward(reward) {
+        if (!reward) return;
+        state.gold += reward.gold;
+        const animalCount = Math.min(3, reward.animalCount);
+        for (let i = 0; i < animalCount; i++) {
+            const pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Normal' || a.grade === 'Rare' || a.grade === 'Epic' || a.grade === 'Legendary');
+            const picked = pool[Math.floor(Math.random() * pool.length)];
+            if (picked) {
+                ownedAnimals.push(createAnimal(picked, Math.max(1, Math.min(20, Math.floor((state.maxStage || 1) / 2)))));
+            }
+        }
+        offlineRewardState.lastSeenAt = Date.now();
+        offlineRewardState.pendingReward = null;
+        offlineRewardState.lastOfflineRewardAt = new Date().toISOString();
+        saveDataImmediate();
+        updateUI();
+        renderInventory();
+    }
+
+    function showOfflineRewardPopup(reward) {
+        if (!reward) return;
+        const rewardHtml = `
+            <div style="font-size:1.3rem;font-weight:900;color:#ffd700;margin-bottom:8px;">⏱️ 오프라인 보상</div>
+            <div style="font-size:0.9rem;color:#ddd;margin-bottom:10px;">${Math.floor(reward.elapsedSeconds / 60)}분 동안 잠수했습니다.</div>
+            <div style="background:#222;padding:12px;border-radius:10px;margin-bottom:10px;">
+                <div>💰 골드: ${reward.gold.toLocaleString()}</div>
+                <div>🐾 랜덤 동물: ${reward.animalCount}마리</div>
+            </div>
+            <button class="btn-action" onclick="closeOfflineRewardPopup(); applyOfflineReward(window.__offlineRewardData);" style="background:#3b82f6;color:white;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:900;">보상 받기</button>
+        `;
+        const modal = document.createElement('div');
+        modal.id = 'offline-reward-modal';
+        modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:500; padding:20px;';
+        modal.innerHTML = `<div style="background:#111;border:2px solid #ffd700;border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.4);">${rewardHtml}</div>`;
+        document.body.appendChild(modal);
+        window.__offlineRewardData = reward;
+    }
+
+    function closeOfflineRewardPopup() {
+        const modal = document.getElementById('offline-reward-modal');
+        if (modal) modal.remove();
+        window.__offlineRewardData = null;
+    }
+
 
     function openStageSelect() {
         let maxSelectable = Math.max(1, state.maxStage);
@@ -3219,6 +3304,23 @@ function renameAnimal() {
         });
     }
 
+    function initializeOfflineReward() {
+        const now = Date.now();
+        if (!offlineRewardState.lastSeenAt) {
+            offlineRewardState.lastSeenAt = now;
+        }
+        const reward = calculateOfflineReward();
+        if (reward) {
+            showOfflineRewardPopup(reward);
+        }
+        const statusEl = document.getElementById('offline-reward-status');
+        if (statusEl) {
+            const last = offlineRewardState.lastOfflineRewardAt ? new Date(offlineRewardState.lastOfflineRewardAt).toLocaleString() : '없음';
+            statusEl.textContent = reward ? `보상 가능: ${Math.floor(reward.elapsedSeconds / 60)}분` : `마지막 수령: ${last}`;
+        }
+        saveDataImmediate();
+    }
+
     async function initGame() {
         ball.shadow = document.createElement('div'); ball.shadow.className = 'ball-shadow'; court.appendChild(ball.shadow);
         ball.el = document.createElement('div'); ball.el.className = 'ball'; court.appendChild(ball.el);
@@ -3266,7 +3368,7 @@ function renameAnimal() {
             state.redComposition = [null, null, null]; // 친선전에는 AI 스킬 없음
         }
         
-        updateRosterUI(); updateUI(); resetPositions('red'); requestAnimationFrame(gameLoop); 
+        updateRosterUI(); updateUI(); resetPositions('red'); initializeOfflineReward(); requestAnimationFrame(gameLoop); 
     }
     
     function syncPlayerStats() {
@@ -4015,6 +4117,28 @@ function renameAnimal() {
                     // 비행 후 2초간(120프레임) 속도 25% 감소 상태 활성화
                     p.speedDebuffTimer = 120;
                 }
+                // 상어: 잠수 후 튀어나오며 공격
+                else if (p.animal.id === 'shark' && p.flyTimer > 0) {
+                    p.flyTimer--;
+                    const totalFlyTime = 24;
+                    const progress = 1 - (p.flyTimer / totalFlyTime);
+                    p.z = 18 * Math.sin(progress * Math.PI);
+
+                    if (p.flyTimer <= 0) {
+                        const hoop = p.team === 'blue' ? { x: 92, y: 50 } : { x: 8, y: 50 };
+                        const attackRadius = 18;
+                        const nearbyEnemies = enemies.filter(e => Math.hypot(e.x - hoop.x, e.y - hoop.y) < attackRadius);
+                        nearbyEnemies.forEach(e => {
+                            e.stunTimer = 42;
+                            e.vx *= 0.4;
+                            e.vy *= 0.4;
+                            createVfx(e.x, e.y, 'freeze', '#38bdf8');
+                        });
+                        createVfx(hoop.x, hoop.y, 'wave', '#38bdf8');
+                        createVfx(hoop.x, hoop.y, 'power', '#38bdf8');
+                        p.z = 0;
+                    }
+                }
                 // 매가 비행 중이면 공을 계속 추적하고 포물선 궤적 + 자연스러운 크기 변화
                 else if (p.animal.id === 'falcon' && p.flyTimer > 0) {
                     let dx = ball.x - p.x;
@@ -4062,7 +4186,7 @@ function renameAnimal() {
                 currentAccel = p.animal.accel; 
                 iqStat = p.animal.iq; 
                 if(p.activeBuff > 0) targetSpeed *= 3; 
-                if(p.flyTimer > 0) targetSpeed *= (p.animal.id === 'parrot' ? 3.5 : 5); 
+                if(p.flyTimer > 0) targetSpeed *= (p.animal.id === 'parrot' ? 3.5 : (p.animal.id === 'shark' ? 2.4 : 5)); 
             } 
             else { 
                 targetSpeed = state.redStats.maxSpeed * 0.8 * (p.slowTimer > 0 ? 0.5 : 1) * (p.bisonRecoveryTimer > 0 ? 0.7 : 1) * (p.chargeTimer > 0 ? 2.5 : 1); 
@@ -4183,6 +4307,88 @@ function renameAnimal() {
                             createVfx(p.x, p.y, 'roar', '#ef4444'); 
                             createVfx(p.x, p.y, 'wave', '#ef4444');
                             skillUsed = true; 
+                        }
+                    }
+                }
+                else if (p.animal.id === 'seal') {
+                    if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 20) {
+                        let target = enemies.slice().sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+                        if (target) {
+                            let dx = target.x - p.x;
+                            let dy = target.y - p.y;
+                            let dist = Math.hypot(dx, dy);
+                            if (dist > 0) {
+                                p.vx = (dx / dist) * 4;
+                                p.vy = (dy / dist) * 4;
+                                p.tx = target.x;
+                                p.ty = target.y;
+                            }
+                            target.stunTimer = 24;
+                            createVfx(p.x, p.y, 'speed', '#3b82f6');
+                            createVfx(target.x, target.y, 'freeze', '#3b82f6');
+                            skillUsed = true;
+                        }
+                    }
+                }
+                else if (p.animal.id === 'squid') {
+                    if (skillProbability < 15) {
+                        let targets = enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 18).slice(0, 2);
+                        if (targets.length > 0) {
+                            targets.forEach(e => {
+                                e.slowTimer = 48;
+                                e.vx *= 0.7;
+                                e.vy *= 0.7;
+                                createVfx(e.x, e.y, 'wave', '#a855f7');
+                            });
+                            createVfx(p.x, p.y, 'aura', '#a855f7');
+                            skillUsed = true;
+                        }
+                    }
+                }
+                else if (p.animal.id === 'jellyfish') {
+                    if (skillProbability < 15) {
+                        enemies.forEach(e => {
+                            e.stunTimer = 18;
+                            e.vx *= 0.8;
+                            e.vy *= 0.8;
+                            createVfx(e.x, e.y, 'spark', '#06b6d4');
+                        });
+                        players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60);
+                        createVfx(p.x, p.y, 'aura', '#06b6d4');
+                        skillUsed = true;
+                    }
+                }
+                else if (p.animal.id === 'manatee') {
+                    if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 20) {
+                        players.filter(t => t.team === p.team && t !== p).forEach(t => t.activeBuff = 60);
+                        createVfx(p.x, p.y, 'ring', '#38bdf8');
+                        createVfx(p.x, p.y, 'aura', '#38bdf8');
+                        skillUsed = true;
+                    }
+                }
+                else if (p.animal.id === 'shark') {
+                    if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 15) {
+                        const hoop = p.team === 'blue' ? { x: 92, y: 50 } : { x: 8, y: 50 };
+                        const distToHoop = Math.hypot(p.x - hoop.x, p.y - hoop.y);
+                        if (distToHoop < 25) {
+                            p.flyTimer = 24;
+                            p.flightBuffTimer = 24;
+                            p.stealImmune = 24;
+                            p.tx = hoop.x;
+                            p.ty = hoop.y;
+                            createVfx(p.x, p.y, 'wave', '#38bdf8');
+                            createVfx(p.x, p.y, 'aura', '#38bdf8');
+                            skillUsed = true;
+                        } else {
+                            let target = enemies.slice().sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+                            if (target) {
+                                target.stunTimer = 42;
+                                target.vx = (target.x - p.x > 0 ? 1 : -1) * 3;
+                                target.vy = (target.y - p.y > 0 ? 1 : -1) * 3;
+                                createVfx(p.x, p.y, 'roar', '#ef4444');
+                                createVfx(target.x, target.y, 'freeze', '#ef4444');
+                                skillUsed = true;
+                            }
                         }
                     }
                 }
