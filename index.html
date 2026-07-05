@@ -2731,7 +2731,7 @@ function renameAnimal() {
             const pool = ANIMAL_LIBRARY.filter(a => a.grade === 'Normal' || a.grade === 'Rare' || a.grade === 'Epic' || a.grade === 'Legendary');
             const picked = pool[Math.floor(Math.random() * pool.length)];
             if (picked) {
-                const animal = createAnimal(picked, Math.max(1, Math.min(20, Math.floor((state.maxStage || 1) / 2))));
+                const animal = createAnimal(picked, 1);
                 ownedAnimals.push(animal);
                 earnedAnimals.push(animal);
             }
@@ -2775,28 +2775,45 @@ function renameAnimal() {
 
     function showOfflineRewardAnimals(animals) {
         if (!animals || animals.length === 0) return;
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index:600; padding:20px;';
-        const card = document.createElement('div');
-        card.style.cssText = 'background:#171717; border:2px solid #ffd700; border-radius:18px; width:100%; max-width:380px; padding:20px; max-height:80vh; overflow-y:auto;';
-        card.innerHTML = `
-            <div style="font-size:1.25rem;font-weight:900;color:#ffd700;margin-bottom:10px;">🎁 획득한 동물</div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                ${animals.map(animal => `
-                    <div style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid ${animal.color};" onclick="openAnimalInfoFromCard('${animal.uid}')">
-                        <div style="font-size:1.8rem;">${animal.icon}</div>
-                        <div style="flex:1;">
-                            <div style="font-size:0.95rem;font-weight:900;color:white;">${animal.name}</div>
-                            <div style="font-size:0.72rem;color:#aaa;">${animal.grade} · Lv.${animal.level}</div>
-                        </div>
-                        <div style="font-size:0.8rem;color:${animal.color};font-weight:900;">정보</div>
-                    </div>
-                `).join('')}
-            </div>
-            <button onclick="this.parentElement.parentElement.remove()" style="margin-top:14px; width:100%; padding:10px; border:none; border-radius:10px; background:#3b82f6; color:white; font-weight:900; cursor:pointer;">닫기</button>
-        `;
-        overlay.appendChild(card);
-        document.body.appendChild(overlay);
+        const overlay = document.getElementById('full-overlay');
+        const iconEl = document.getElementById('overlay-icon');
+        const titleEl = document.getElementById('overlay-title');
+        const subEl = document.getElementById('overlay-sub');
+
+        if (!overlay || !iconEl || !titleEl || !subEl) return;
+
+        if (animals.length === 1) {
+            const animal = animals[0];
+            iconEl.innerText = animal.icon;
+            titleEl.innerText = animal.name;
+            subEl.innerHTML = `<div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+                <div style="color:${animal.color}; font-weight:900;">${animal.grade}</div>
+                <div style="font-size:0.95rem; color:#ddd;">Lv.1</div>
+                <button onclick="openAnimalInfoFromCard('${animal.uid}')" style="padding:8px 12px; border:none; border-radius:10px; background:#3b82f6; color:white; font-weight:900; cursor:pointer;">정보 보기</button>
+            </div>`;
+            subEl.style.color = animal.color;
+        } else {
+            iconEl.innerText = '🎁';
+            titleEl.innerText = '오프라인 보상!';
+            let gridHtml = '<div id="offline-reward-grid" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:15px; max-height:250px; overflow-y:auto; position:relative;">';
+            animals.forEach(animal => {
+                gridHtml += `<div class="gacha-result-icon" data-uid="${animal.uid}" data-icon="${animal.icon}" data-color="${animal.color}" data-price="${animal.level * 100}" onclick="openAnimalInfoFromCard('${animal.uid}')" style="font-size:1.8rem; background:rgba(0,0,0,0.5); border:2px solid ${animal.color}; border-radius:10px; width:50px; height:50px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 6px rgba(0,0,0,0.3); transition:all 0.3s ease; position:relative; cursor:pointer;">${animal.icon}</div>`;
+            });
+            gridHtml += '</div>';
+            subEl.innerHTML = gridHtml;
+            subEl.style.color = '#fff';
+        }
+
+        overlay.style.display = 'flex';
+        iconEl.className = '';
+        void iconEl.offsetWidth;
+        iconEl.className = 'anim-pop';
+
+        overlay.onclick = function() {
+            overlay.style.display = 'none';
+            if (typeof renderInventory === 'function') renderInventory();
+            overlay.onclick = null;
+        };
     }
 
     function openAnimalInfoFromCard(uid) {
