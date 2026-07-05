@@ -1858,6 +1858,45 @@
     let touchStartX = 0; let touchStartY = 0;
     const viewSlider = document.getElementById('view-slider');
     viewSlider.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, {passive: true});
+
+    function getCurrentLocalRoster() {
+        if (players.length > 0) {
+            return players.filter(p => p.team === 'blue').slice(0, 3).map(p => ({
+                id: p.animal?.id || 'dog',
+                name: p.animal?.name || '동물',
+                icon: p.animal?.icon || '🐶',
+                level: p.animal?.level || 1
+            }));
+        }
+
+        try {
+            const saved = JSON.parse(localStorage.getItem('animalHoopsRPGSave3') || '{}');
+            if (Array.isArray(saved?.roster)) {
+                return saved.roster.slice(0, 3).map(animal => ({
+                    id: animal?.id || 'dog',
+                    name: animal?.name || '동물',
+                    icon: animal?.icon || '🐶',
+                    level: animal?.level || 1
+                }));
+            }
+        } catch (e) {}
+
+        return [];
+    }
+
+    function normalizeFriendlyRoster(roster) {
+        if (!Array.isArray(roster) || roster.length === 0) return [];
+        return roster.slice(0, 3).map(animal => {
+            const entry = animal && typeof animal === 'object' ? animal : { id: animal };
+            const lookup = ANIMAL_LIBRARY.find(lib => lib.id === entry.id);
+            return {
+                id: entry.id || lookup?.id || 'dog',
+                name: entry.name || lookup?.name || '동물',
+                icon: entry.icon || lookup?.icon || '🐶',
+                level: entry.level || 1
+            };
+        });
+    }
     viewSlider.addEventListener('touchend', e => {
         let dx = e.changedTouches[0].screenX - touchStartX; let dy = e.changedTouches[0].screenY - touchStartY;
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
@@ -3422,9 +3461,10 @@ function renameAnimal() {
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
         // 친선전 모드인 경우 상대팀 로스터 할당
-        if (isFriendlyMatch && opponentData && opponentData.roster) {
+        if (isFriendlyMatch && opponentData && Array.isArray(opponentData.roster)) {
+            const normalizedRoster = normalizeFriendlyRoster(opponentData.roster);
             let redPlayers = players.filter(p => p.team === 'red');
-            opponentData.roster.forEach((animal, idx) => {
+            normalizedRoster.forEach((animal, idx) => {
                 if (redPlayers[idx]) {
                     redPlayers[idx].animal = {
                         id: animal.id,
@@ -3434,7 +3474,24 @@ function renameAnimal() {
                         speed: 1,
                         shoot: 45,
                         iq: 40,
-                        accel: 0.055
+                        accel: 0.055,
+                        maxUses: 0
+                    };
+                    redPlayers[idx].skillUsesLeft = 0;
+                }
+            });
+            redPlayers.forEach((player, idx) => {
+                if (!player.animal && normalizedRoster[idx]) {
+                    player.animal = {
+                        id: normalizedRoster[idx].id,
+                        name: normalizedRoster[idx].name,
+                        icon: normalizedRoster[idx].icon,
+                        level: normalizedRoster[idx].level || 1,
+                        speed: 1,
+                        shoot: 45,
+                        iq: 40,
+                        accel: 0.055,
+                        maxUses: 0
                     };
                 }
             });
@@ -5909,17 +5966,26 @@ function renameAnimal() {
             }
             
             // 상대방의 최근 로스터 로드 (최신 방식)
-            const opponentRoster = await getRecentRoster(opponentUid);
-            const playerRoster = await getRoster(currentUser.uid);
+            let opponentRoster = null;
+            let playerRoster = null;
+            try {
+                opponentRoster = await getRecentRoster(opponentUid);
+                playerRoster = await getRoster(currentUser.uid);
+            } catch (error) {
+                console.warn("친선전 로스터 조회 실패, 로컬 데이터로 대체합니다.", error);
+            }
             
-            console.log("로스터 로드 결과:", { opponentRoster, playerRoster });
+            const normalizedPlayerRoster = normalizeFriendlyRoster(playerRoster?.animals || getCurrentLocalRoster());
+            const normalizedOpponentRoster = normalizeFriendlyRoster(opponentRoster?.animals || normalizedPlayerRoster);
             
-            if (!opponentRoster || !opponentRoster.animals || opponentRoster.animals.length === 0) {
+            console.log("로스터 로드 결과:", { opponentRoster, playerRoster, normalizedPlayerRoster, normalizedOpponentRoster });
+            
+            if (normalizedOpponentRoster.length === 0) {
                 alert("상대방의 팀 정보를 찾을 수 없습니다.");
                 return;
             }
             
-            if (!playerRoster || !playerRoster.animals || playerRoster.animals.length === 0) {
+            if (normalizedPlayerRoster.length === 0) {
                 alert("내 팀 정보를 찾을 수 없습니다. PLAY 버튼으로 팀을 먼저 구성하세요.");
                 return;
             }
@@ -5928,8 +5994,8 @@ function renameAnimal() {
             isFriendlyMatch = true;
             opponentData = {
                 uid: opponentUid,
-                name: opponentName,
-                roster: opponentRoster.animals
+                name: opponentName || '상대',
+                roster: normalizedOpponentRoster
             };
             
             console.log("⚽ 친선전 준비 완료:", {
