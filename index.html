@@ -594,12 +594,19 @@
               return false;
             }
 
-            const savePayload = {
+            const fullSaveData = {
               ...gameData,
               uid,
               lastSaved: new Date().toISOString()
             };
-            persistLocalGameData(savePayload);
+            const remoteSavePayload = {
+              ...fullSaveData,
+              ownedAnimals: (fullSaveData.ownedAnimals || []).map(serializeAnimalForPersistence),
+              roster: (fullSaveData.roster || [])
+                .map(entry => entry?.uid || entry?.id || null)
+                .filter(Boolean)
+            };
+            persistLocalGameData(fullSaveData);
 
             if (!db || !auth || !getCurrentUser()) {
               return true;
@@ -609,7 +616,7 @@
             void (async () => {
               try {
                 const latestServerData = await loadGameData(uid);
-                const resolvedData = mergeGameDataForSync(savePayload, latestServerData);
+                const resolvedData = mergeGameDataForSync(remoteSavePayload, latestServerData);
                 await db.collection('gameData').doc(uid).set({
                   uid: uid,
                   gold: resolvedData.gold,
@@ -999,10 +1006,17 @@
               console.warn("Firestore가 아직 초기화되지 않았습니다.");
               return;
             }
+            const normalizedAnimals = (animals || []).map(animal => {
+              if (typeof animal === 'string') return animal;
+              if (animal && typeof animal === 'object') {
+                return animal.uid || animal.id || null;
+              }
+              return null;
+            }).filter(Boolean);
             await db.collection('rosters').doc(uid).set({
               userId: uid,
               teamName: teamName,
-              animals: animals,
+              animals: normalizedAnimals,
               lastSaved: new Date()
             });
             console.log("✅ 로스터 저장됨");
@@ -1652,24 +1666,139 @@
     });
     window.addEventListener('pagehide', syncOfflineRewardTimestamp);
 
+    function getCurrentRosterSnapshot() {
+        return players.filter(p => p.team === 'blue').slice(0, 3).map(p => p.animal).filter(Boolean).map(animal => ({
+            uid: animal.uid || null,
+            id: animal.id || null,
+            level: animal.level || 1,
+            name: animal.name || null,
+            icon: animal.icon || null
+        }));
+    }
+
+    function serializeAnimalForPersistence(animal) {
+        const resolvedLevel = animal?.level || 1;
+        const allocatedPoints = animal?.allocatedPoints || { speed: 0, shoot: 0, iq: 0 };
+        return {
+            uid: animal?.uid || genUid(),
+            id: animal?.id || 'unknown',
+            level: resolvedLevel,
+            allocatedPoints: {
+                speed: allocatedPoints.speed || 0,
+                shoot: allocatedPoints.shoot || 0,
+                iq: allocatedPoints.iq || 0
+            },
+            totalAvailablePoints: animal?.totalAvailablePoints || getAvailablePoints(resolvedLevel)
+        };
+    }
+
+    function buildGameSaveData() {
+        const animalsWithStats = ownedAnimals.map(a => ({
+            ...a,
+            baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
+            allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
+            totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
+        }));
+        return {
+            gold: state.gold,
+            stage: state.stage,
+            maxStage: state.maxStage,
+            ownedAnimals: animalsWithStats,
+            roster: getCurrentRosterSnapshot(),
+            offlineRewardState,
+            lastSaved: new Date().toISOString()
+        };
+    }
+
+    function buildRemoteSavePayload() {
+        const data = buildGameSaveData();
+        return {
+            ...data,
+            ownedAnimals: data.ownedAnimals.map(serializeAnimalForPersistence),
+            roster: data.roster
+                .map(entry => entry.uid || entry.id || null)
+                .filter(Boolean)
+        };
+    }
+
+    function applyAnimalStats(animal) {
+        const original = ANIMAL_LIBRARY.find(lib => lib.id === animal.id);
+        const baseStats = original ? {
+            speed: original.speed,
+            shoot: original.shoot,
+            iq: original.iq
+        } : {
+            speed: animal.baseStats?.speed || animal.speed || 0.5,
+            shoot: animal.baseStats?.shoot || animal.shoot || 40,
+            iq: animal.baseStats?.iq || animal.iq || 40
+        };
+
+        animal.baseStats = { ...baseStats };
+        if (!animal.allocatedPoints) animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+
+        const allocatedPoints = animal.allocatedPoints;
+        const speedMult = 1 + 4 * Math.sqrt((allocatedPoints.speed || 0) / 60);
+        const shootMult = 1 + 4 * Math.sqrt((allocatedPoints.shoot || 0) / 60);
+        const iqMult = 1 + 4 * Math.sqrt((allocatedPoints.iq || 0) / 60);
+
+        animal.speed = baseStats.speed * speedMult;
+        animal.shoot = baseStats.shoot * shootMult;
+        animal.iq = baseStats.iq * iqMult;
+
+        if (original) {
+            if (original.skill !== undefined) animal.skill = original.skill;
+            if (original.skillDesc !== undefined) animal.skillDesc = original.skillDesc;
+            if (original.maxUses !== undefined) animal.maxUses = original.maxUses;
+            if (original.icon) animal.icon = original.icon;
+            if (original.color) animal.color = original.color;
+            if (original.shootRange !== undefined) animal.shootRange = original.shootRange;
+            if (original.passRate !== undefined) animal.passRate = original.passRate;
+            if (original.accel !== undefined) animal.accel = original.accel;
+            if (original.grade) animal.grade = original.grade;
+            if (original.name) animal.name = original.name;
+        }
+
+        animal.totalAvailablePoints = animal.totalAvailablePoints || getAvailablePoints(animal.level || 1);
+        return animal;
+    }
+
+    function hydrateOwnedAnimalsFromPersistence(savedAnimals) {
+        return (Array.isArray(savedAnimals) ? savedAnimals : []).map(savedAnimal => {
+            const original = ANIMAL_LIBRARY.find(lib => lib.id === savedAnimal?.id);
+            const hydrated = createAnimal(original || { id: savedAnimal?.id || 'unknown', name: savedAnimal?.name || '알 수 없음' }, savedAnimal?.level || 1);
+            hydrated.uid = savedAnimal?.uid || genUid();
+            hydrated.level = savedAnimal?.level || 1;
+            hydrated.allocatedPoints = {
+                speed: savedAnimal?.allocatedPoints?.speed || 0,
+                shoot: savedAnimal?.allocatedPoints?.shoot || 0,
+                iq: savedAnimal?.allocatedPoints?.iq || 0
+            };
+            hydrated.totalAvailablePoints = savedAnimal?.totalAvailablePoints || getAvailablePoints(hydrated.level);
+            return applyAnimalStats(hydrated);
+        });
+    }
+
+    function resolveRosterAnimal(entry, animalLookup) {
+        if (!entry) return null;
+        if (typeof entry === 'string') {
+            if (animalLookup.has(entry)) return animalLookup.get(entry);
+            return Array.from(animalLookup.values()).find(animal => animal.id === entry) || null;
+        }
+        if (entry && typeof entry === 'object') {
+            if (entry.uid && animalLookup.has(entry.uid)) {
+                return animalLookup.get(entry.uid);
+            }
+            if (entry.id) {
+                if (animalLookup.has(entry.id)) return animalLookup.get(entry.id);
+                return Array.from(animalLookup.values()).find(animal => animal.id === entry.id) || null;
+            }
+        }
+        return null;
+    }
+
     function saveData() {
         try {
-            // baseStats와 allocatedPoints를 명시적으로 저장
-            const animalsWithStats = ownedAnimals.map(a => ({
-                ...a,
-                baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
-                allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
-                totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
-            }));
-            const data = { 
-                gold: state.gold, 
-                stage: state.stage, 
-                maxStage: state.maxStage, 
-                ownedAnimals: animalsWithStats, 
-                roster: players.filter(p => p.team === 'blue').map(p => p.animal),
-                offlineRewardState,
-                lastSaved: new Date().toISOString()
-            };
+            const data = buildGameSaveData();
             
             // 로컬 저장 (백업)
             localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
@@ -1677,7 +1806,7 @@
             // 서버 저장 (계정 기반) - 200ms debounce
             const currentUser = getCurrentUser();
             if (currentUser && typeof saveGameData === 'function') {
-                debouncedSave(currentUser.uid, data, 200);
+                debouncedSave(currentUser.uid, buildRemoteSavePayload(), 200);
             }
         } catch(e) {
             console.error("Save Error:", e);
@@ -1686,41 +1815,13 @@
     
     // 현재 게임 상태 반환 (자동 저장용)
     function getGameData() {
-        const animalsWithStats = ownedAnimals.map(a => ({
-            ...a,
-            baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
-            allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
-            totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
-        }));
-        return { 
-            gold: state.gold, 
-            stage: state.stage, 
-            maxStage: state.maxStage, 
-            ownedAnimals: animalsWithStats, 
-            roster: players.filter(p => p.team === 'blue').map(p => p.animal),
-            offlineRewardState,
-            lastSaved: new Date().toISOString()
-        };
+        return buildGameSaveData();
     }
     
     // 즉시 저장 함수 (중요 이벤트용)
     function saveDataImmediate() {
         try {
-            const animalsWithStats = ownedAnimals.map(a => ({
-                ...a,
-                baseStats: a.baseStats || { speed: a.speed, shoot: a.shoot, iq: a.iq },
-                allocatedPoints: a.allocatedPoints || { speed: 0, shoot: 0, iq: 0 },
-                totalAvailablePoints: a.totalAvailablePoints || getAvailablePoints(a.level)
-            }));
-            const data = { 
-                gold: state.gold, 
-                stage: state.stage, 
-                maxStage: state.maxStage, 
-                ownedAnimals: animalsWithStats, 
-                roster: players.filter(p => p.team === 'blue').map(p => p.animal),
-                offlineRewardState,
-                lastSaved: new Date().toISOString()
-            };
+            const data = buildGameSaveData();
             
             // 로컬 저장 (백업)
             localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
@@ -1728,7 +1829,7 @@
             // 서버 즉시 저장
             const currentUser = getCurrentUser();
             if (currentUser && typeof immediateSave === 'function') {
-                immediateSave(currentUser.uid, data);
+                immediateSave(currentUser.uid, buildRemoteSavePayload());
             }
         } catch(e) {
             console.error("Save Immediate Error:", e);
@@ -1805,78 +1906,32 @@
         if (data.offlineRewardState) offlineRewardState = { ...offlineRewardState, ...data.offlineRewardState };
         if (data.maxStage !== undefined) state.maxStage = data.maxStage;
         else state.maxStage = data.stage || 1;
-        // 게임 시작 시 현재 최고 스테이지로 이동
         state.stage = state.maxStage;
-        if (data.ownedAnimals) {
-                ownedAnimals = data.ownedAnimals;
-                // 모든 동물에 대해 스탯 초기화 및 포인트 시스템 갱신
-                ownedAnimals.forEach(a => {
-                    // ANIMAL_LIBRARY에서 원본 스탯 찾기
-                    const original = ANIMAL_LIBRARY.find(lib => lib.id === a.id);
-                    if (original) {
-                        // baseStats를 항상 원본 능력치로 설정
-                        a.baseStats = { speed: original.speed, shoot: original.shoot, iq: original.iq };
-                        // allocatedPoints가 있으면 적용, 없으면 0
-                        if (!a.allocatedPoints) a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                        // 스탯 계산 적용 (균형 패치: 60포인트 투자 시 5배)
-                        let speedMult = 1 + 4 * Math.sqrt((a.allocatedPoints.speed || 0) / 60);
-                        let shootMult = 1 + 4 * Math.sqrt((a.allocatedPoints.shoot || 0) / 60);
-                        let iqMult = 1 + 4 * Math.sqrt((a.allocatedPoints.iq || 0) / 60);
-                        a.speed = original.speed * speedMult;
-                        a.shoot = original.shoot * shootMult;
-                        a.iq = original.iq * iqMult;
-                        // 모든 정보를 최신으로 업데이트 (새로운 버전 적용)
-                        if (original.skill) a.skill = original.skill;
-                        if (original.skillDesc) a.skillDesc = original.skillDesc;
-                        if (original.maxUses !== undefined) a.maxUses = original.maxUses;
-                        if (original.icon) a.icon = original.icon;
-                        if (original.color) a.color = original.color;
-                        if (original.shootRange !== undefined) a.shootRange = original.shootRange;
-                        if (original.passRate !== undefined) a.passRate = original.passRate;
-                        if (original.accel !== undefined) a.accel = original.accel;
-                        if (original.grade) a.grade = original.grade;
-                        if (original.name) a.name = original.name;
-                    } else {
-                        if (!a.baseStats) a.baseStats = { speed: a.speed, shoot: a.shoot, iq: a.iq };
-                        if (!a.allocatedPoints) a.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
+
+        if (Array.isArray(data.ownedAnimals)) {
+            ownedAnimals = hydrateOwnedAnimalsFromPersistence(data.ownedAnimals);
+        }
+
+        if (Array.isArray(data.roster) && data.roster.length > 0 && players.length > 0) {
+            const bluePlayers = players.filter(p => p.team === 'blue');
+            if (bluePlayers.length > 0) {
+                const animalLookup = new Map(ownedAnimals.map(animal => [animal.uid, animal]));
+                const rosterAnimals = data.roster
+                    .map(entry => resolveRosterAnimal(entry, animalLookup))
+                    .filter(Boolean);
+
+                bluePlayers.slice(0, 3).forEach((player, index) => {
+                    const rosterAnimal = rosterAnimals[index] || ownedAnimals[index] || player.animal;
+                    if (rosterAnimal) {
+                        player.animal = { ...rosterAnimal };
+                        if (!player.animal.uid) player.animal.uid = genUid();
+                        applyAnimalStats(player.animal);
+                        player.skillUsesLeft = player.animal.maxUses || 0;
                     }
-                    // 포인트 시스템 갱신 (새로운 공식)
-                    a.totalAvailablePoints = getAvailablePoints(a.level);
                 });
+                console.log("✅ 로스터 로드 및 적용 완료");
             }
-        if (data.roster && data.roster.length === 3) {
-                // 게임이 초기화된 후에 호출되므로 players 배열이 존재
-                let bluePlayers = players.filter(p => p.team === 'blue');
-                if (bluePlayers && bluePlayers.length === 3) {
-                    for(let i=0; i<3; i++) {
-                        bluePlayers[i].animal = data.roster[i];
-                        if(!bluePlayers[i].animal.uid) bluePlayers[i].animal.uid = genUid();
-                        
-                        // 로드된 동물도 baseStats 보장
-                        const originalRoster = ANIMAL_LIBRARY.find(lib => lib.id === bluePlayers[i].animal.id);
-                        if (originalRoster) {
-                            bluePlayers[i].animal.baseStats = { speed: originalRoster.speed, shoot: originalRoster.shoot, iq: originalRoster.iq };
-                            if (!bluePlayers[i].animal.allocatedPoints) bluePlayers[i].animal.allocatedPoints = { speed: 0, shoot: 0, iq: 0 };
-                            
-                            // 외형 및 설명 최신 업데이트
-                            if (originalRoster.icon) bluePlayers[i].animal.icon = originalRoster.icon;
-                            if (originalRoster.skill) bluePlayers[i].animal.skill = originalRoster.skill;
-                            
-                            // 스탯 계산
-                            let speedMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.speed || 0) / 60);
-                            let shootMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.shoot || 0) / 60);
-                            let iqMult = 1 + 4 * Math.sqrt((bluePlayers[i].animal.allocatedPoints.iq || 0) / 60);
-                            bluePlayers[i].animal.speed = originalRoster.speed * speedMult;
-                            bluePlayers[i].animal.shoot = originalRoster.shoot * shootMult;
-                            bluePlayers[i].animal.iq = originalRoster.iq * iqMult;
-                            
-                            bluePlayers[i].animal.totalAvailablePoints = getAvailablePoints(bluePlayers[i].animal.level);
-                            bluePlayers[i].skillUsesLeft = bluePlayers[i].animal.maxUses || 0;
-                        }
-                    }
-                    console.log("✅ 로스터 로드 및 적용 완료");
-                }
-            }
+        }
     }
 
     let touchStartX = 0; let touchStartY = 0;
