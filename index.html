@@ -1616,8 +1616,21 @@
     let possessionTeamForRound = 'red';
 
     const court = document.getElementById('court-area');
+    const debugLog = (...args) => {};
+    let activeVfxCount = 0;
+    const MAX_ACTIVE_VFX = 120;
     let players = [];
     let ball = { x: 50, y: 50, z: 50, vx: 0, vy: 0, vz: 0, el: null, shadow: null, holder: null, lastHolder: null, state: 'loose', targetTeam: null, points: 2, isGoal: false };
+
+    function syncOfflineRewardTimestamp() {
+        offlineRewardState.lastSeenAt = Date.now();
+        saveDataImmediate();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) syncOfflineRewardTimestamp();
+    });
+    window.addEventListener('pagehide', syncOfflineRewardTimestamp);
 
     function saveData() {
         try {
@@ -1634,6 +1647,7 @@
                 maxStage: state.maxStage, 
                 ownedAnimals: animalsWithStats, 
                 roster: players.filter(p => p.team === 'blue').map(p => p.animal),
+                offlineRewardState,
                 lastSaved: new Date().toISOString()
             };
             
@@ -3312,6 +3326,7 @@ function renameAnimal() {
 }
 
     function createVfx(x, y, type, color = 'red') {
+        if (!court || activeVfxCount >= MAX_ACTIVE_VFX) return;
         const div = document.createElement('div');
         if (type === 'wave') { div.className = 'vfx-shockwave'; div.style.borderColor = color; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         else if (type === 'meteor') { div.className = 'vfx-meteor'; div.innerText = '☄️'; div.style.left = `${x}%`; }
@@ -3327,17 +3342,28 @@ function renameAnimal() {
         else if (type === 'roar') { div.className = 'vfx-roar'; div.style.boxShadow = `0 0 30px ${color}`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         else if (type === 'magic') { div.className = 'vfx-magic'; div.style.background = `radial-gradient(circle, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
         else if (type === 'flight') { div.className = 'vfx-flight'; div.style.background = `linear-gradient(180deg, ${color}, transparent)`; div.style.left = `${x}%`; div.style.top = `${y}%`; }
-        court.appendChild(div); setTimeout(() => div.remove(), 1000);
+        court.appendChild(div);
+        activeVfxCount += 1;
+        setTimeout(() => {
+            if (div.parentNode) div.remove();
+            activeVfxCount = Math.max(0, activeVfxCount - 1);
+        }, 1000);
     }
 
     function createMagicPath(fromX, fromY, toX, toY, color = '#d8b4fe') {
+        if (!court || activeVfxCount >= MAX_ACTIVE_VFX) return;
         const div = document.createElement('div'); div.className = 'vfx-magic-path';
         const dx = toX - fromX; const dy = toY - fromY; const dist = Math.hypot(dx, dy); const angle = Math.atan2(dy, dx);
         div.style.width = `${dist}%`; div.style.left = `${fromX}%`; div.style.top = `${fromY}%`;
         div.style.transform = `translate(0, -50%) rotate(${angle}rad)`;
         div.style.background = `linear-gradient(90deg, ${color} 0%, rgba(255,255,255,0.8) 50%, ${color} 100%)`;
         div.style.animation = 'pathFade 0.45s ease-out forwards';
-        court.appendChild(div); setTimeout(() => div.remove(), 500);
+        court.appendChild(div);
+        activeVfxCount += 1;
+        setTimeout(() => {
+            if (div.parentNode) div.remove();
+            activeVfxCount = Math.max(0, activeVfxCount - 1);
+        }, 500);
     }
 
     function createRainbowPath(fromX, fromY, toX, toY) {
@@ -4447,7 +4473,7 @@ function renameAnimal() {
                         p.ty = p.sharkDiveTarget.y;
                         p.cooldown = 30;
                         createVfx(p.x, p.y, 'wave', '#38bdf8');
-                        createVfx(p.x, p.y, 'aura', '#38bdf8');
+                        createVfx(p.x, p.y, 'ring', '#38bdf8');
                         createVfx(hoop.x, hoop.y, 'ring', '#38bdf8');
                         skillUsed = true;
                     }
@@ -5197,7 +5223,7 @@ function renameAnimal() {
             }
             p.el.style.left = `${p.x}%`; p.el.style.top = `calc(${p.y}% - ${p.z}px)`; p.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
             p.shadow.style.left = `${p.x}%`; p.shadow.style.top = `${p.y}%`; p.shadow.style.transform = `translate(-50%, -50%) scale(${Math.max(0.5, 1 - p.z/40)})`; p.shadow.style.opacity = Math.max(0.2, 1 - p.z/30);
-            if(p.flyTimer > 0) createVfx(p.x, p.y, 'flight', '#60a5fa');
+            if(p.flyTimer > 0 && state.time % 3 === 0) createVfx(p.x, p.y, 'flight', '#60a5fa');
             
             // === 분열된 자식 플레이어 렌더링 ===
             if (p.fragmentChild) {
