@@ -923,69 +923,48 @@
         // 🏆 랭킹 관련 함수
         // ===========================
 
-        async function getTopRankings(limit = 50) {
+        async function getTopRankings(limit = 20) {
           try {
             if (!db) {
               console.warn("Firestore가 아직 초기화되지 않았습니다.");
               return [];
             }
-            
-            // gameData 컬렉션에서 모든 플레이어의 maxStage 조회
-            const gameDataSnapshot = await db.collection('gameData').get();
-            
-            const rankings = [];
-            
-            for (const doc of gameDataSnapshot.docs) {
+
+            const gameDataSnapshot = await db.collection('gameData')
+              .orderBy('maxStage', 'desc')
+              .limit(limit)
+              .get();
+
+            const rankings = await Promise.all(gameDataSnapshot.docs.map(async (doc) => {
               const gameData = doc.data();
               const uid = gameData.uid || doc.id;
-              
-              // 해당 사용자의 프로필 조회
               const userDoc = await db.collection('users').doc(uid).get();
-              const userData = userDoc.data();
-              
-              if (userData) {
-                // 가장 많이 사용한 동물 조회
-                let avatarIcon = userData.avatar || '🐶';
-                try {
-                  const mostUsedAnimal = await getMostUsedAnimal(uid);
-                  if (mostUsedAnimal && mostUsedAnimal.id) {
-                    // animalData에서 해당 동물의 아이콘 찾기
-                    const animalInfo = window.animalData?.find(a => a.id === mostUsedAnimal.id);
-                    if (animalInfo) {
-                      avatarIcon = animalInfo.icon;
-                    }
-                  }
-                } catch (error) {
-                  console.log("동물 통계 조회 실패, 저장된 프로필 아이콘 사용:", error);
-                }
-                
-                rankings.push({
-                  userId: uid,
-                  nickname: userData.nickname || '플레이어',
-                  avatar: avatarIcon,
-                  maxStage: gameData.maxStage || 1,
-                  stage: gameData.stage || 0,
-                  wins: userData.wins || 0,
-                  losses: userData.losses || 0,
-                  rating: userData.rating || 1500,
-                  winRate: userData.winRate || 0
-                });
-              }
-            }
-            
-            // maxStage 기준으로 내림차순 정렬
+              const userData = userDoc.exists ? userDoc.data() : null;
+
+              return {
+                userId: uid,
+                nickname: userData?.nickname || '플레이어',
+                avatar: userData?.avatar || '🐶',
+                maxStage: gameData.maxStage || gameData.stage || 1,
+                stage: gameData.stage || 0,
+                wins: userData?.wins || 0,
+                losses: userData?.losses || 0,
+                rating: userData?.rating || 1500,
+                winRate: userData?.winRate || 0
+              };
+            }));
+
             rankings.sort((a, b) => {
               if (b.maxStage !== a.maxStage) {
                 return b.maxStage - a.maxStage;
               }
               return b.rating - a.rating;
             });
-            
-            // rank 번호 부여
+
             rankings.forEach((rank, index) => {
               rank.rank = index + 1;
             });
-            
+
             return rankings.slice(0, limit);
           } catch (error) {
             console.error("랭킹 조회 실패:", error);
@@ -1541,9 +1520,6 @@
                 </div>
                 
                 <div class="popup-actions">
-                    <button class="btn-friendly" id="popup-friendly-btn" onclick="startFriendlyFromPopup()">
-                        ⚽ 친선전 신청
-                    </button>
                     <button class="btn-cancel" onclick="closePlayerInfoPopup()">닫기</button>
                 </div>
             </div>
@@ -1576,7 +1552,6 @@
         { id: 'seal', name: '물개', grade: 'Rare', speed: 0.8, accel: 0.09, shoot: 48, iq: 70, icon: '🦭', color: '#3b82f6', shootRange: 20, passRate: 0.45, skill: '급속 돌진', skillDesc: '공을 잡으면 짧게 돌진해 가장 가까운 적을 0.4초 기절시킵니다.', maxUses: 2, weight: 110 },
         { id: 'squid', name: '오징어', grade: 'Epic', speed: 0.75, accel: 0.08, shoot: 55, iq: 90, icon: '🐙', color: '#a855f7', shootRange: 24, passRate: 0.5, skill: '촉수 속박', skillDesc: '주변 적 2명을 0.8초간 둔화시키고 공을 뺏기 쉬운 상태로 만듭니다.', maxUses: 2, weight: 80 },
         { id: 'jellyfish', name: '해파리', grade: 'Epic', speed: 0.5, accel: 0.05, shoot: 40, iq: 85, icon: '🪼', color: '#a855f7', shootRange: 16, passRate: 0.4, skill: '전기 방출', skillDesc: '주변 적을 잠시 마비시키고 팀원의 이동 속도를 올려줍니다.', maxUses: 3, weight: 60 },
-        { id: 'manatee', name: '매너티', grade: 'Rare', speed: 0.45, accel: 0.04, shoot: 60, iq: 78, icon: '🫧', color: '#3b82f6', shootRange: 18, passRate: 0.35, skill: '평온한 보호', skillDesc: '공을 들고 있을 때 주변 팀원에게 짧은 보호 버프를 줍니다.', maxUses: 2, weight: 180 },
         { id: 'shark', name: '상어', grade: 'Legendary', speed: 1.0, accel: 0.12, shoot: 72, iq: 68, icon: '🦈', color: '#ef4444', shootRange: 26, passRate: 0.25, skill: '잠수 드리블', skillDesc: '공을 들고 골대 근처에 가면 잠수해 더 가까이 접근한 뒤 튀어나오며 물보라를 일으켜 주변 적을 기절시킵니다.', maxUses: 2, weight: 170 },
         { id: 'dog', name: '바둑이', grade: 'Normal', speed: 0.5, accel: 0.05, shoot: 40, iq: 30, icon: '🐶', color: '#a8a29e', shootRange: 22, passRate: 0.3, weight: 100 },
         { id: 'turtle', name: '거북이', grade: 'Normal', speed: 0.2, accel: 0.02, shoot: 50, iq: 60, icon: '🐢', color: '#a8a29e', shootRange: 10, passRate: 0.1, weight: 250 },
@@ -1654,8 +1629,6 @@
     let targetAnimUid = null;
     let gachaTimeout1, gachaTimeout2; 
     let currentPickedList = [];
-    let isFriendlyMatch = false; // 친선전 모드 여부 (선언을 위로 이동)
-    let opponentData = null; // 친선전 상대 정보 (선언을 위로 이동)
     
     // 라운드 시작 관련 전역 변수
     let waitingForPlayersArrive = false;
@@ -1787,24 +1760,23 @@
         const currentUser = getCurrentUser();
 
         if (currentUser && typeof loadGameData === 'function') {
-            try {
-                const serverData = await loadFromServer();
-                if (serverData) {
-                    const localTime = localData?.lastSaved ? new Date(localData.lastSaved).getTime() : 0;
-                    const serverTime = serverData.lastSaved ? new Date(serverData.lastSaved).getTime() : 0;
-                    if (!localData || !serverTime || serverTime >= localTime) {
-                        applyLoadedData(serverData);
-                        console.log("✅ 서버 데이터로 최신 상태 복원");
-                    } else {
-                        console.log("✅ 로컬 데이터 유지");
+            void (async () => {
+                try {
+                    const serverData = await loadFromServer();
+                    if (serverData) {
+                        const localTime = localData?.lastSaved ? new Date(localData.lastSaved).getTime() : 0;
+                        const serverTime = serverData.lastSaved ? new Date(serverData.lastSaved).getTime() : 0;
+                        if (!localData || !serverTime || serverTime >= localTime) {
+                            applyLoadedData(serverData);
+                            console.log("✅ 서버 데이터로 최신 상태 복원");
+                        } else {
+                            console.log("✅ 로컬 데이터 유지");
+                        }
                     }
+                } catch (error) {
+                    console.error("데이터 동기화 실패:", error);
                 }
-            } catch (error) {
-                console.error("데이터 동기화 실패:", error);
-            }
-        }
-
-        if (currentUser && typeof loadGameData === 'function') {
+            })();
             startAutoSave(currentUser.uid, getGameData, 10000);
         } else {
             console.log("✅ 로컬 데이터 로드 완료 (로그인 안됨)");
@@ -1971,7 +1943,7 @@
                 await initGame();
                 const currentUser = getCurrentUser();
                 if (currentUser) {
-                    await initializeAnimalStats(currentUser.uid);
+                    void initializeAnimalStats(currentUser.uid);
                 }
                 isGameRunning = true; 
                 // 게임 초기화 완료 후 로딩 화면 닫기
@@ -3512,64 +3484,13 @@ function renameAnimal() {
         for(let i=0; i<3; i++) createPlayer('blue', i); for(let i=0; i<3; i++) createPlayer('red', i);
         players.forEach(p => p.matchup = players.find(e => e.team !== p.team && e.roleIdx === p.roleIdx));
         
-        // 친선전 모드인 경우 상대팀 로스터 할당
-        if (isFriendlyMatch && opponentData && Array.isArray(opponentData.roster)) {
-            const normalizedRoster = normalizeFriendlyRoster(opponentData.roster);
-            let redPlayers = players.filter(p => p.team === 'red');
-            normalizedRoster.forEach((animal, idx) => {
-                if (redPlayers[idx]) {
-                    redPlayers[idx].animal = {
-                        id: animal.id,
-                        name: animal.name,
-                        icon: animal.icon,
-                        level: animal.level || 1,
-                        speed: 1,
-                        shoot: 45,
-                        iq: 40,
-                        accel: 0.055,
-                        maxUses: 0
-                    };
-                    redPlayers[idx].skillUsesLeft = 0;
-                }
-            });
-            redPlayers.forEach((player, idx) => {
-                if (!player.animal && normalizedRoster[idx]) {
-                    player.animal = {
-                        id: normalizedRoster[idx].id,
-                        name: normalizedRoster[idx].name,
-                        icon: normalizedRoster[idx].icon,
-                        level: normalizedRoster[idx].level || 1,
-                        speed: 1,
-                        shoot: 45,
-                        iq: 40,
-                        accel: 0.055,
-                        maxUses: 0
-                    };
-                }
-            });
-            console.log("⚽ 친선전 상대팀 로스터 적용됨");
-        }
-        
         // 스탯 동기화: 로스터 동물들의 스탯을 플레이어에 적용
         syncPlayerStats();
         
         // 데이터 로드 - 완료될 때까지 대기
         await loadData(); 
         
-        // 친선전 모드가 아닌 경우만 applyEnemyStats 적용 (스테이지 기반)
-        if (!isFriendlyMatch) {
-            applyEnemyStats();
-        } else {
-            // 친선전 모드: 상대팀 스탯을 약간 강화 (추천받은 높은 스테이지)
-            let recommendedLevel = 20 + Math.random() * 10; // 20-30 정도의 난이도
-            state.redStats = {
-                maxSpeed: 0.8 + Math.sqrt(recommendedLevel) * 0.1,
-                accel: 0.055 + recommendedLevel * 0.002,
-                shoot: 50 + recommendedLevel * 2,
-                iq: 50 + recommendedLevel * 1.5
-            };
-            state.redComposition = [null, null, null]; // 친선전에는 AI 스킬 없음
-        }
+        applyEnemyStats();
         
         updateRosterUI(); updateUI(); resetPositions('red'); initializeOfflineReward(); requestAnimationFrame(gameLoop); 
     }
@@ -3793,34 +3714,8 @@ function renameAnimal() {
     function endStage(isWin) {
         isResetting = true;
         
-        // 친선전 모드인 경우
-        if (isFriendlyMatch && opponentData) {
-            if (isWin) {
-                showEvent("친선전 승리! 🎉", 50, 40, "#22c55e", "3rem");
-                // 친선전 결과 저장
-                recordFriendlyMatchResult(getCurrentUser().uid, opponentData.uid, true);
-            } else {
-                showEvent("친선전 패배...", 50, 40, "var(--red)", "3rem");
-                recordFriendlyMatchResult(getCurrentUser().uid, opponentData.uid, false);
-            }
-            
-            setTimeout(() => {
-                // 홈 화면으로 복귀
-                isFriendlyMatch = false;
-                opponentData = null;
-                isGameRunning = false;
-                document.getElementById('game-ui').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('game-ui').style.display = 'none';
-                    document.getElementById('start-screen').style.display = 'flex';
-                    setTimeout(() => { document.getElementById('start-screen').style.opacity = '1'; }, 50);
-                    changeTab(3, document.querySelectorAll('.nav-item')[3]); // 랭킹 페이지로 이동
-                    loadRankings(); // 랭킹 새로고침
-                }, 500);
-            }, 1500);
-        } else {
-            // 일반 스테이지 모드
-            if (isWin) {
+        // 일반 스테이지 모드
+        if (isWin) {
                 let reward = state.stage * 100 + 500; state.gold += reward; state.stage++; state.maxStage = Math.max(state.maxStage, state.stage); applyEnemyStats();
                 showEvent("STAGE CLEAR!", 50, 40, "var(--gold)", "3.5rem");
                 setTimeout(() => showEvent(`+${reward}💰`, 50, 55, "var(--gold)", "2rem"), 1000);
@@ -3883,110 +3778,6 @@ function renameAnimal() {
                 // 로딩 화면 숨기기
                 document.getElementById('loading-screen').classList.remove('active');
             }, 3500);
-        }
-    }
-    
-    // ===========================
-    // 📊 친선전 결과 기록 함수
-    // ===========================
-    
-    async function recordFriendlyMatchResult(playerUid, opponentUid, isWin) {
-        try {
-            if (!db) {
-                console.warn("Firestore가 초기화되지 않았습니다.");
-                return;
-            }
-            
-            const currentUser = getCurrentUser();
-            if (!currentUser) return;
-            
-            // 플레이어 프로필 업데이트
-            const playerRef = db.collection('users').doc(playerUid);
-            const playerDoc = await playerRef.get();
-            const playerData = playerDoc.data();
-            
-            if (playerData) {
-                const newWins = (playerData.wins || 0) + (isWin ? 1 : 0);
-                const newLosses = (playerData.losses || 0) + (isWin ? 0 : 1);
-                const totalGames = newWins + newLosses;
-                const winRate = totalGames > 0 ? Math.round((newWins / totalGames) * 100) : 0;
-                
-                await playerRef.update({
-                    wins: newWins,
-                    losses: newLosses,
-                    winRate: winRate,
-                    lastUpdated: new Date()
-                });
-                
-                console.log(`✅ ${isWin ? '승리' : '패배'} 기록: ${newWins}W ${newLosses}L (승률: ${winRate}%)`);
-            }
-            
-            // 사용한 동물 통계 업데이트
-            console.log("🔍 redComposition 확인:", state?.redComposition);
-            console.log("🔍 players 배열:", players?.map(p => ({ team: p.team, animal: p.animal?.id })));
-            
-            let usedAnimals = [];
-            
-            // 방법 1: state.redComposition 사용
-            if (state && state.redComposition && state.redComposition.length > 0) {
-                usedAnimals = state.redComposition.filter(id => id).map(id => {
-                    const animal = window.animalData?.find(a => a.id === id);
-                    return {
-                        id: id,
-                        name: animal?.name || id,
-                        icon: animal?.icon || '🐶'
-                    };
-                });
-                console.log("✅ redComposition에서 사용한 동물 추출:", usedAnimals);
-            } 
-            // 방법 2: players 배열에서 직접 추출 (fallback)
-            else if (players && players.length > 0) {
-                usedAnimals = players
-                    .filter(p => p.team === 'red' && p.animal && p.animal.id)
-                    .map(p => ({
-                        id: p.animal.id,
-                        name: p.animal.name,
-                        icon: p.animal.icon || '🐶'
-                    }));
-                console.log("✅ players 배열에서 사용한 동물 추출:", usedAnimals);
-            }
-            
-            if (usedAnimals.length > 0) {
-                console.log("📤 updateAnimalUsageStats 호출:", playerUid, usedAnimals);
-                await updateAnimalUsageStats(playerUid, usedAnimals);
-                    
-                    // 프로필 아이콘을 가장 많이 사용한 동물로 업데이트
-                    try {
-                        const mostUsedAnimal = await getMostUsedAnimal(playerUid);
-                        if (mostUsedAnimal && mostUsedAnimal.id) {
-                            const animalInfo = window.animalData?.find(a => a.id === mostUsedAnimal.id);
-                            if (animalInfo) {
-                                await db.collection('users').doc(playerUid).update({
-                                    avatar: animalInfo.icon,
-                                    lastAvatarUpdate: new Date()
-                                });
-                                console.log(`✅ 프로필 아이콘 업데이트: ${animalInfo.icon}`);
-                            }
-                        }
-                    } catch (error) {
-                        console.log("프로필 아이콘 업데이트 실패 (계속 진행):", error);
-                    }
-            }
-            
-            // 친선전 기록을 friendlyMatches 컬렉션에 저장
-            await db.collection('friendlyMatches').add({
-                playerUid: playerUid,
-                opponentUid: opponentUid,
-                playerWon: isWin,
-                timestamp: new Date(),
-                playerStage: state.maxStage,
-                playerScore: state.scoreB,
-                opponentScore: state.scoreR
-            });
-            
-        } catch (error) {
-            console.error("친선전 결과 기록 실패:", error);
-        }
     }
 
     function updateBall() {
@@ -4574,14 +4365,6 @@ function renameAnimal() {
                         });
                         players.filter(t => t.team === p.team).forEach(t => t.activeBuff = 60);
                         createVfx(p.x, p.y, 'aura', '#06b6d4');
-                        skillUsed = true;
-                    }
-                }
-                else if (p.animal.id === 'manatee') {
-                    if ((ball.holder === p || (ball.isFake && ball.fakeHolder === p)) && skillProbability < 20) {
-                        players.filter(t => t.team === p.team && t !== p).forEach(t => t.activeBuff = 60);
-                        createVfx(p.x, p.y, 'ring', '#38bdf8');
-                        createVfx(p.x, p.y, 'aura', '#38bdf8');
                         skillUsed = true;
                     }
                 }
@@ -5463,9 +5246,6 @@ function renameAnimal() {
                 
                 // 프로필 로드
                 loadUserProfile(user.uid);
-                
-                // 랭킹 로드
-                loadRankings();
             } else {
                 // 사용자가 로그인되지 않음
                 console.log("❌ 로그인 필요");
@@ -5665,133 +5445,39 @@ function renameAnimal() {
     
     async function showPlayerInfoPopup(playerData) {
         try {
-            // ⚠️ playerData 검증
             if (!playerData) {
                 alert("플레이어 정보를 찾을 수 없습니다.");
                 return;
             }
-            
-            // userId가 없으면 추가
-            if (!playerData.userId) {
-                console.warn("⚠️ playerData에 userId가 없음. 자동 설정 시도");
-                // userId 필드를 찾기
-                if (playerData.uid) playerData.userId = playerData.uid;
-                else {
-                    alert("플레이어 정보가 불완전합니다.");
-                    return;
-                }
+
+            const userId = playerData.userId || playerData.uid;
+            if (!userId) {
+                alert("플레이어 정보가 불완전합니다.");
+                return;
             }
-            
+
             currentPopupPlayer = playerData;
-            
-            // 🐾 가장 많이 사용한 동물로 프로필 아이콘 설정
-            let profileIcon = playerData.avatar || '🐶';
-            try {
-                if (db) {
-                    const statsDoc = await db.collection('animalStats').doc(playerData.userId).get();
-                    if (statsDoc.exists && statsDoc.data().usage) {
-                        // 사용 횟수가 가장 많은 동물 찾기
-                        const usage = statsDoc.data().usage;
-                        const mostUsedAnimalId = Object.entries(usage).reduce((max, current) => 
-                            current[1] > usage[max] ? current[0] : max
-                        );
-                        
-                        // ANIMAL_LIBRARY에서 아이콘 조회
-                        const animalInfo = ANIMAL_LIBRARY.find(a => a.id === mostUsedAnimalId);
-                        if (animalInfo) {
-                            profileIcon = animalInfo.icon;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.log("가장 많이 사용한 동물 조회 실패, 저장된 프로필 사용:", error);
-            }
-            
-            // 기본 정보 표시
+            const profileIcon = playerData.avatar || '🐶';
+
             document.getElementById('popup-avatar').textContent = profileIcon;
             document.getElementById('popup-nickname').textContent = playerData.nickname || '플레이어';
             document.getElementById('popup-max-stage').textContent = playerData.maxStage || 1;
             document.getElementById('popup-wins').textContent = playerData.wins || 0;
             document.getElementById('popup-losses').textContent = playerData.losses || 0;
-            
-            // 최근 로스터 표시
-            const recentRoster = await getRecentRoster(playerData.userId);
+
             const rosterDisplay = document.getElementById('popup-recent-roster');
-            
-            if (recentRoster && recentRoster.animals && recentRoster.animals.length > 0) {
-                rosterDisplay.innerHTML = '';
-                recentRoster.animals.forEach((animal) => {
-                    const card = document.createElement('div');
-                    card.className = 'animal-card';
-                    card.innerHTML = `
-                        <div class="animal-icon">${animal.icon || '🐶'}</div>
-                        <div class="animal-name">${animal.name || '동물'}</div>
-                        <div class="animal-level">Lv.${animal.level || 1}</div>
-                    `;
-                    rosterDisplay.appendChild(card);
-                });
-            } else {
-                rosterDisplay.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#888; font-size:0.8rem;">로스터 정보 없음</div>';
-            }
-            
-            // 가장 많이 사용한 동물 표시
-            const mostUsed = await getMostUsedAnimal(playerData.userId);
+            rosterDisplay.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#888; font-size:0.8rem;">로스터 정보는 간단히만 표시됩니다.</div>';
+
             const mostUsedContainer = document.getElementById('popup-most-used');
-            
-            if (mostUsed && mostUsed.id) {
-                // ANIMAL_LIBRARY에서 동물 정보 찾기 (한글 이름 포함)
-                const animalInfo = ANIMAL_LIBRARY.find(a => a.id === mostUsed.id);
-                
-                if (animalInfo) {
-                    mostUsedContainer.innerHTML = `
-                        <div style="font-size:2.5rem;">${animalInfo.icon || '🐶'}</div>
-                        <div class="most-used-info">
-                            <div class="most-used-count">가장 많이 사용한 동물</div>
-                            <div class="most-used-name">${animalInfo.name}</div>
-                            <div style="font-size:0.75rem; color:#888; margin-top:3px;">
-                                사용 횟수: <span>${mostUsed.count}</span>회
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    mostUsedContainer.innerHTML = `
-                        <div style="font-size:2.5rem;">🐶</div>
-                        <div class="most-used-info">
-                            <div class="most-used-count">가장 많이 사용한 동물</div>
-                            <div class="most-used-name">${mostUsed.id}</div>
-                            <div style="font-size:0.75rem; color:#888; margin-top:3px;">
-                                사용 횟수: <span>${mostUsed.count}</span>회
-                            </div>
-                        </div>
-                    `;
-                }
-            } else {
-                mostUsedContainer.innerHTML = `
-                    <div style="font-size:2.5rem;">?</div>
-                    <div class="most-used-info">
-                        <div class="most-used-count">사용 데이터</div>
-                        <div class="most-used-name">없음</div>
-                    </div>
-                `;
-            }
-            
-            // 동물별 사용 통계 상세 정보 표시
-            await displayAnimalUsageStats(playerData.userId);
-            
-            // 친선전 버튼 활성화 (자신이 아닌 경우만)
-            const currentUser = getCurrentUser();
-            const friendlyBtn = document.getElementById('popup-friendly-btn');
-            if (currentUser && playerData.userId === currentUser.uid) {
-                friendlyBtn.disabled = true;
-                friendlyBtn.style.opacity = '0.5';
-                friendlyBtn.style.cursor = 'not-allowed';
-            } else {
-                friendlyBtn.disabled = false;
-                friendlyBtn.style.opacity = '1';
-                friendlyBtn.style.cursor = 'pointer';
-            }
-            
-            // 팝업 표시
+            mostUsedContainer.innerHTML = `
+                <div style="font-size:2.5rem;">${profileIcon}</div>
+                <div class="most-used-info">
+                    <div class="most-used-count">프로필 정보</div>
+                    <div class="most-used-name">${playerData.nickname || '플레이어'}</div>
+                    <div style="font-size:0.75rem; color:#888; margin-top:3px;">Stage ${playerData.maxStage || 1}</div>
+                </div>
+            `;
+
             document.getElementById('player-info-popup').classList.add('active');
         } catch (error) {
             console.error("플레이어 정보 팝업 표시 실패:", error);
@@ -5802,106 +5488,6 @@ function renameAnimal() {
     function closePlayerInfoPopup() {
         document.getElementById('player-info-popup').classList.remove('active');
         currentPopupPlayer = null;
-    }
-    
-    // 🐾 동물별 사용 통계 상세 정보 표시
-    async function displayAnimalUsageStats(uid) {
-        try {
-            if (!db) return;
-            
-            // animalStats 컬렉션에서 동물 사용 통계 조회
-            const statsDoc = await db.collection('animalStats').doc(uid).get();
-            if (!statsDoc.exists || !statsDoc.data().usage) {
-                console.log("동물 통계 데이터 없음");
-                return;
-            }
-            
-            const usage = statsDoc.data().usage;
-            
-            // 동물별 사용 횟수를 정렬 (내림차순)
-            const animalStats = Object.entries(usage)
-                .map(([animalId, count]) => {
-                    const animal = ANIMAL_LIBRARY.find(a => a.id === animalId);
-                    return {
-                        id: animalId,
-                        name: animal ? animal.name : animalId,
-                        icon: animal ? animal.icon : '🐶',
-                        grade: animal ? animal.grade : 'Unknown',
-                        count: count
-                    };
-                })
-                .sort((a, b) => b.count - a.count);
-            
-            // HTML로 동물별 통계 렌더링
-            let statsHtml = '<div class="popup-section" style="max-height: 250px; overflow-y: auto;">';
-            statsHtml += '<div class="section-title">📊 동물별 사용 통계</div>';
-            statsHtml += '<div style="display: flex; flex-direction: column; gap: 10px;">';
-            
-            animalStats.slice(0, 10).forEach((stat, idx) => {
-                // 등급별 색상
-                let gradeColor = '#888';
-                if (stat.grade === 'Legendary') gradeColor = '#ffd700';
-                else if (stat.grade === 'Epic') gradeColor = '#a855f7';
-                else if (stat.grade === 'Rare') gradeColor = '#3b82f6';
-                
-                statsHtml += `
-                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid ${gradeColor};">
-                        <div style="font-size: 1.8rem; flex-shrink: 0;">${stat.icon}</div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 0.85rem; font-weight: 900; color: white;">${stat.name}</div>
-                            <div style="font-size: 0.7rem; color: #888; margin-top: 2px;">${stat.grade}</div>
-                        </div>
-                        <div style="text-align: right; flex-shrink: 0;">
-                            <div style="font-size: 1rem; font-weight: 900; color: ${gradeColor};">${stat.count}</div>
-                            <div style="font-size: 0.65rem; color: #666;">회</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            if (animalStats.length === 0) {
-                statsHtml += '<div style="text-align: center; color: #888; font-size: 0.75rem; padding: 15px;">사용 통계 데이터가 없습니다.</div>';
-            } else if (animalStats.length > 10) {
-                statsHtml += `<div style="text-align: center; color: #666; font-size: 0.7rem; margin-top: 5px;">외 ${animalStats.length - 10}마리...</div>`;
-            }
-            
-            statsHtml += '</div></div>';
-            
-            // 팝업에 통계 영역 추가
-            const popupCard = document.querySelector('.player-info-card');
-            if (popupCard) {
-                let statsSection = popupCard.querySelector('[data-stats-section]');
-                if (!statsSection) {
-                    statsSection = document.createElement('div');
-                    statsSection.setAttribute('data-stats-section', 'true');
-                    // 팝업-액션 섹션 위에 삽입
-                    const actionDiv = popupCard.querySelector('.popup-actions');
-                    if (actionDiv) {
-                        actionDiv.parentNode.insertBefore(statsSection, actionDiv);
-                    } else {
-                        popupCard.appendChild(statsSection);
-                    }
-                }
-                statsSection.innerHTML = statsHtml;
-            }
-        } catch (error) {
-            console.error("동물별 통계 표시 실패:", error);
-        }
-    }
-    
-    async function startFriendlyFromPopup() {
-        if (!currentPopupPlayer || !currentPopupPlayer.userId) {
-            alert("플레이어 정보가 없습니다.");
-            console.error("❌ currentPopupPlayer:", currentPopupPlayer);
-            return;
-        }
-        
-        // ⚠️ 값을 먼저 저장한 후 팝업 닫기 (closePlayerInfoPopup이 currentPopupPlayer를 null로 만들기 때문)
-        const userId = currentPopupPlayer.userId;
-        const nickname = currentPopupPlayer.nickname;
-        
-        closePlayerInfoPopup();
-        await startFriendlyMatch(userId, nickname);
     }
 
     // ===========================
@@ -5927,11 +5513,11 @@ function renameAnimal() {
                 playBtn.style.opacity = '0.5';
                 
                 try {
-                    // Firebase가 초기화될 때까지 최대 3초 대기
+                    // Firebase가 초기화될 때까지 최대 0.8초만 기다림
                     let waitTime = 0;
-                    while ((!auth || !db) && waitTime < 3000) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        waitTime += 100;
+                    while ((!auth || !db) && waitTime < 800) {
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        waitTime += 50;
                     }
                     
                     const currentUser = getCurrentUser();
@@ -5991,82 +5577,6 @@ function renameAnimal() {
                 });
         }
     }
-    
-    // ===========================
-    // ⚽ 친선전(대전) 함수
-    // ===========================
-    
-    window.startFriendlyMatch = async function(opponentUid, opponentName) {
-        try {
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
-                alert("로그인이 필요합니다.");
-                return;
-            }
-            
-            console.log("친선전 시작 시도:", { opponent: opponentName, opponentUid: opponentUid });
-            
-            // 진행 중인 스테이지 경기 확인
-            const currentGameData = await loadGameData(currentUser.uid);
-            if (currentGameData && currentGameData.stage > 0) {
-                const confirmed = confirm(`🎯 현재 Stage ${currentGameData.stage} 진행 중입니다.\n\n친선전을 시작하면 진행 중인 경기가 중단됩니다.\n계속 진행하시겠습니까?`);
-                if (!confirmed) {
-                    console.log("❌ 친선전 시작 취소됨");
-                    return;
-                }
-                console.log("⚠️ 진행 중인 스테이지 경기 중단됨");
-            }
-            
-            // 상대방의 최근 로스터 로드 (최신 방식)
-            let opponentRoster = null;
-            let playerRoster = null;
-            try {
-                opponentRoster = await getRecentRoster(opponentUid);
-                playerRoster = await getRoster(currentUser.uid);
-            } catch (error) {
-                console.warn("친선전 로스터 조회 실패, 로컬 데이터로 대체합니다.", error);
-            }
-            
-            const normalizedPlayerRoster = normalizeFriendlyRoster(playerRoster?.animals || getCurrentLocalRoster());
-            const normalizedOpponentRoster = normalizeFriendlyRoster(opponentRoster?.animals || normalizedPlayerRoster);
-            
-            console.log("로스터 로드 결과:", { opponentRoster, playerRoster, normalizedPlayerRoster, normalizedOpponentRoster });
-            
-            if (normalizedOpponentRoster.length === 0) {
-                alert("상대방의 팀 정보를 찾을 수 없습니다.");
-                return;
-            }
-            
-            if (normalizedPlayerRoster.length === 0) {
-                alert("내 팀 정보를 찾을 수 없습니다. PLAY 버튼으로 팀을 먼저 구성하세요.");
-                return;
-            }
-            
-            // 친선전 모드 설정
-            isFriendlyMatch = true;
-            opponentData = {
-                uid: opponentUid,
-                name: opponentName || '상대',
-                roster: normalizedOpponentRoster
-            };
-            
-            console.log("⚽ 친선전 준비 완료:", {
-                player: currentUser.displayName || currentUser.email,
-                opponent: opponentName,
-                playerTeam: playerRoster.animals.length,
-                opponentTeam: opponentRoster.animals.length,
-                opponentTeamName: opponentRoster.teamName || '팀'
-            });
-            
-            // 게임 시작 (startGame이 changeTab(2)를 호출함)
-            startGame();
-            
-        } catch (error) {
-            console.error("친선전 시작 실패:", error);
-            alert("친선전 시작에 실패했습니다: " + error.message);
-        }
-    }
-    
     
     // ===========================
     // 🏠 화면 전환 함수들
