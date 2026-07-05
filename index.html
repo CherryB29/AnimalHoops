@@ -548,6 +548,45 @@
         }
 
         // 게임 데이터 저장/로드
+        function parsePersistedTimestamp(value) {
+          if (!value) return 0;
+          if (value && typeof value.toDate === 'function') return value.toDate().getTime();
+          if (value && typeof value === 'object' && typeof value.seconds === 'number') {
+            return value.seconds * 1000;
+          }
+          const parsed = new Date(value);
+          return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+        }
+
+        function mergeGameDataForSync(localData, remoteData) {
+          const localTime = parsePersistedTimestamp(localData?.lastSaved);
+          const remoteTime = parsePersistedTimestamp(remoteData?.lastSaved);
+          if (!remoteData || !remoteTime || localTime >= remoteTime) {
+            return {
+              ...localData,
+              lastSaved: localData?.lastSaved || new Date().toISOString()
+            };
+          }
+          return {
+            ...remoteData,
+            lastSaved: remoteData?.lastSaved || new Date().toISOString()
+          };
+        }
+
+        function persistLocalGameData(gameData) {
+          try {
+            const data = {
+              ...gameData,
+              lastSaved: gameData.lastSaved || new Date().toISOString()
+            };
+            localStorage.setItem('animalHoopsRPGSave3', JSON.stringify(data));
+            return true;
+          } catch (error) {
+            console.error("로컬 저장 실패:", error);
+            return false;
+          }
+        }
+
         async function saveGameData(uid, gameData) {
           try {
             if (!uid) {
@@ -555,30 +594,40 @@
               return false;
             }
 
-            const isReady = await ensureFirebaseReady(5000);
-            if (!isReady || !db || !auth || !getCurrentUser()) {
-              console.warn("Firestore가 아직 준비되지 않아 서버 저장을 보류합니다.");
-              return false;
+            const savePayload = {
+              ...gameData,
+              uid,
+              lastSaved: new Date().toISOString()
+            };
+            persistLocalGameData(savePayload);
+
+            if (!db || !auth || !getCurrentUser()) {
+              return true;
             }
-            
+
             showSaveIndicator();
-            
-            await db.collection('gameData').doc(uid).set({
-              uid: uid,
-              gold: gameData.gold,
-              stage: gameData.stage,
-              maxStage: gameData.maxStage,
-              ownedAnimals: gameData.ownedAnimals,
-              roster: gameData.roster,
-              lastSaved: new Date()
-            }, { merge: true });
-            
-            console.log("✅ 게임 데이터 저장됨");
-            
-            // 저장 완료 후 300ms 후 숨기기
-            setTimeout(() => {
-              hideSaveIndicator();
-            }, 300);
+            void (async () => {
+              try {
+                const latestServerData = await loadGameData(uid);
+                const resolvedData = mergeGameDataForSync(savePayload, latestServerData);
+                await db.collection('gameData').doc(uid).set({
+                  uid: uid,
+                  gold: resolvedData.gold,
+                  stage: resolvedData.stage,
+                  maxStage: resolvedData.maxStage,
+                  ownedAnimals: resolvedData.ownedAnimals,
+                  roster: resolvedData.roster,
+                  offlineRewardState: resolvedData.offlineRewardState,
+                  lastSaved: resolvedData.lastSaved
+                }, { merge: true });
+                console.log("✅ 게임 데이터 서버 저장됨");
+              } catch (error) {
+                console.warn("서버 저장 실패, 로컬 저장은 유지됩니다:", error);
+              } finally {
+                setTimeout(() => hideSaveIndicator(), 300);
+              }
+            })();
+
             return true;
           } catch (error) {
             console.error("게임 데이터 저장 실패:", error);
@@ -589,12 +638,10 @@
 
         async function loadGameData(uid) {
           try {
-            const isReady = await ensureFirebaseReady(5000);
-            if (!isReady || !db || !auth || !getCurrentUser()) {
-              console.warn("Firestore가 아직 준비되지 않아 로드를 보류합니다.");
+            if (!uid || !db || !auth || !getCurrentUser()) {
               return null;
             }
-            
+
             const doc = await db.collection('gameData').doc(uid).get();
             if (doc.exists) {
               console.log("✅ 게임 데이터 로드됨");
@@ -1719,14 +1766,13 @@
     async function loadFromServer() {
         const currentUser = getCurrentUser();
         if (!currentUser || typeof loadGameData !== 'function') {
-            console.log("📭 서버 로드 불가 - 로컬 데이터 사용");
             return null;
         }
         
         try {
             const serverData = await loadGameData(currentUser.uid);
             if (serverData) {
-                console.log("🔄 서버 데이터로 로드");
+                console.log("🔄 서버 데이터 확인 완료");
                 return serverData;
             }
             return null;
@@ -1737,26 +1783,30 @@
     }
     
     async function loadData() {
-        // 1. 서버 데이터 먼저 시도 (로그인된 경우)
+        const localData = loadLocalData();
         const currentUser = getCurrentUser();
+
         if (currentUser && typeof loadGameData === 'function') {
-            const serverData = await loadFromServer();
-            if (serverData) {
-                // 서버 데이터로 복원
-                applyLoadedData(serverData);
-                console.log("✅ 서버 데이터 로드 완료");
-                // 자동 저장 시작 (10초마다)
-                startAutoSave(currentUser.uid, getGameData, 10000);
-            } else {
-                // 서버 데이터 없음 - 로컬 데이터 사용
-                loadLocalData();
-                console.log("✅ 로컬 데이터 로드 완료");
-                // 자동 저장 시작 (10초마다)
-                startAutoSave(currentUser.uid, getGameData, 10000);
+            try {
+                const serverData = await loadFromServer();
+                if (serverData) {
+                    const localTime = localData?.lastSaved ? new Date(localData.lastSaved).getTime() : 0;
+                    const serverTime = serverData.lastSaved ? new Date(serverData.lastSaved).getTime() : 0;
+                    if (!localData || !serverTime || serverTime >= localTime) {
+                        applyLoadedData(serverData);
+                        console.log("✅ 서버 데이터로 최신 상태 복원");
+                    } else {
+                        console.log("✅ 로컬 데이터 유지");
+                    }
+                }
+            } catch (error) {
+                console.error("데이터 동기화 실패:", error);
             }
+        }
+
+        if (currentUser && typeof loadGameData === 'function') {
+            startAutoSave(currentUser.uid, getGameData, 10000);
         } else {
-            // 로그인 안됨 - 로컬 데이터만 사용
-            loadLocalData();
             console.log("✅ 로컬 데이터 로드 완료 (로그인 안됨)");
         }
     }
@@ -1769,10 +1819,12 @@
                 const data = JSON.parse(saved);
                 applyLoadedData(data);
                 console.log("📁 로컬 데이터로 로드");
+                return data;
             } catch (e) {
                 console.error("로컬 데이터 파싱 오류:", e);
             }
         }
+        return null;
     }
     
     // 로드된 데이터 적용
