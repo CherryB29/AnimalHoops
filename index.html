@@ -1666,18 +1666,46 @@
     });
     window.addEventListener('pagehide', syncOfflineRewardTimestamp);
 
+    function normalizeAnimalLevel(value, fallback = 1) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+        return Math.floor(parsed);
+    }
+
+    function findOwnedAnimalByIdentity(targetAnimals, animalLike) {
+        const animals = Array.isArray(targetAnimals) ? targetAnimals : [];
+        if (!animalLike) return null;
+        if (animalLike.uid) {
+            const byUid = animals.find(a => a && a.uid === animalLike.uid);
+            if (byUid) return byUid;
+        }
+        if (animalLike.id) {
+            const sameLevel = animals.find(a => a && a.id === animalLike.id && normalizeAnimalLevel(a.level, 1) === normalizeAnimalLevel(animalLike.level, 1));
+            if (sameLevel) return sameLevel;
+            return animals.find(a => a && a.id === animalLike.id) || null;
+        }
+        return null;
+    }
+
     function getCurrentRosterSnapshot() {
-        return players.filter(p => p.team === 'blue').slice(0, 3).map(p => p.animal).filter(Boolean).map(animal => ({
-            uid: animal.uid || null,
-            id: animal.id || null,
-            level: animal.level || 1,
-            name: animal.name || null,
-            icon: animal.icon || null
-        }));
+        return players.filter(p => p.team === 'blue').slice(0, 3).map(p => p.animal).filter(Boolean).map(animal => {
+            const canonical = findOwnedAnimalByIdentity(ownedAnimals, animal);
+            const source = canonical || animal;
+            const resolvedLevel = normalizeAnimalLevel(source.level || animal.level || 1, 1);
+            return {
+                uid: source.uid || animal.uid || null,
+                id: source.id || animal.id || null,
+                level: resolvedLevel,
+                name: source.customName || source.name || animal.name || null,
+                icon: source.icon || animal.icon || null,
+                favorite: !!source.favorite,
+                customName: source.customName || null
+            };
+        });
     }
 
     function serializeAnimalForPersistence(animal) {
-        const resolvedLevel = animal?.level || 1;
+        const resolvedLevel = normalizeAnimalLevel(animal?.level, 1);
         const allocatedPoints = animal?.allocatedPoints || { speed: 0, shoot: 0, iq: 0 };
         return {
             uid: animal?.uid || genUid(),
@@ -1688,7 +1716,9 @@
                 shoot: allocatedPoints.shoot || 0,
                 iq: allocatedPoints.iq || 0
             },
-            totalAvailablePoints: animal?.totalAvailablePoints || getAvailablePoints(resolvedLevel)
+            totalAvailablePoints: animal?.totalAvailablePoints || getAvailablePoints(resolvedLevel),
+            favorite: !!animal?.favorite,
+            customName: animal?.customName || null
         };
     }
 
@@ -1767,13 +1797,15 @@
             const original = ANIMAL_LIBRARY.find(lib => lib.id === savedAnimal?.id);
             const hydrated = createAnimal(original || { id: savedAnimal?.id || 'unknown', name: savedAnimal?.name || '알 수 없음' }, savedAnimal?.level || 1);
             hydrated.uid = savedAnimal?.uid || genUid();
-            hydrated.level = savedAnimal?.level || 1;
+            hydrated.level = normalizeAnimalLevel(savedAnimal?.level, 1);
             hydrated.allocatedPoints = {
                 speed: savedAnimal?.allocatedPoints?.speed || 0,
                 shoot: savedAnimal?.allocatedPoints?.shoot || 0,
                 iq: savedAnimal?.allocatedPoints?.iq || 0
             };
             hydrated.totalAvailablePoints = savedAnimal?.totalAvailablePoints || getAvailablePoints(hydrated.level);
+            hydrated.favorite = !!savedAnimal?.favorite;
+            hydrated.customName = savedAnimal?.customName || null;
             return applyAnimalStats(hydrated);
         });
     }
@@ -1922,9 +1954,14 @@
 
                 bluePlayers.slice(0, 3).forEach((player, index) => {
                     const rosterAnimal = rosterAnimals[index] || ownedAnimals[index] || player.animal;
-                    if (rosterAnimal) {
-                        player.animal = { ...rosterAnimal };
+                    const canonical = findOwnedAnimalByIdentity(ownedAnimals, rosterAnimal);
+                    const resolvedAnimal = canonical || rosterAnimal;
+                    if (resolvedAnimal) {
+                        player.animal = { ...resolvedAnimal };
+                        player.animal.level = normalizeAnimalLevel(resolvedAnimal.level || player.animal.level || 1, 1);
                         if (!player.animal.uid) player.animal.uid = genUid();
+                        player.animal.favorite = !!resolvedAnimal.favorite;
+                        player.animal.customName = resolvedAnimal.customName || null;
                         applyAnimalStats(player.animal);
                         player.skillUsesLeft = player.animal.maxUses || 0;
                     }
