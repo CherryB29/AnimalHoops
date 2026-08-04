@@ -3326,11 +3326,15 @@ function renameAnimal() {
     }
 
     // 🔄 자동판매 함수
-    function autoSellAnimals() {
+    function autoSellAnimals(protectedUids = []) {
         const settings = window.gameSettings || {};
+        const protectedUidSet = new Set((protectedUids || []).filter(Boolean));
         let soldAnimals = [];
         
         ownedAnimals = ownedAnimals.filter(animal => {
+            // 새로 뽑은 동물은 자동판매 대상에서 제외
+            if (protectedUidSet.has(animal.uid)) return true;
+
             // 스탯이 배분되었거나 즐겨찾기된 동물은 판매 안 함
             let hasAllocated = (animal.allocatedPoints.speed || 0) + (animal.allocatedPoints.shoot || 0) + (animal.allocatedPoints.iq || 0) > 0;
             if (hasAllocated || animal.favorite) return true;
@@ -3463,7 +3467,10 @@ function renameAnimal() {
     document.getElementById('flash-screen').style.animation = '';
     
     // 🎯 자동판매 실행 및 판매 목록 받기
-    let soldAnimals = autoSellAnimals();
+    const protectedUids = (currentPickedList || []).map(animal => animal.uid).filter(Boolean);
+    let soldAnimals = autoSellAnimals(protectedUids);
+    renderInventory();
+    updateUI();
     
     const overlay = document.getElementById('full-overlay');
     
